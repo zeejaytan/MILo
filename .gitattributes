@@ -1,0 +1,7 @@
+# These files are executed on Spartan (Linux). A CRLF line ending in a shebang makes
+# the kernel look for an interpreter named "bash\r", which fails with a message that
+# does not obviously point at line endings. Keep them LF regardless of what the laptop
+# checkout does.
+*.sh    text eol=lf
+*.slurm text eol=lf
+*.py    text eol=lf
