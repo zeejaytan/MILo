@@ -215,6 +215,19 @@ def training(
         )
         gt_image = viewpoint_cam.original_image.cuda()
 
+        # [SHERD FORK] Object masking for turntable captures.
+        # Upstream MILo loads a PNG alpha channel into `viewpoint_cam.gt_mask` but never
+        # uses it (the multiply in scene/cameras.py is commented out, and the loss below
+        # is computed on the raw image). On a turntable the backdrop is the one thing that
+        # does NOT move with the sherd, so without this the optimiser spends Gaussians
+        # modelling an inconsistent background and softens the sherd's silhouette.
+        # We composite the ground truth against the render background outside the mask,
+        # which actively tells the model "there is nothing here" and lets background
+        # Gaussians be pruned. Zeroing both images instead would leave them unpenalised.
+        if getattr(viewpoint_cam, "gt_mask", None) is not None:
+            mask = viewpoint_cam.gt_mask.cuda()
+            gt_image = gt_image * mask + background[:, None, None] * (1.0 - mask)
+
         # Rendering loss
         if args.decoupled_appearance:
             Ll1 = L1_loss_appearance(image, gt_image, gaussians, viewpoint_cam.uid)

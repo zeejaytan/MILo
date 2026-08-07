@@ -207,3 +207,22 @@ dmypy.json
 # Pyre type checker
 .pyre/
 learnableearthparser/fast_sampler/_sampler.c
+#####################
+# Sherd fork (zeejaytan) — laptop <-> GitHub <-> Spartan
+#####################
+
+# Heavy data lives on Spartan only. Nothing below is ever committed or copied
+# to the laptop: photographs, COLMAP datasets, trained scenes, meshes.
+data/
+output/
+artifacts/
+*.hdf5
+*.h5
+
+# Upstream ignores *.sh / *.slurm / *.png / *.ply outright, which would silently
+# swallow this fork's own tooling. Re-include ours by name.
+!scripts/
+!scripts/**/*.sh
+!scripts/**/*.py
+!slurm/
+!slurm/*.slurm
