@@ -10,15 +10,22 @@
 #     batched — but there is no need, the transfer is I/O bound, not compute.
 #
 # Usage (on Spartan):
-#   ./scripts/mediaflux_fetch.sh <mediaflux-namespace> <date>/<tree>
+#   ./scripts/mediaflux_fetch.sh --list [sub-namespace]   # browse, to find the capture
+#   ./scripts/mediaflux_fetch.sh <capture> [mediaflux-namespace]
 #
-# Example:
-#   ./scripts/mediaflux_fetch.sh /projects/proj-xxxx/Rabati2025/16062025 16062025
+# Examples:
+#   ./scripts/mediaflux_fetch.sh --list
+#   ./scripts/mediaflux_fetch.sh 16062025
+#   ./scripts/mediaflux_fetch.sh 16062025 /projects/proj-1000_rbt23.../Rabati2025/16062025
 #
 # The destination is the path the photogrammetry pipeline config already expects:
 #   /data/gpfs/projects/punim2657/Rabati2025/<date>/<tree>/
 set -euo pipefail
 
+# Rabati 2023 photogrammetry allocation. The layout underneath it is not assumed —
+# use --list to see it, then pass the full namespace as the second argument if the
+# capture does not sit directly under the root.
+MF_ROOT="${MF_ROOT:-/projects/proj-1000_rbt23photogrammetry-1128.4.1250}"
 PHOTO_ROOT="${PHOTO_ROOT:-/data/gpfs/projects/punim2657/Rabati2025}"
 MF_CONFIG="${MF_CONFIG:-$HOME/.Arcitecta/mflux.cfg}"
 LOG_DIR="${LOG_DIR:-/data/gpfs/projects/punim2657/MILo/logs/mediaflux}"
@@ -26,14 +33,28 @@ LOG_DIR="${LOG_DIR:-/data/gpfs/projects/punim2657/MILo/logs/mediaflux}"
 NB_WORKERS="${NB_WORKERS:-4}"
 NB_QUERIERS="${NB_QUERIERS:-4}"
 
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <mediaflux-namespace> <capture-relpath>" >&2
-  echo "  e.g. $0 /projects/proj-xxxx/Rabati2025/16062025 16062025" >&2
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 --list [sub-namespace]" >&2
+  echo "       $0 <capture> [mediaflux-namespace]" >&2
+  echo "  e.g. $0 --list" >&2
+  echo "       $0 16062025" >&2
+  echo "Allocation root (override with \$MF_ROOT): $MF_ROOT" >&2
   exit 1
 fi
 
-SRC_NAMESPACE="$1"
-CAPTURE="$2"
+if [[ "$1" == "--list" ]]; then
+  NS="${2:-}"
+  NS="${MF_ROOT%/}${NS:+/${NS#/}}"
+  module load unimelb-mf-clients
+  echo "Listing $NS — you will be prompted for your Mediaflux password."
+  # aterm needs a real terminal; this cannot be run over a non-interactive ssh.
+  aterm --mf.config "$MF_CONFIG" \
+        --command "asset.namespace.list :namespace $NS"
+  exit 0
+fi
+
+CAPTURE="$1"
+SRC_NAMESPACE="${2:-${MF_ROOT%/}/${CAPTURE}}"
 DEST="${PHOTO_ROOT}/${CAPTURE}"
 
 if [[ ! -f "$MF_CONFIG" ]]; then
