@@ -64,10 +64,11 @@ echo "Config: $MF_CONFIG$([[ $UNATTENDED == 1 ]] && echo ' (token — unattended
 if [[ "$1" == "--list" ]]; then
     NS="${MF_ROOT%/}${2:+/${2#/}}"
     echo "Listing $NS"
-    # aterm reads its config from $MFLUX_CFG and takes the command as bare arguments.
-    # It does NOT accept --mf.config or --command: passing those makes it try to run
-    # "--mf.config" as a Tcl command.
-    MFLUX_CFG="$MF_CONFIG" aterm "asset.namespace.list :namespace $NS"
+    # aterm reads its config from $MFLUX_CFG, and takes the service and each of its
+    # arguments as SEPARATE shell arguments. A single quoted string is parsed as one Tcl
+    # command name and fails with `invalid command name "asset.namespace.list :namespace
+    # ..."`. It also does not accept --mf.config or --command.
+    MFLUX_CFG="$MF_CONFIG" aterm asset.namespace.list :namespace "$NS"
     exit 0
 fi
 
