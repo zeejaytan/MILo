@@ -111,22 +111,32 @@ echo "CONDA_OVERRIDE_CUDA=$CONDA_OVERRIDE_CUDA (driver reports CUDA 12.8)"
 # package name and conflicts with COLMAP's libboost >=1.90, while pinning zlib conflicts
 # with the libzlib >=1.3.2 that libsqlite wants. The image libraries arrive with opencv
 # anyway. Naming fewer packages leaves the solver free to find a consistent set.
-if [[ ! -d "$ENV_PREFIX" ]]; then
-    if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
-        # COLMAP's own build dependencies, plus OpenMVS's. No colmap package, so no
-        # __cuda constraint enters the solve at all.
-        conda create -y -p "$ENV_PREFIX" -c conda-forge \
-            cmake ninja pkg-config git \
-            ceres-solver eigen freeimage glew glog gflags flann metis sqlite lz4 \
-            opencv cgal-cpp libboost-devel gmp mpfr
-    else
-        conda create -y -p "$ENV_PREFIX" -c conda-forge \
-            "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
-            cmake ninja pkg-config \
-            opencv cgal-cpp libboost-devel eigen glew gmp mpfr
-    fi
+if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
+    # COLMAP's own build dependencies, plus OpenMVS's. No colmap package, so no
+    # __cuda constraint enters the solve at all.
+    #
+    # The list comes from colmap/cmake/FindDependencies.cmake at tag 4.1.1 rather than
+    # from memory: 4.x added OpenImageIO (replacing FreeImage) and requires CHOLMOD from
+    # SuiteSparse, neither of which 3.9 needed. PoseLib, faiss and ONNX are NOT listed
+    # here on purpose — COLMAP fetches those itself, FETCH_POSELIB/FETCH_FAISS/FETCH_ONNX
+    # all default to ON.
+    #
+    # conda install rather than create only-if-missing: an earlier run left the
+    # environment half-built when cmake failed, and skipping the step because the
+    # directory existed would have repeated the same failure.
+    [[ -d "$ENV_PREFIX" ]] || conda create -y -p "$ENV_PREFIX" -c conda-forge python=3.11
+    conda install -y -p "$ENV_PREFIX" -c conda-forge \
+        cmake ninja pkg-config git \
+        ceres-solver suitesparse eigen openimageio glew glog gflags flann metis \
+        sqlite lz4 curl openssl \
+        opencv cgal-cpp libboost-devel gmp mpfr
+elif [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
+    conda create -y -p "$ENV_PREFIX" -c conda-forge \
+        "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
+        cmake ninja pkg-config \
+        opencv cgal-cpp libboost-devel eigen glew gmp mpfr
 else
-    echo "environment already present at $ENV_PREFIX"
+    echo "packaged COLMAP already present at $ENV_PREFIX"
 fi
 conda activate "$ENV_PREFIX"
 
@@ -152,7 +162,14 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         -DCUDA_ENABLED=ON \
         -DCMAKE_CUDA_ARCHITECTURES="80;89;90" \
         -DGUI_ENABLED=OFF \
+        -DTESTS_ENABLED=OFF \
+        -DCCACHE_ENABLED=OFF \
+        -DONNX_ENABLED=OFF \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    # ONNX is off deliberately: it exists for learned feature extraction, which this
+    # workflow does not use, and enabling it would pull the whole onnxruntime in. GUI off
+    # because compute nodes are headless. Tests off because a build is not what we are
+    # validating here — the GPU checks at the end are.
     cmake --build "$COLMAP_BUILD_DIR" -j "$NPROC"
     cmake --install "$COLMAP_BUILD_DIR"
 fi
