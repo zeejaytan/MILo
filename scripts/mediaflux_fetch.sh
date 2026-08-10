@@ -45,6 +45,24 @@ else
     exit 1
 fi
 
+# Decide whether a unimelb-mf-check run found anything wrong.
+#
+# The client exits 0 whether or not it found differences, so the exit code proves nothing.
+# The CSV is not a bare list of problems either: it always carries a header row and a
+# four-line summary block, so counting lines reports 7 failures on a perfect transfer —
+# which is exactly what an earlier version of this script did, on a run the client itself
+# had just declared clean. The summary rows are the authority.
+check_failures() {
+    local csv="$1" missing mismatch
+    missing=$(awk -F, '/Number of assets \(missing\)/  {gsub(/[^0-9]/,"",$4); print $4}' "$csv")
+    mismatch=$(awk -F, '/Number of assets \(content mismatch\)/ {gsub(/[^0-9]/,"",$4); print $4}' "$csv")
+    if [[ -z "$missing" || -z "$mismatch" ]]; then
+        echo "UNPARSEABLE"
+        return
+    fi
+    echo $(( missing + mismatch ))
+}
+
 usage() {
     echo "Usage: $0 --list [sub-namespace]" >&2
     echo "       $0 <capture> [mediaflux-namespace]" >&2
@@ -124,10 +142,12 @@ if [[ "$1" == "--up" ]]; then
         --nb-workers "$NB_WORKERS" \
         --nb-queriers "$NB_QUERIERS" \
         "$SRC" "${DEST_NS%/}/${LABEL}"
-    # unimelb-mf-check exits 0 whether or not it found differences, so the exit code
-    # proves nothing. Without --detailed-output the CSV lists only missing or invalid
-    # files, so anything past the header is a real discrepancy.
-    DIFFS=$(($(wc -l < "$CHECK_CSV") - 1))
+    DIFFS=$(check_failures "$CHECK_CSV")
+    if [[ "$DIFFS" == "UNPARSEABLE" ]]; then
+        echo "Could not read a verification summary from $CHECK_CSV — treating as unverified." >&2
+        echo "Do not delete the local copy." >&2
+        exit 1
+    fi
     if [[ "$DIFFS" -gt 0 ]]; then
         echo "$DIFFS file(s) missing or invalid on the server: $CHECK_CSV" >&2
         echo "Do not delete the local copy." >&2
@@ -173,13 +193,18 @@ unimelb-mf-check \
     --nb-queriers "$NB_QUERIERS" \
     "$DEST" "${SRC_NAMESPACE%/}"
 
-DIFFS=$(($(wc -l < "$CHECK_CSV") - 1))
+DIFFS=$(check_failures "$CHECK_CSV")
+if [[ "$DIFFS" == "UNPARSEABLE" ]]; then
+    echo "Could not read a verification summary from $CHECK_CSV — treating as unverified." >&2
+    echo "Do NOT reconstruct from this copy." >&2
+    exit 1
+fi
 if [[ "$DIFFS" -gt 0 ]]; then
     echo "$DIFFS file(s) missing or invalid: $CHECK_CSV" >&2
     echo "Do NOT reconstruct from this copy — re-run the download." >&2
     exit 1
 fi
-echo "Verified: no missing or invalid files ($CHECK_CSV)"
+echo "Verified: every asset present and checksum-matched ($CHECK_CSV)"
 
 echo
 echo "=== what arrived ==="
