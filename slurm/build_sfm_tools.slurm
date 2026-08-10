@@ -125,10 +125,18 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
     # environment half-built when cmake failed, and skipping the step because the
     # directory existed would have repeated the same failure.
     [[ -d "$ENV_PREFIX" ]] || conda create -y -p "$ENV_PREFIX" -c conda-forge python=3.11
+    # ceres-solver is pinned to a CPU build (build strings starting "h", as against the
+    # GPU ones starting "gpulgpl"). conda otherwise picks a GPU build, whose build number
+    # is higher — and those are compiled against CUDA 12.9, so CeresConfig.cmake demands
+    # CUDAToolkit >= 12.9.86 and the COLMAP configure dies against Spartan's 12.8 module:
+    #   "required is at least 12.9.86 (found .../CUDA/12.8.0/targets/x86_64-linux/include)"
+    # That is the same driver-version problem arriving through a dependency instead of
+    # through COLMAP itself. Ceres only uses CUDA for dense linear solvers, which COLMAP's
+    # bundle adjustment does not use — it goes through SuiteSparse — so nothing is lost.
     conda install -y -p "$ENV_PREFIX" -c conda-forge \
         cmake ninja pkg-config git \
-        ceres-solver suitesparse eigen openimageio glew glog gflags flann metis \
-        sqlite lz4 curl openssl \
+        "ceres-solver=2.2.0=h*" suitesparse eigen openimageio glew glog gflags \
+        flann metis sqlite lz4 curl openssl \
         opencv cgal-cpp libboost-devel gmp mpfr
 elif [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
     conda create -y -p "$ENV_PREFIX" -c conda-forge \
