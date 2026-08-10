@@ -36,7 +36,9 @@ PHOTO_ROOT=/data/gpfs/projects/punim2657/Rabati2025
 W="$PHOTO_ROOT/$GROUP/work_colmap_openmvs"
 IMAGES="$PHOTO_ROOT/$GROUP"
 OUT=/data/gpfs/projects/punim2657/MILo/logs/mapper_sweep/$(echo "$GROUP" | tr '/' '_')
-MILO_PY=/data/gpfs/projects/punim2657/MILo/envs/milo/bin/python
+# Not the interpreter directly: the COLMAP module puts a Python 3.10 numpy on
+# PYTHONPATH, which shadows this environment's numpy. See scripts/milo_python.sh.
+MILO_PY=/data/gpfs/projects/punim2657/MILo/repo/scripts/milo_python.sh
 
 echo "=== mapper sweep for $GROUP started $(date) on $(hostname) ==="
 [[ -f "$W/database.db" ]] || { echo "No database at $W/database.db" >&2; exit 1; }

@@ -37,7 +37,10 @@ DRY_RUN=0
 
 PHOTOGRAMMETRY="${PHOTOGRAMMETRY:-/data/gpfs/projects/punim2657/Photogrammetry}"
 MILO_ROOT="${MILO_ROOT:-/data/gpfs/projects/punim2657/MILo}"
-MILO_PY="${MILO_PY:-$MILO_ROOT/envs/milo/bin/python}"
+# The wrapper, not the interpreter: the pipeline loads COLMAP, which puts a Python
+# 3.10 numpy on PYTHONPATH and shadows this environment's. split_and_validate.py
+# would fail on it. See scripts/milo_python.sh.
+MILO_PY="${MILO_PY:-$MILO_ROOT/repo/scripts/milo_python.sh}"
 PHOTO_ROOT="${PHOTO_ROOT:-/data/gpfs/projects/punim2657/Rabati2025}"
 MIN_VERTICES="${MIN_VERTICES:-2000}"
 # submit_single.sh asks for 64G. COLMAP's feature extractor was OOM-killed at 67G on the
