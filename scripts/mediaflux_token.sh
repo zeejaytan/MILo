@@ -80,8 +80,11 @@ case "${1:-create}" in
     ;;
   --list)    aterm_with "$SOURCE_CFG" secure.identity.token.describe; exit 0 ;;
   --destroy)
-    [[ -n "${2:-}" ]] || { echo "Usage: $0 --destroy <token-id>" >&2; exit 1; }
-    aterm_with "$SOURCE_CFG" secure.identity.token.destroy :id "$2"
+    [[ -n "${2:-}" ]] || { echo "Usage: $0 --destroy <token-id> [lifetime]" >&2; exit 1; }
+    # The id element carries a required 'lifetime' attribute; without it the server
+    # rejects the call with "XPath args/id is invalid: missing attribute 'lifetime'".
+    # Tokens minted by this script are persistent (see --list).
+    aterm_with "$SOURCE_CFG" secure.identity.token.destroy :id -lifetime "${3:-persistent}" "$2"
     echo "Destroyed token $2."
     exit 0
     ;;
