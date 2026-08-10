@@ -77,6 +77,20 @@ step "COLMAP $COLMAP_VERSION + OpenMVS build dependencies (conda-forge)"
 # The CUDA variant is selected explicitly: conda will otherwise happily pick the cpu_
 # build, which would silently drop GPU feature extraction and matching and only show up
 # as a very slow reconstruction.
+#
+# EVERY conda-forge COLMAP 4.x CUDA build declares `__cuda >= 12.9`. Spartan's driver is
+# 570.211.01, which supports CUDA 12.8 — one minor version short, so the solver refuses:
+#   "nothing provides __cuda >=12.9 needed by colmap-4.1.1-cuda_129ha585b08_1"
+#
+# That declaration is conda-forge's packaging metadata, not an NVIDIA requirement. CUDA
+# 12.x guarantees minor-version compatibility: a binary built against the 12.9 runtime
+# runs on any 12.x driver, unless it calls a driver entry point introduced after the
+# driver's own version. Overriding the check is therefore reasonable, but it IS a
+# gamble — which is precisely why the GPU verification below is not optional. If COLMAP
+# cannot initialise the GPU, this job fails rather than leaving a toolchain that installs
+# cleanly and dies during a reconstruction.
+export CONDA_OVERRIDE_CUDA="${CONDA_OVERRIDE_CUDA:-12.9}"
+echo "CONDA_OVERRIDE_CUDA=$CONDA_OVERRIDE_CUDA (driver reports CUDA 12.8)"
 if [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
     conda create -y -p "$ENV_PREFIX" -c conda-forge \
         "colmap=${COLMAP_VERSION}=cuda*" \
@@ -188,6 +202,14 @@ echo "  OpenMVS 2.3 : /data/gpfs/projects/punim2657/Photogrammetry/openmvs/insta
 if [[ "$FAILED" -ne 0 ]]; then
     echo
     echo "BUILD COMPLETED BUT VERIFICATION FAILED — do not reconstruct with this." >&2
+    echo >&2
+    echo "If the failure is COLMAP not initialising the GPU, the 12.9-over-12.8 override" >&2
+    echo "did not hold. There is a fallback that costs little: the global mapper is CPU" >&2
+    echo "work, so the cpu_ build of COLMAP 4.1.1 still provides the thing we upgraded" >&2
+    echo "for. Feature extraction and matching can keep using the GPU through the" >&2
+    echo "existing COLMAP 3.9 module, whose database 4.x reads. Rebuild with:" >&2
+    echo "  COLMAP_BUILD=cpu sbatch slurm/build_sfm_tools.slurm" >&2
+    echo "and set MAPPER=global in reconstruct_group.slurm as usual." >&2
     exit 1
 fi
 echo
