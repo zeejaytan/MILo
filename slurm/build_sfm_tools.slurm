@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=build-sfm
 #SBATCH --account=punim2657
-#SBATCH --partition=sapphire
+#SBATCH --partition=gpu-a100
+#SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
 #SBATCH --time=08:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/build_sfm_%j.log
@@ -32,6 +33,16 @@ set -euo pipefail
 # Nothing here touches the existing COLMAP module or the existing OpenMVS install. Both
 # stay exactly where they are, so a comparison against the old toolchain remains possible
 # and nothing that currently works is put at risk.
+#
+# WHY A GPU NODE. Compiling does not need one — nvcc cross-compiles, and the target
+# architectures are set explicitly below rather than auto-detected. Two other things do:
+#   * Linking. Anything touching the CUDA driver API needs libcuda.so.1, which ships with
+#     the driver and is absent on CPU nodes. A stub exists for this, but only if cmake
+#     finds it; on the login node OpenMVS already failed with
+#     "libcuda.so.1: cannot open shared object file".
+#   * Testing. A build that COMPILES is not a build that WORKS. Verifying here costs
+#     minutes; discovering it during a reconstruction wastes a GPU job and muddles the
+#     diagnosis of whatever else that run was meant to answer.
 #
 # Usage:
 #   ./scripts/remote/pull_and_sbatch.sh slurm/build_sfm_tools.slurm
@@ -126,6 +137,45 @@ cmake --install "$OPENMVS_BUILD"
 step "what was installed"
 ls "$OPENMVS_PREFIX/bin/OpenMVS" 2>/dev/null || ls "$OPENMVS_PREFIX/bin"
 
+step "verify on the GPU"
+# The point of building here. A binary that compiled and linked is not a binary that
+# runs: the driver library only exists on a node with a GPU, so this is the first moment
+# either tool can actually be exercised.
+FAILED=0
+
+echo "--- OpenMVS binaries load the driver library"
+for tool in DensifyPointCloud ReconstructMesh RefineMesh InterfaceCOLMAP TextureMesh; do
+    if "$OPENMVS_PREFIX/bin/OpenMVS/$tool" --help >/dev/null 2>&1; then
+        echo "    $tool: runs"
+    else
+        # --help exits non-zero in some OpenMVS tools; a missing library does not even
+        # get that far, so distinguish the two.
+        if "$OPENMVS_PREFIX/bin/OpenMVS/$tool" --help 2>&1 | grep -qi "cannot open shared object"; then
+            echo "    $tool: FAILED to load libraries" >&2; FAILED=1
+        else
+            echo "    $tool: runs (non-zero exit from --help, which is normal)"
+        fi
+    fi
+done
+
+echo "--- COLMAP sees the GPU"
+# Feature extraction with use_gpu 1 on an empty database exercises the CUDA/OpenGL path
+# far enough to fail loudly if the GPU is unusable, without needing any images.
+TMPDB=$(mktemp -d)/probe.db
+if colmap feature_extractor --database_path "$TMPDB" --image_path "$TOOLS/src" \
+        --SiftExtraction.use_gpu 1 2>&1 | grep -qiE "cuda error|no cuda|failed to initialize"; then
+    echo "    COLMAP could not use the GPU" >&2; FAILED=1
+else
+    echo "    COLMAP GPU path initialised"
+fi
+
+echo "--- global mapper present (the reason for upgrading)"
+if colmap help 2>&1 | grep -q global_mapper || colmap global_mapper -h >/dev/null 2>&1; then
+    echo "    global_mapper: available"
+else
+    echo "    global_mapper: MISSING — this build cannot do global SfM" >&2; FAILED=1
+fi
+
 step "summary"
 echo "COLMAP   : $ENV_PREFIX/bin/colmap"
 colmap -h 2>&1 | sed -n '1,2p'
@@ -134,7 +184,12 @@ echo
 echo "The old toolchain is untouched:"
 echo "  COLMAP 3.9  : module load COLMAP/3.9-CUDA-11.7.0"
 echo "  OpenMVS 2.3 : /data/gpfs/projects/punim2657/Photogrammetry/openmvs/install/bin/OpenMVS"
+
+if [[ "$FAILED" -ne 0 ]]; then
+    echo
+    echo "BUILD COMPLETED BUT VERIFICATION FAILED — do not reconstruct with this." >&2
+    exit 1
+fi
 echo
-echo "The binaries link against CUDA and cannot be exercised on this CPU node; the first"
-echo "reconstruction on a GPU node is what proves them."
+echo "Verified on $(hostname) with a GPU present."
 echo "=== finished $(date) ==="
