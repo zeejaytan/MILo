@@ -82,8 +82,15 @@ step() { echo; echo "=== $* ==="; }
 
 # CGAL/GMP/cmake first: they are the packages that drag numpy around, so let conda have
 # its way before torch is installed rather than after.
+#
+# cmake is pinned below 4. conda-forge's current default is 4.4, which has removed
+# compatibility with cmake_minimum_required(VERSION <3.5), and the pybind11 that
+# tetra_triangulation fetches still declares one. That is what stopped job 28891642:
+#   "CMake Error at _deps/pybind11-src/CMakeLists.txt:8: Compatibility with
+#    CMake < 3.5 has been removed from CMake."
 step "CGAL, GMP, cmake (conda-forge)"
-conda install -y -c conda-forge cmake gmp cgal
+conda install -y -c conda-forge "cmake<4" gmp cgal
+cmake --version | head -1
 
 step "torch 2.3.1 + cu118 (pip wheels, not conda)"
 pip install --no-cache-dir \
@@ -105,7 +112,11 @@ step "tetra_triangulation (Delaunay, from Tetra-NeRF)"
 (
     cd submodules/tetra_triangulation
     # cmake finds torch through python; CUDA through the exports above.
-    cmake . -DCMAKE_PREFIX_PATH="$(python -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
+    # CMAKE_POLICY_VERSION_MINIMUM is a no-op on cmake 3.x (just an unused-variable
+    # warning) and keeps this working if the pin above ever slips to cmake 4.
+    cmake . \
+        -DCMAKE_PREFIX_PATH="$(python -c 'import torch,os;print(os.path.dirname(torch.__file__))')" \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     make -j"${SLURM_CPUS_PER_TASK:-8}"
     pip install --no-cache-dir -e .
 )
