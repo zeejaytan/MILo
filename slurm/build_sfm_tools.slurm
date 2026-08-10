@@ -55,6 +55,9 @@ OPENMVS_BUILD=$TOOLS/src/openMVS_build
 OPENMVS_PREFIX=$TOOLS/openmvs-2.4.0
 
 COLMAP_VERSION="${COLMAP_VERSION:-4.1.1}"
+# cuda | cpu. The cpu build still provides global_mapper, which is CPU work anyway, so it
+# is a real fallback rather than a defeat if the CUDA override below does not hold.
+COLMAP_BUILD="${COLMAP_BUILD:-cuda}"
 OPENMVS_TAG="${OPENMVS_TAG:-v2.4.0}"
 NPROC="${SLURM_CPUS_PER_TASK:-16}"
 
@@ -93,7 +96,7 @@ export CONDA_OVERRIDE_CUDA="${CONDA_OVERRIDE_CUDA:-12.9}"
 echo "CONDA_OVERRIDE_CUDA=$CONDA_OVERRIDE_CUDA (driver reports CUDA 12.8)"
 if [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
     conda create -y -p "$ENV_PREFIX" -c conda-forge \
-        "colmap=${COLMAP_VERSION}=cuda*" \
+        "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
         cmake ninja pkg-config \
         opencv cgal-cpp boost-cpp eigen glew gmp mpfr \
         libpng libjpeg-turbo libtiff zlib
@@ -102,10 +105,10 @@ else
 fi
 conda activate "$ENV_PREFIX"
 
-step "verify COLMAP has CUDA compiled in"
+step "verify the COLMAP build variant is the one asked for"
 colmap -h 2>&1 | head -3
-if ! colmap -h 2>&1 | head -3 | grep -qi cuda; then
-    echo "COLMAP reports no CUDA support — the cpu_ build was installed." >&2
+if [[ "$COLMAP_BUILD" == "cuda" ]] && ! colmap -h 2>&1 | head -3 | grep -qi cuda; then
+    echo "Asked for the CUDA build but COLMAP reports no CUDA support." >&2
     exit 1
 fi
 
