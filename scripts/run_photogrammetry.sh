@@ -40,6 +40,13 @@ MILO_ROOT="${MILO_ROOT:-/data/gpfs/projects/punim2657/MILo}"
 MILO_PY="${MILO_PY:-$MILO_ROOT/envs/milo/bin/python}"
 PHOTO_ROOT="${PHOTO_ROOT:-/data/gpfs/projects/punim2657/Rabati2025}"
 MIN_VERTICES="${MIN_VERTICES:-2000}"
+# submit_single.sh asks for 64G. COLMAP's feature extractor was OOM-killed at 67G on the
+# FIRST image of A11 (5568x3712, 16000 features, domain-size pooling on). DSP-SIFT builds
+# several scaled copies of each image per thread, so peak memory scales with pixels x
+# features x threads rather than with the number of photographs. Raising the request is
+# the fix that does not change the reconstruction; lowering max_num_features would.
+MEM="${MEM:-256G}"
+TIME_LIMIT="${TIME_LIMIT:-24:00:00}"
 
 SRC_CONFIG="$PHOTOGRAMMETRY/pipeline/config/pipeline_config.yaml"
 OUT_CONFIG="$MILO_ROOT/config/pipeline_config_group.yaml"
@@ -84,6 +91,9 @@ if [[ "$DRY_RUN" == "1" ]]; then
     exit 0
 fi
 
+echo "Memory : $MEM   Time: $TIME_LIMIT"
+
 cd "$PHOTOGRAMMETRY"
-sbatch --export=ALL,PYTHON="$MILO_PY",PYTHONNOUSERSITE=1,CONFIG_PATH="$OUT_CONFIG" \
+sbatch --mem="$MEM" --time="$TIME_LIMIT" \
+       --export=ALL,PYTHON="$MILO_PY",PYTHONNOUSERSITE=1,CONFIG_PATH="$OUT_CONFIG" \
        pipeline/bin/submit_single.sh "$GROUP"
