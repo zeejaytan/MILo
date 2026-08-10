@@ -58,6 +58,18 @@ COLMAP_VERSION="${COLMAP_VERSION:-4.1.1}"
 # cuda | cpu. The cpu build still provides global_mapper, which is CPU work anyway, so it
 # is a real fallback rather than a defeat if the CUDA override below does not hold.
 COLMAP_BUILD="${COLMAP_BUILD:-cuda}"
+# 1 = compile COLMAP against the CUDA 12.8 toolkit instead of installing the conda
+# package. This is the honest way out of the driver-version problem rather than a
+# fallback: every conda-forge COLMAP CUDA build demands a 12.9 driver and Spartan's is
+# 12.8, so the packaged route needs CONDA_OVERRIDE_CUDA and depends on CUDA's
+# minor-version compatibility holding for every code path the reconstruction touches.
+# Compiled against 12.8, the binary needs 12.8, and that is the end of the question.
+# The constraint belongs to the colmap PACKAGE, not to its dependencies, so ceres, eigen,
+# freeimage, glog, flann and the rest still come prebuilt from conda-forge and only
+# COLMAP itself is compiled.
+COLMAP_FROM_SOURCE="${COLMAP_FROM_SOURCE:-0}"
+COLMAP_SRC=$TOOLS/src/colmap
+COLMAP_BUILD_DIR=$TOOLS/src/colmap_build
 OPENMVS_TAG="${OPENMVS_TAG:-v2.4.0}"
 NPROC="${SLURM_CPUS_PER_TASK:-16}"
 
@@ -99,21 +111,59 @@ echo "CONDA_OVERRIDE_CUDA=$CONDA_OVERRIDE_CUDA (driver reports CUDA 12.8)"
 # package name and conflicts with COLMAP's libboost >=1.90, while pinning zlib conflicts
 # with the libzlib >=1.3.2 that libsqlite wants. The image libraries arrive with opencv
 # anyway. Naming fewer packages leaves the solver free to find a consistent set.
-if [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
-    conda create -y -p "$ENV_PREFIX" -c conda-forge \
-        "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
-        cmake ninja pkg-config \
-        opencv cgal-cpp libboost-devel eigen glew gmp mpfr
+if [[ ! -d "$ENV_PREFIX" ]]; then
+    if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
+        # COLMAP's own build dependencies, plus OpenMVS's. No colmap package, so no
+        # __cuda constraint enters the solve at all.
+        conda create -y -p "$ENV_PREFIX" -c conda-forge \
+            cmake ninja pkg-config git \
+            ceres-solver eigen freeimage glew glog gflags flann metis sqlite lz4 \
+            opencv cgal-cpp libboost-devel gmp mpfr
+    else
+        conda create -y -p "$ENV_PREFIX" -c conda-forge \
+            "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
+            cmake ninja pkg-config \
+            opencv cgal-cpp libboost-devel eigen glew gmp mpfr
+    fi
 else
     echo "environment already present at $ENV_PREFIX"
 fi
 conda activate "$ENV_PREFIX"
 
+# CUDA comes from the module system for everything compiled here, so the binaries need
+# exactly the driver this cluster has.
+module load GCC/11.3.0 OpenMPI/4.1.4 CUDA/12.8.0
+export CUDA_HOME="${EBROOTCUDA:?}"
+export PATH="$CUDA_HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}"
+nvcc --version | tail -2
+
+if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
+    step "COLMAP $COLMAP_VERSION from source, against CUDA 12.8"
+    if [[ ! -d "$COLMAP_SRC/.git" ]]; then
+        git clone --depth 1 --branch "$COLMAP_VERSION" \
+            https://github.com/colmap/colmap.git "$COLMAP_SRC"
+    fi
+    rm -rf "$COLMAP_BUILD_DIR"
+    cmake -S "$COLMAP_SRC" -B "$COLMAP_BUILD_DIR" -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$ENV_PREFIX" \
+        -DCMAKE_PREFIX_PATH="$ENV_PREFIX" \
+        -DCUDA_ENABLED=ON \
+        -DCMAKE_CUDA_ARCHITECTURES="80;89;90" \
+        -DGUI_ENABLED=OFF \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    cmake --build "$COLMAP_BUILD_DIR" -j "$NPROC"
+    cmake --install "$COLMAP_BUILD_DIR"
+fi
+
 step "verify the COLMAP build variant is the one asked for"
 colmap -h 2>&1 | head -3
-if [[ "$COLMAP_BUILD" == "cuda" ]] && ! colmap -h 2>&1 | head -3 | grep -qi cuda; then
-    echo "Asked for the CUDA build but COLMAP reports no CUDA support." >&2
-    exit 1
+if [[ "$COLMAP_BUILD" == "cuda" || "$COLMAP_FROM_SOURCE" == "1" ]]; then
+    if ! colmap -h 2>&1 | head -3 | grep -qi cuda; then
+        echo "Expected a CUDA-enabled COLMAP but it reports none." >&2
+        exit 1
+    fi
 fi
 
 step "OpenMVS sources ($OPENMVS_TAG)"
@@ -131,13 +181,11 @@ fi
 grep -E "OpenMVS_(MAJOR|MINOR|PATCH)_VERSION " "$OPENMVS_SRC/CMakeLists.txt" | head -3
 
 step "configure OpenMVS"
-# CUDA from the module system, not conda: it must match the driver on the GPU nodes, and
-# the module is what every other job here already uses.
-module load GCC/11.3.0 OpenMPI/4.1.4 CUDA/11.8.0
-export CUDA_HOME="${EBROOTCUDA:?}"
-export PATH="$CUDA_HOME/bin:$PATH"
-export LD_LIBRARY_PATH="$CUDA_HOME/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}"
-nvcc --version | tail -2
+# CUDA 12.8 was already loaded above and is used for everything compiled in this job:
+# it is the highest the driver supports, so the binaries run here without relying on
+# minor-version compatibility. An earlier version loaded 11.8 at this point, which would
+# have built OpenMVS against a different CUDA from COLMAP in the same environment.
+echo "building against CUDA $(nvcc --version | sed -n 's/.*release \([0-9.]*\).*/\1/p' | tail -1)"
 
 rm -rf "$OPENMVS_BUILD"; mkdir -p "$OPENMVS_BUILD"
 cmake -S "$OPENMVS_SRC" -B "$OPENMVS_BUILD" -G Ninja \
