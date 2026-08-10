@@ -25,7 +25,7 @@ set -euo pipefail
 
 # Rabati 2023 photogrammetry allocation. The layout underneath it is not assumed —
 # use --list to see it, then pass a full namespace if a capture sits deeper.
-MF_ROOT="${MF_ROOT:-/projects/proj-1000_rbt23photogrammetry-1128.4.1250}"
+MF_ROOT="${MF_ROOT:-/projects/proj-1000_rbt23photogrammetry-1128.4.1250/Rabati2025}"
 PHOTO_ROOT="${PHOTO_ROOT:-/data/gpfs/projects/punim2657/Rabati2025}"
 TOKEN_CFG="${TOKEN_CFG:-$HOME/.Arcitecta/mflux-token.cfg}"
 BASE_CFG="${BASE_CFG:-$HOME/.Arcitecta/mflux.cfg}"
@@ -64,11 +64,33 @@ echo "Config: $MF_CONFIG$([[ $UNATTENDED == 1 ]] && echo ' (token — unattended
 if [[ "$1" == "--list" ]]; then
     NS="${MF_ROOT%/}${2:+/${2#/}}"
     echo "Listing $NS"
-    # aterm reads its config from $MFLUX_CFG, and takes the service and each of its
-    # arguments as SEPARATE shell arguments. A single quoted string is parsed as one Tcl
-    # command name and fails with `invalid command name "asset.namespace.list :namespace
-    # ..."`. It also does not accept --mf.config or --command.
-    MFLUX_CFG="$MF_CONFIG" aterm asset.namespace.list :namespace "$NS"
+    echo
+    # Enumeration goes through unimelb-mf-check against an EMPTY temporary directory:
+    # every remote asset comes back as "missing locally", which is exactly the listing we
+    # want, and nothing is transferred.
+    #
+    # Not aterm. The project role is not granted ACCESS to asset.namespace.list, and
+    # Mediaflux reports that denial as "The namespace ... does not exist or is not
+    # accessible" — wording indistinguishable from a wrong path, which cost a long detour
+    # hunting for a namespace that was correct all along.
+    PROBE_DIR=$(mktemp -d)
+    LIST_CSV="${LOG_DIR}/list_$(echo "${2:-root}" | tr '/' '_').csv"
+    trap 'rm -rf "$PROBE_DIR"' EXIT
+    unimelb-mf-check --mf.config "$MF_CONFIG" --direction down \
+        --output "$LIST_CSV" --detailed-output --no-csum-check \
+        --nb-queriers "$NB_QUERIERS" --nb-workers "$NB_WORKERS" \
+        "$PROBE_DIR" "$NS" 2>&1 | grep -E 'assets \[|Connected' || true
+
+    echo
+    echo "=== folders directly under $(basename "$NS") ==="
+    grep -oE "${NS//./\\.}/[^\",]*" "$LIST_CSV" 2>/dev/null \
+        | sed "s|^${NS}/||" | cut -d/ -f1 | sort | uniq -c | sort -rn | head -30
+    echo
+    echo "=== file types ==="
+    grep -oE "${NS//./\\.}/[^\",]*" "$LIST_CSV" 2>/dev/null \
+        | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -12
+    echo
+    echo "Full inventory: $LIST_CSV"
     exit 0
 fi
 

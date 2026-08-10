@@ -33,7 +33,11 @@ set -euo pipefail
 
 BASE_CFG="${BASE_CFG:-$HOME/.Arcitecta/mflux.cfg}"
 TOKEN_CFG="${TOKEN_CFG:-$HOME/.Arcitecta/mflux-token.cfg}"
-MF_ROOT="${MF_ROOT:-/projects/proj-1000_rbt23photogrammetry-1128.4.1250}"
+# The allocation is what roles are named after; MF_ROOT is where the captures actually
+# live inside it. They are not the same string, and conflating them makes the role lookup
+# below silently find nothing.
+MF_ALLOCATION="${MF_ALLOCATION:-proj-1000_rbt23photogrammetry-1128.4.1250}"
+MF_ROOT="${MF_ROOT:-/projects/${MF_ALLOCATION}/Rabati2025}"
 
 module load unimelb-mf-clients
 
@@ -95,7 +99,7 @@ echo "Source : $SOURCE_CFG$([[ $INTERACTIVE == 1 ]] && echo ' (you will be promp
 # Which roles to grant. Only those covering the allocation this repo works with, plus the
 # user role itself — not every role the account happens to hold. A token that can reach
 # one project is a smaller thing to lose than one that can reach everything.
-PROJECT="$(basename "$MF_ROOT")"
+PROJECT="$MF_ALLOCATION"
 ROLES_RAW=$(aterm_with "$SOURCE_CFG" actor.describe :type user :name "$MF_USER" 2>/dev/null \
             | sed -n 's/.*-type "role" "\([^"]*\)".*/\1/p' || true)
 mapfile -t PROJECT_ROLES < <(printf '%s\n' "$ROLES_RAW" | grep -F "$PROJECT" || true)
@@ -167,9 +171,20 @@ echo "Wrote $TOKEN_CFG (mode 600, token id ${TOKEN_ID:-unknown})."
 # Prove the token can do the thing it exists for, unattended. A token that authenticates
 # but is granted nothing looks fine until every batch job fails on it — which is exactly
 # what the first two attempts here produced.
+#
+# The check goes through unimelb-mf-check, NOT aterm. The project role is not granted
+# ACCESS to asset.namespace.list, and Mediaflux reports that denial as "The namespace ...
+# does not exist or is not accessible" — indistinguishable from a wrong path, and it sent
+# an earlier version of this script hunting for a namespace that was correct all along.
+# The transfer clients are what the workflow actually depends on, so they are what gets
+# tested. An empty temporary directory means nothing is downloaded.
 echo
-echo "=== verifying: listing $MF_ROOT with the token, no prompt ==="
-if aterm_with "$TOKEN_CFG" asset.namespace.list :namespace "$MF_ROOT"; then
+echo "=== verifying: enumerating $MF_ROOT with the token, no prompt ==="
+PROBE_DIR=$(mktemp -d); PROBE_CSV=$(mktemp)
+trap 'rm -rf "$TRANSCRIPT" "$PROBE_DIR" "$PROBE_CSV"' EXIT
+if unimelb-mf-check --mf.config "$TOKEN_CFG" --direction down \
+       --output "$PROBE_CSV" --no-csum-check --nb-queriers 4 \
+       "$PROBE_DIR" "$MF_ROOT" 2>&1 | grep -E 'assets \[(checked|missing)\]|Connected'; then
     echo
     echo "Verified. Transfers now run unattended:"
     echo "  ./scripts/mediaflux_fetch.sh --list"
@@ -181,7 +196,7 @@ if aterm_with "$TOKEN_CFG" asset.namespace.list :namespace "$MF_ROOT"; then
     fi
 else
     echo >&2
-    echo "The token authenticates but cannot reach $MF_ROOT." >&2
+    echo "The token authenticates but cannot enumerate $MF_ROOT." >&2
     echo "Check which roles your account holds:  $0 --roles" >&2
     exit 1
 fi
