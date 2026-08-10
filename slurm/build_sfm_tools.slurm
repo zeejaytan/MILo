@@ -154,6 +154,12 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         git clone --depth 1 --branch "$COLMAP_VERSION" \
             https://github.com/colmap/colmap.git "$COLMAP_SRC"
     fi
+    # Skip if already built and installed: a later stage failing should not cost the
+    # COLMAP compile again on the next attempt. REBUILD_COLMAP=1 forces it.
+    if [[ -x "$ENV_PREFIX/bin/colmap" && "${REBUILD_COLMAP:-0}" != "1" ]]; then
+        echo "COLMAP already installed at $ENV_PREFIX/bin/colmap — skipping build"
+        echo "(REBUILD_COLMAP=1 to force)"
+    else
     rm -rf "$COLMAP_BUILD_DIR"
     cmake -S "$COLMAP_SRC" -B "$COLMAP_BUILD_DIR" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -172,6 +178,7 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
     # validating here — the GPU checks at the end are.
     cmake --build "$COLMAP_BUILD_DIR" -j "$NPROC"
     cmake --install "$COLMAP_BUILD_DIR"
+    fi
 fi
 
 step "verify the COLMAP build variant is the one asked for"
@@ -213,8 +220,23 @@ cmake -S "$OPENMVS_SRC" -B "$OPENMVS_BUILD" -G Ninja \
     -DOpenMVS_USE_CUDA=ON \
     -DOpenMVS_USE_OPENMP=ON \
     -DOpenMVS_BUILD_TOOLS=ON \
+    -DOpenMVS_BUILD_VIEWER=OFF \
+    -DOpenMVS_USE_PYTHON=OFF \
+    -DOpenMVS_USE_BREAKPAD=OFF \
+    -DOpenMVS_ENABLE_TESTS=OFF \
     -DCMAKE_CUDA_ARCHITECTURES="80;89;90" \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+# Four OpenMVS defaults are switched off, read from its CMakeLists at v2.4.0 rather than
+# discovered by failing:
+#   BUILD_VIEWER  ON by default and needs GLFW/OpenGL. Compute nodes are headless, so
+#                 this would have failed the build AFTER COLMAP had finished compiling.
+#   USE_PYTHON    ON by default and requires Python3 *Development* headers for bindings
+#                 this workflow never calls.
+#   USE_BREAKPAD  crash reporting; its find is QUIET so it would be skipped anyway, but
+#                 there is no reason to link it.
+#   ENABLE_TESTS  build time spent on something the GPU checks below cover better.
+# Everything OpenMVS actually requires — Boost (iostreams, program_options, system,
+# serialization), Eigen3, OpenCV, CGAL, VCG, CUDAToolkit — is already provided.
 
 step "build OpenMVS with $NPROC cores"
 cmake --build "$OPENMVS_BUILD" -j "$NPROC"
