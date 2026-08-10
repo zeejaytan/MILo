@@ -94,12 +94,16 @@ step "COLMAP $COLMAP_VERSION + OpenMVS build dependencies (conda-forge)"
 # cleanly and dies during a reconstruction.
 export CONDA_OVERRIDE_CUDA="${CONDA_OVERRIDE_CUDA:-12.9}"
 echo "CONDA_OVERRIDE_CUDA=$CONDA_OVERRIDE_CUDA (driver reports CUDA 12.8)"
+# Only what OpenMVS needs to BUILD is listed. An earlier attempt also pinned boost-cpp,
+# zlib, libpng, libjpeg-turbo and libtiff, and the solve failed: boost-cpp is the retired
+# package name and conflicts with COLMAP's libboost >=1.90, while pinning zlib conflicts
+# with the libzlib >=1.3.2 that libsqlite wants. The image libraries arrive with opencv
+# anyway. Naming fewer packages leaves the solver free to find a consistent set.
 if [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
     conda create -y -p "$ENV_PREFIX" -c conda-forge \
         "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
         cmake ninja pkg-config \
-        opencv cgal-cpp boost-cpp eigen glew gmp mpfr \
-        libpng libjpeg-turbo libtiff zlib
+        opencv cgal-cpp libboost-devel eigen glew gmp mpfr
 else
     echo "environment already present at $ENV_PREFIX"
 fi
