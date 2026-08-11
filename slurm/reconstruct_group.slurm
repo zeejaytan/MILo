@@ -163,7 +163,19 @@ if [[ "$STAGE" == "mvs" ]]; then
     echo "  views: $(ls "$DENSE/images" | wc -l)"
 else
 
-if [[ ! -f "$DB" ]]; then
+# Existence of the database is NOT evidence that it is usable. The previous run crashed
+# after feature extraction and before matching, leaving a 205 MB database with keypoints
+# for all 68 images and zero matches — and this check, which only looked for the file,
+# skipped matching and handed global_mapper an empty correspondence graph. It crashed in
+# two seconds and registered nothing. Ask the database what it actually contains.
+HAVE_FEATURES=0; HAVE_PAIRS=0
+if [[ -f "$DB" ]]; then
+    HAVE_FEATURES=$(db_images_with_features "$DB")
+    HAVE_PAIRS=$(db_verified_pairs "$DB")
+    echo "existing database: $HAVE_FEATURES images with features, $HAVE_PAIRS verified pairs"
+fi
+
+if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
     # COLMAP 4.x SPLIT these options: generic ones (use_gpu, max_image_size, gpu_index,
     # num_threads, type) moved to FeatureExtraction.* / FeatureMatching.*, while
     # SIFT-specific ones (max_num_features, domain_size_pooling, peak_threshold) stayed
@@ -183,7 +195,11 @@ if [[ ! -f "$DB" ]]; then
     echo "  images with features: $FEAT_IMAGES of $N"
     [[ "$FEAT_IMAGES" -ge "$N" ]] || {
         echo "Feature extraction did not cover every photograph." >&2; exit 1; }
+else
+    echo "features already present for all $N photographs — skipping extraction"
+fi
 
+if [[ "$HAVE_PAIRS" -le 0 ]]; then
     step "exhaustive matching"
     run_colmap colmap exhaustive_matcher \
         --database_path "$DB" \
@@ -194,7 +210,7 @@ if [[ ! -f "$DB" ]]; then
     echo "  geometrically verified image pairs: $PAIRS"
     [[ "$PAIRS" -gt 0 ]] || { echo "Matching produced no verified pairs." >&2; exit 1; }
 else
-    echo "reusing existing database $DB (delete it to redo features and matches)"
+    echo "matches already present ($HAVE_PAIRS verified pairs) — skipping matching"
 fi
 
 # ----------------------------------------------------------------------------- mapping
