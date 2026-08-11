@@ -138,7 +138,12 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         "gcc_linux-64=14.*" "gxx_linux-64=14.*" \
         "ceres-solver=2.2.0=h*" suitesparse eigen openimageio glew glog gflags \
         flann metis sqlite lz4 curl openssl \
-        opencv cgal-cpp libboost-devel gmp mpfr
+        "opencv=4.*" cgal-cpp libboost-devel gmp mpfr
+    # opencv is pinned to 4.x. conda-forge now defaults to OpenCV 5.0.0, and OpenMVS
+    # 2.4.0 (January 2026) predates it. OpenMVS does a bare FIND_PACKAGE(OpenCV REQUIRED)
+    # with NO version guard, so 5.0 is accepted at configure time and would fail later
+    # during compilation on the API changes — after COLMAP had already built. Found by
+    # checking what was in the environment rather than by building and waiting.
 elif [[ ! -x "$ENV_PREFIX/bin/colmap" ]]; then
     conda create -y -p "$ENV_PREFIX" -c conda-forge \
         "colmap=${COLMAP_VERSION}=${COLMAP_BUILD}*" \
