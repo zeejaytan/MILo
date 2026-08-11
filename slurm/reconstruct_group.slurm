@@ -66,7 +66,10 @@ eval "$(conda shell.bash hook)"
 conda activate "$SFM_ENV"
 export PYTHONNOUSERSITE=1
 
-colmap -h 2>&1 | head -2
+# Captured, not piped: `colmap -h | head` makes head close the pipe, colmap dies of
+# SIGPIPE, and `set -o pipefail` would end this job before it reconstructed anything.
+# The same trap cost three rounds in the build script.
+echo "$(colmap -h 2>&1 | head -2 || true)"
 
 N=$(find "$IMAGES" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) | wc -l)
 echo "photographs: $N"
