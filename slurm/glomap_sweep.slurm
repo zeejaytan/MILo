@@ -102,22 +102,23 @@ run_case() {
     report "$dest"
 }
 
-# Baseline: reproduce the failure, so the comparison is against what actually ran.
-run_case baseline
+# Round 2. Round 1 established that no single threshold is responsible — relaxing each
+# alone still gave zero — while the two that DID admit structure were all three relaxed
+# together (2,464 points) and skipping retriangulation (15,779). So retriangulation is
+# the stage discarding the structure, and the filters matter only in combination. These
+# cases test whether the two effects add, and how far the count can be pushed towards the
+# incremental mapper's 70,947.
+run_case no_retri     --GlobalMapper.skip_retriangulation 1
 
-# Each threshold relaxed on its own, to see which one is doing the filtering.
-run_case angular5   --GlobalMapper.max_angular_reproj_error_deg 5
-run_case normreproj --GlobalMapper.max_normalized_reproj_error 0.05
-run_case triangle   --GlobalMapper.min_tri_angle_deg 0.25
+run_case no_retri_relaxed     --GlobalMapper.skip_retriangulation 1     --GlobalMapper.max_angular_reproj_error_deg 5     --GlobalMapper.max_normalized_reproj_error 0.05     --GlobalMapper.min_tri_angle_deg 0.25
 
-# All three together, for the case where no single one is sufficient.
-run_case relaxed_all \
-    --GlobalMapper.max_angular_reproj_error_deg 5 \
-    --GlobalMapper.max_normalized_reproj_error 0.05 \
-    --GlobalMapper.min_tri_angle_deg 0.25
+run_case no_retri_verylax     --GlobalMapper.skip_retriangulation 1     --GlobalMapper.max_angular_reproj_error_deg 10     --GlobalMapper.max_normalized_reproj_error 0.2     --GlobalMapper.min_tri_angle_deg 0.1     --GlobalMapper.ba_min_track_length 2     --GlobalMapper.track_min_num_views_per_track 2
 
-# Keep the positioned structure without the retriangulation pass that discards it.
-run_case no_retri   --GlobalMapper.skip_retriangulation 1
+# Does bundle adjustment itself filter? One iteration instead of three.
+run_case no_retri_ba1     --GlobalMapper.skip_retriangulation 1     --GlobalMapper.ba_num_iterations 1     --GlobalMapper.max_angular_reproj_error_deg 5     --GlobalMapper.max_normalized_reproj_error 0.05
+
+# Skip bundle adjustment entirely: keeps whatever global positioning produced.
+run_case no_retri_no_ba     --GlobalMapper.skip_retriangulation 1     --GlobalMapper.skip_bundle_adjustment 1
 
 echo
 echo "=== summary ==="
