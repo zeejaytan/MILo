@@ -206,8 +206,8 @@ def build_masked_images(
         raise AdapterError(
             f"{len(mismatched)} mask(s) do not match their undistorted view:\n{head}\n"
             "The masks were projected from a different camera geometry than the images "
-            "MILo will train on. Re-project them against the undistorted model in "
-            f"{work / 'dense' / 'sparse'}, or pass --no-masks."
+            "MILo will train on. Re-project them against the undistorted sparse model "
+            f"in the workspace under {work}, or pass --no-masks."
         )
     if missing:
         raise AdapterError(
@@ -251,6 +251,13 @@ def main() -> int:
                     help="work_colmap_openmvs directory of an existing capture")
     ap.add_argument("--out", required=True, type=Path,
                     help="MILo dataset directory to create (e.g. .../MILo/data/16062025)")
+    ap.add_argument("--dense-dir", default="dense",
+                    help="name of the undistorted workspace inside --work. The pipeline "
+                         "writes 'dense'; dense_from_model.slurm writes 'dense_<tag>' so "
+                         "that a corrected model does not overwrite an earlier one. Which "
+                         "one is used matters more than any training setting: on tree A01 "
+                         "the GLOMAP model collapsed the turntable rotation and duplicated "
+                         "every sherd, while scoring the BETTER reprojection error.")
     ap.add_argument("--no-masks", action="store_true",
                     help="skip masking; trains on the backdrop as well")
     ap.add_argument("--copy", action="store_true",
@@ -263,7 +270,7 @@ def main() -> int:
     work: Path = args.work.resolve()
     out: Path = args.out.resolve()
 
-    dense = work / "dense"
+    dense = work / args.dense_dir
     src_images = dense / "images"
     src_sparse = dense / "sparse"
     if not src_images.is_dir():
