@@ -1,0 +1,104 @@
+#!/bin/bash
+#SBATCH --job-name=dense-inc
+#SBATCH --account=punim2657
+#SBATCH --partition=gpu-a100-short
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=120G
+#SBATCH --time=4:00:00
+#SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/dense_inc_%j.log
+
+set -uo pipefail   # NOT -e: colmap segfaults in its exit handlers after finishing the work
+
+# Dense reconstruction from a NAMED sparse model, written to its own directory.
+#
+# The existing dense/ workspace was undistorted from GLOMAP's model, which collapsed the
+# turntable: its cameras occupy a 67-degree arc around the tree instead of going round it,
+# so the rig was rebuilt once per turntable position. The incremental model on the SAME
+# database covers 347.7 degrees. This job rebuilds from that model without touching the
+# GLOMAP outputs, so the two can be compared rather than one overwriting the other.
+#
+# Both OpenMVS 2.4.0 defaults that damaged the first mesh are overridden here:
+#   --crop-to-roi 0   2.4.0 estimates a scene box and discards everything outside it
+#   --decimate 1      RefineMesh's "auto" threw away 63% of the faces before refining
+#
+# Usage:
+#   sbatch slurm/dense_from_model.slurm 16062025 sparse_incremental/0
+
+GROUP="${1:?usage: sbatch dense_from_model.slurm <date>[/<tree>] <model-relpath>}"
+MODEL_REL="${2:?second argument is the model path relative to the work directory}"
+TAG="${TAG:-incremental}"
+
+TOOLS=/data/gpfs/projects/punim2657/tools
+SFM_ENV=$TOOLS/sfm
+OPENMVS_BIN=$TOOLS/openmvs/bin/OpenMVS
+PHOTO_ROOT=/data/gpfs/projects/punim2657/Rabati2025
+MILO=/data/gpfs/projects/punim2657/MILo
+
+IMAGES="$PHOTO_ROOT/$GROUP"
+W="$IMAGES/work_colmap_openmvs"
+MODEL="$W/$MODEL_REL"
+DENSE="$W/dense_$TAG"
+
+echo "=== dense reconstruction of $GROUP from $MODEL_REL started $(date) on $(hostname) ==="
+[[ -d "$MODEL" ]] || { echo "No model at $MODEL" >&2; exit 1; }
+
+module purge
+module load Miniforge3/24.7.1-2
+eval "$(conda shell.bash hook)"
+conda activate "$SFM_ENV"
+export PYTHONNOUSERSITE=1
+export LD_LIBRARY_PATH="$SFM_ENV/lib:${LD_LIBRARY_PATH:-}"
+
+step() { echo; echo "=== $* ($(date +%H:%M:%S)) ==="; }
+
+# The gate. Reprojection error cannot tell a correct turntable solve from a collapsed one
+# -- the collapsed GLOMAP model scored BETTER (0.537 vs 0.635 px median). The camera arc
+# can. Refuse to spend two hours meshing a model that has already failed it.
+step "turntable check"
+python "$MILO/repo/scripts/check_turntable.py" "$MODEL" | tee /tmp/turntable_$$.txt
+if grep -q "COLLAPSED" /tmp/turntable_$$.txt; then
+    echo
+    echo "This model collapsed the turntable rotation. Meshing it would reproduce the" >&2
+    echo "duplicated-sherd result. Stopping." >&2
+    exit 1
+fi
+
+step "undistort from $MODEL_REL"
+rm -rf "$DENSE"
+colmap image_undistorter --image_path "$IMAGES" --input_path "$MODEL" \
+    --output_path "$DENSE" --max_image_size "${UNDIST_MAX:-3200}"
+echo "  (exit $? -- judged by the files below, not by the exit code)"
+ls "$DENSE/images" 2>/dev/null | wc -l | xargs echo "  undistorted images:"
+
+step "OpenMVS: interface"
+"$OPENMVS_BIN/InterfaceCOLMAP" -w "$DENSE" -i "$DENSE" -o "$DENSE/scene.mvs" \
+    --image-folder "$DENSE/images"
+
+step "OpenMVS: dense point cloud (ROI cropping OFF)"
+"$OPENMVS_BIN/DensifyPointCloud" -w "$DENSE" -i "$DENSE/scene.mvs" \
+    -o "$DENSE/scene_dense.mvs" --cuda-device 0 \
+    --resolution-level "${DENS_LEVEL:-0}" --number-views "${DENS_VIEWS:-8}" \
+    --number-views-fuse "${DENS_FUSE:-5}" --crop-to-roi 0
+
+step "OpenMVS: mesh"
+"$OPENMVS_BIN/ReconstructMesh" -w "$DENSE" -i "$DENSE/scene_dense.mvs" \
+    -p "$DENSE/scene_dense.ply" -o "$DENSE/scene_dense_mesh.ply" \
+    --target-face-num "${TARGET_FACES:-10000000}" --crop-to-roi 0
+
+# Refinement is the step most likely to run out of memory now that decimation is off:
+# 3.8M faces instead of 1.4M. The unrefined mesh above is already written, so a failure
+# here costs the refinement only -- it does not cost the run.
+step "OpenMVS: refine (decimation DISABLED)"
+"$OPENMVS_BIN/RefineMesh" -w "$DENSE" -i "$DENSE/scene_dense.mvs" \
+    -m "$DENSE/scene_dense_mesh.ply" -o "$DENSE/scene_refined_mesh.ply" \
+    --scales "${REFINE_SCALES:-2}" --cuda-device 0 --decimate 1 \
+    || echo "  (refinement failed -- the unrefined mesh is still there and is usable)"
+
+step "done"
+ls -lh "$DENSE"/*.ply 2>/dev/null | awk '{print $5, $9}'
+echo
+echo "Open scene_dense_mesh.ply and scene_refined_mesh.ply and look at them:"
+echo "  is the base square rather than round, and does each sherd appear once?"
+echo "=== finished $(date) ==="
