@@ -39,7 +39,13 @@ set -euo pipefail
 #   MAPPER=incremental ... slurm/reconstruct_group.slurm 16062025/A11
 
 GROUP="${1:?usage: sbatch reconstruct_group.slurm <date>/<group>}"
-MAPPER="${MAPPER:-global}"
+# incremental | global. INCREMENTAL IS THE DEFAULT AND SHOULD STAY THAT WAY for this rig.
+# Measured on tree A01, same database, same 177 photographs, camera arc around the tree:
+#   incremental  347.7 deg  (largest gap 12 deg)   -- the turntable's rotation was understood
+#   global        66.6 deg  (largest gap 293 deg)  -- collapsed; sherds duplicated per turn
+# GLOMAP registered all 177 images and scored a better reprojection error (0.537 vs 0.635
+# px median) while being the wrong answer. Do not pick a mapper on that number here.
+MAPPER="${MAPPER:-incremental}"
 # colmap | mvs | all. Splitting matters for scheduling, not just tidiness: gpu-a100 has
 # 336 jobs queued and estimates a start ~23 hours out, while gpu-a100-short has 3 queued
 # and a 4-hour limit. The COLMAP stage finishes well inside 4 hours AND carries the
@@ -402,6 +408,17 @@ print(len(cl.read_points3D_binary('$TRI/points3D.bin')[0]))" 2>/dev/null || echo
         exit 1; }
     BEST="$TRI"
 fi
+
+# GATE. These are turntable captures: the tree rotates and the camera stays put. Structure-
+# from-motion can explain that two ways, and only one is useful -- either the tree is held
+# still and the camera travels right round it (correct), or the camera is held still and a
+# fresh copy of every sherd is placed at every turntable position (useless). Both explain
+# the photographs equally well, so REPROJECTION ERROR CANNOT SEPARATE THEM: on tree A01 the
+# wrong answer scored 0.54 px median and was reported as a success for most of a day.
+#
+# The camera arc does separate them, needs no ground truth, and costs a second.
+step "turntable check"
+"$MILO_PY" "$MILO_REPO/scripts/check_turntable.py" "$BEST" || true
 
 # Undistortion expects the chosen model; give it its own directory rather than renaming,
 # so which model was used stays visible afterwards.
