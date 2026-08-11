@@ -218,9 +218,13 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
 fi
 
 step "verify the COLMAP build variant is the one asked for"
-colmap -h 2>&1 | head -3
+# `| head` closes the pipe, colmap dies of SIGPIPE, and with `set -o pipefail` that
+# non-zero status ends the whole script — which is exactly what stopped this run after
+# COLMAP installed and before OpenMVS was even cloned. Capture once, then inspect.
+COLMAP_BANNER=$(colmap -h 2>&1 | head -3 || true)
+echo "$COLMAP_BANNER"
 if [[ "$COLMAP_BUILD" == "cuda" || "$COLMAP_FROM_SOURCE" == "1" ]]; then
-    if ! colmap -h 2>&1 | head -3 | grep -qi cuda; then
+    if ! grep -qi cuda <<< "$COLMAP_BANNER"; then
         echo "Expected a CUDA-enabled COLMAP but it reports none." >&2
         exit 1
     fi
@@ -325,7 +329,11 @@ fi
 
 step "summary"
 echo "COLMAP   : $ENV_PREFIX/bin/colmap"
-colmap -h 2>&1 | sed -n '1,2p'
+echo "$COLMAP_BANNER" | head -2
+# NOTE: this binary links the system BLAS (/usr/lib64/libflexiblas.so.3), which exists on
+# compute nodes but NOT on the login node — there it fails with "libflexiblas.so.3:
+# cannot open shared object file". That is harmless: COLMAP needs a GPU anyway, so it
+# only ever runs on a compute node. Do not try to sanity-check it from the login node.
 echo "OpenMVS  : $OPENMVS_PREFIX/bin/OpenMVS"
 echo
 echo "The old toolchain is untouched:"
