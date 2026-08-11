@@ -49,6 +49,21 @@ MAPPER="${MAPPER:-global}"
 #   STAGE=colmap sbatch --partition=gpu-a100-short --time=4:00:00 ...
 #   STAGE=mvs    sbatch ...
 STAGE="${STAGE:-all}"
+# Two OpenMVS 2.4.0 defaults that damaged the A01 mesh. Both are NEW in 2.4.0 — the 2.3.0
+# this workflow was tuned against had neither — so the conservator's config never had an
+# opinion about them, and they took effect silently on upgrade.
+#
+# 1. ROI cropping. 2.4.0 estimates a bounding box for the scene and throws away everything
+#    outside it. On A01 that removed 325,114 of 5,485,616 dense points (5.9%) — small in
+#    total, but a box removes only the outer edge, which is why it read as clean cut-offs.
+#    Our scene is a clamp rig deliberately photographed to its extremities; there is
+#    nothing here we want cropped.
+CROP_ROI="${CROP_ROI:-0}"
+# 2. Decimation before refinement. RefineMesh's --decimate is documented as
+#    "[0..1] ... 0 - auto, 1 - disabled" and defaults to 0. Auto discarded 3,776,050 faces
+#    down to 1,380,313 (63%) BEFORE refining, rounding off fracture edges and merging
+#    neighbouring sherd surfaces. Fracture faces are the whole point of this capture.
+DECIMATE="${DECIMATE:-1}"
 # Allowed epipolar error during two-view geometry estimation. GLOMAP's guide recommends
 # 4 or 10 for high-resolution or blurry images; these frames are 5568x3712.
 EPIPOLAR_ERROR="${EPIPOLAR_ERROR:-10}"
@@ -415,6 +430,7 @@ export LD_LIBRARY_PATH="$SFM_ENV/lib:${LD_LIBRARY_PATH:-}"
 # relative to a working directory, so without it the later tools resolve them against the
 # process CWD — which is the repo — and DensifyPointCloud died looking for
 # '/data/.../MILo/repo/dense/images/A11_0704.JPG'.
+echo "OpenMVS 2.4.0 defaults overridden: crop-to-roi=$CROP_ROI (0=keep whole scene), decimate=$DECIMATE (1=no decimation)"
 step "OpenMVS: interface"
 "$OPENMVS_BIN/InterfaceCOLMAP" -w "$W" -i "$DENSE" -o "$W/scene.mvs" \
     --image-folder "$DENSE/images"
@@ -422,15 +438,18 @@ step "OpenMVS: interface"
 step "OpenMVS: dense point cloud"
 "$OPENMVS_BIN/DensifyPointCloud" -w "$W" -i "$W/scene.mvs" -o "$W/scene_dense.mvs" \
     --cuda-device 0 --resolution-level "$DENS_LEVEL" \
-    --number-views "$DENS_VIEWS" --number-views-fuse "$DENS_FUSE"
+    --number-views "$DENS_VIEWS" --number-views-fuse "$DENS_FUSE" \
+    --crop-to-roi "$CROP_ROI"
 
 step "OpenMVS: mesh"
 "$OPENMVS_BIN/ReconstructMesh" -w "$W" -i "$W/scene_dense.mvs" -p "$W/scene_dense.ply" \
-    -o "$W/scene_dense_mesh.ply" --target-face-num "$TARGET_FACES"
+    -o "$W/scene_dense_mesh.ply" --target-face-num "$TARGET_FACES" \
+    --crop-to-roi "$CROP_ROI"
 
 step "OpenMVS: refine"
 "$OPENMVS_BIN/RefineMesh" -w "$W" -i "$W/scene_dense.mvs" -m "$W/scene_dense_mesh.ply" \
     -o "$W/scene_refined_mesh.ply" --scales "$REFINE_SCALES" --cuda-device 0 \
+    --decimate "$DECIMATE" \
     || echo "(refinement failed; the unrefined mesh is still usable)"
 
 # ------------------------------------------------------------------------------ sherds
