@@ -138,7 +138,7 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         "gcc_linux-64=14.*" "gxx_linux-64=14.*" \
         "ceres-solver=2.2.0=h*" suitesparse eigen openimageio glew glog gflags \
         flann metis sqlite lz4 curl openssl \
-        "opencv=4.*" cgal-cpp libboost-devel gmp mpfr nanoflann zlib
+        "opencv=4.*" cgal-cpp libboost-devel gmp mpfr nanoflann zlib openblas
     # nanoflann is required by OpenMVS's libs/Common. It was missed the first time
     # because only the TOP-LEVEL CMakeLists was read; the sub-project CMakeLists carry
     # dependencies of their own. The full set, from grepping every CMakeLists at v2.4.0:
@@ -212,6 +212,7 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         -DCMAKE_C_COMPILER="$CC" \
         -DCMAKE_CXX_COMPILER="$CXX" \
         -DCMAKE_CUDA_HOST_COMPILER="$CXX" \
+        -DBLA_VENDOR=OpenBLAS \
         -DCUDA_ENABLED=ON \
         -DCMAKE_CUDA_ARCHITECTURES="80;89;90" \
         -DGUI_ENABLED=OFF \
@@ -219,6 +220,18 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         -DCCACHE_ENABLED=OFF \
         -DONNX_ENABLED=OFF \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    # BLA_VENDOR=OpenBLAS is load-bearing, not cosmetic. Left alone, cmake picks the
+    # system /usr/lib64/libflexiblas.so while conda's SuiteSparse/CHOLMOD carries its own
+    # OpenBLAS — two BLAS implementations in one process. COLMAP then segfaults inside
+    # rotation averaging:
+    #   dtrsm_oltncopy_SKYLAKEX <- dpotrf_ <- cholmod_super_numeric
+    #   <- SparseCholeskyWithFallbackSolver <- RotationAveragingSolver::SolveL1Regression
+    # global_mapper died there every time, and the incremental mapper crashed in bundle
+    # adjustment having registered only 17 of 68 photographs. OPENBLAS_NUM_THREADS=1 did
+    # not help, which ruled out threading and left library duplication. One BLAS in the
+    # process fixes it, and incidentally fixes COLMAP failing on the login node for want
+    # of libflexiblas.so.3.
+    #
     # ONNX is off deliberately: it exists for learned feature extraction, which this
     # workflow does not use, and enabling it would pull the whole onnxruntime in. GUI off
     # because compute nodes are headless. Tests off because a build is not what we are
