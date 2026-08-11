@@ -271,6 +271,38 @@ if [[ "$REG" -lt $(( N / 2 )) ]]; then
     exit 1
 fi
 
+# global_mapper solves camera POSES but writes no 3D points: it left points3D.bin at 8
+# bytes — an empty table — while images.bin held 33 MB of observations for all 68 views.
+# OpenMVS then reported "empty point-cloud" and refused, because it seeds dense matching
+# from the sparse cloud. point_triangulator fills that in from the poses and the matches
+# already in the database. The incremental mapper triangulates as it goes and does not
+# need this, so the step is conditional on the count rather than on the mapper.
+NPOINTS=$("$MILO_PY" -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('cl','$MILO_REPO/milo/scene/colmap_loader.py')
+cl = importlib.util.module_from_spec(spec); spec.loader.exec_module(cl)
+print(len(cl.read_points3D_binary('$BEST/points3D.bin')[0]))" 2>/dev/null || echo 0)
+echo "3D points in the chosen model: $NPOINTS"
+
+if [[ "$NPOINTS" -eq 0 ]]; then
+    step "triangulate points from the solved poses"
+    TRI="$W/sparse/triangulated"
+    rm -rf "$TRI"; mkdir -p "$TRI"
+    run_colmap colmap point_triangulator \
+        --database_path "$DB" --image_path "$IMAGES" \
+        --input_path "$BEST" --output_path "$TRI"
+    NPOINTS=$("$MILO_PY" -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('cl','$MILO_REPO/milo/scene/colmap_loader.py')
+cl = importlib.util.module_from_spec(spec); spec.loader.exec_module(cl)
+print(len(cl.read_points3D_binary('$TRI/points3D.bin')[0]))" 2>/dev/null || echo 0)
+    echo "  triangulated 3D points: $NPOINTS"
+    [[ "$NPOINTS" -gt 0 ]] || {
+        echo "Triangulation produced no points; dense reconstruction cannot proceed." >&2
+        exit 1; }
+    BEST="$TRI"
+fi
+
 # Undistortion expects the chosen model; give it its own directory rather than renaming,
 # so which model was used stays visible afterwards.
 step "undistort"
@@ -294,21 +326,25 @@ fi
 
 # ----------------------------------------------------------------------------- OpenMVS
 export LD_LIBRARY_PATH="$SFM_ENV/lib:${LD_LIBRARY_PATH:-}"
+# -w "$W" on EVERY tool, not just the interface. The scene file stores image paths
+# relative to a working directory, so without it the later tools resolve them against the
+# process CWD — which is the repo — and DensifyPointCloud died looking for
+# '/data/.../MILo/repo/dense/images/A11_0704.JPG'.
 step "OpenMVS: interface"
 "$OPENMVS_BIN/InterfaceCOLMAP" -w "$W" -i "$DENSE" -o "$W/scene.mvs" \
     --image-folder "$DENSE/images"
 
 step "OpenMVS: dense point cloud"
-"$OPENMVS_BIN/DensifyPointCloud" -i "$W/scene.mvs" -o "$W/scene_dense.mvs" \
+"$OPENMVS_BIN/DensifyPointCloud" -w "$W" -i "$W/scene.mvs" -o "$W/scene_dense.mvs" \
     --cuda-device 0 --resolution-level "$DENS_LEVEL" \
     --number-views "$DENS_VIEWS" --number-views-fuse "$DENS_FUSE"
 
 step "OpenMVS: mesh"
-"$OPENMVS_BIN/ReconstructMesh" -i "$W/scene_dense.mvs" -p "$W/scene_dense.ply" \
+"$OPENMVS_BIN/ReconstructMesh" -w "$W" -i "$W/scene_dense.mvs" -p "$W/scene_dense.ply" \
     -o "$W/scene_dense_mesh.ply" --target-face-num "$TARGET_FACES"
 
 step "OpenMVS: refine"
-"$OPENMVS_BIN/RefineMesh" -i "$W/scene_dense.mvs" -m "$W/scene_dense_mesh.ply" \
+"$OPENMVS_BIN/RefineMesh" -w "$W" -i "$W/scene_dense.mvs" -m "$W/scene_dense_mesh.ply" \
     -o "$W/scene_refined_mesh.ply" --scales "$REFINE_SCALES" --cuda-device 0 \
     || echo "(refinement failed; the unrefined mesh is still usable)"
 
