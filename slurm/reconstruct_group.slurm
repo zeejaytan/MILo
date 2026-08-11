@@ -49,6 +49,9 @@ MAPPER="${MAPPER:-global}"
 #   STAGE=colmap sbatch --partition=gpu-a100-short --time=4:00:00 ...
 #   STAGE=mvs    sbatch ...
 STAGE="${STAGE:-all}"
+# Allowed epipolar error during two-view geometry estimation. GLOMAP's guide recommends
+# 4 or 10 for high-resolution or blurry images; these frames are 5568x3712.
+EPIPOLAR_ERROR="${EPIPOLAR_ERROR:-10}"
 
 TOOLS=/data/gpfs/projects/punim2657/tools
 SFM_ENV=$TOOLS/sfm
@@ -200,11 +203,25 @@ else
 fi
 
 if [[ "$HAVE_PAIRS" -le 0 ]]; then
+    # max_error follows GLOMAP's own guide (docs/getting_started.md, "Handle
+    # high-resolution or blurry images"): raise the allowed epipolar error to 4 or 10 for
+    # high-resolution input. These frames are 5568x3712. COLMAP's default is already 4,
+    # so 10 is the documented upper end for images this large.
+    #
+    # This is where two-view geometry is estimated, and therefore where GLOMAP's input
+    # quality is decided — earlier attempts here adjusted the mapper's filters, which
+    # only reject bad points, rather than this, which determines whether good ones exist.
+    #
+    # compute_relative_pose defaults to 0, leaving glomap to decompose relative poses
+    # itself downstream ("Decomposing relative poses..." in its log). Computing them here,
+    # with the calibrated camera, gives it better input.
     step "exhaustive matching"
     run_colmap colmap exhaustive_matcher \
         --database_path "$DB" \
         --FeatureMatching.use_gpu 1 \
-        --FeatureMatching.guided_matching "$GUIDED"
+        --FeatureMatching.guided_matching "$GUIDED" \
+        --TwoViewGeometry.max_error "$EPIPOLAR_ERROR" \
+        --TwoViewGeometry.compute_relative_pose 1
 
     PAIRS=$(db_verified_pairs "$DB")
     echo "  geometrically verified image pairs: $PAIRS"
@@ -254,12 +271,23 @@ if [[ "$MAPPER" == "global" ]]; then
     # random_seed is pinned because it is NOT fixed by default: identical settings gave
     # 15,779 and then 19,027 points on consecutive runs, and a reconstruction that cannot
     # be reproduced cannot be compared against anything.
+    # STOCK THRESHOLDS. The relaxations previously here were invented by sweeping, on a
+    # quarter of a tree, without reading GLOMAP's own guide first. That guide
+    # (docs/getting_started.md) recommends none of them: for a reconstruction that will
+    # not resolve it names sharing camera intrinsics (done, --ImageReader.single_camera)
+    # and raising the epipolar error for high-resolution images (done, in matching). Its
+    # only other advice concerns speed.
+    #
+    # So the mapper runs stock apart from the seed. If it still yields no structure on a
+    # full rotation with properly estimated two-view geometry, that is a real finding
+    # about this material rather than a threshold to be widened until something appears.
+    #
+    # random_seed is pinned because it is NOT fixed by default: identical settings gave
+    # 15,779 and then 19,027 points on consecutive runs, and a reconstruction that cannot
+    # be reproduced cannot be compared against anything.
     run_colmap colmap global_mapper \
         --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE" \
-        --GlobalMapper.random_seed 0 \
-        --GlobalMapper.max_angular_reproj_error_deg 5 \
-        --GlobalMapper.max_normalized_reproj_error 0.05 \
-        --GlobalMapper.min_tri_angle_deg 0.25
+        --GlobalMapper.random_seed 0
 else
     step "incremental mapper (multiple models allowed)"
     run_colmap colmap mapper \
