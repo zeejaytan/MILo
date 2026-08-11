@@ -138,13 +138,18 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         "gcc_linux-64=14.*" "gxx_linux-64=14.*" \
         "ceres-solver=2.2.0=h*" suitesparse eigen openimageio glew glog gflags \
         flann metis sqlite lz4 curl openssl \
-        "opencv=4.*" cgal-cpp libboost-devel gmp mpfr nanoflann
+        "opencv=4.*" cgal-cpp libboost-devel gmp mpfr nanoflann zlib
     # nanoflann is required by OpenMVS's libs/Common. It was missed the first time
     # because only the TOP-LEVEL CMakeLists was read; the sub-project CMakeLists carry
     # dependencies of their own. The full set, from grepping every CMakeLists at v2.4.0:
     # Boost, Ceres, CGAL, CUDAToolkit, Eigen3, OpenCV, OpenMP, VCG, nanoflann, plus
     # JPEG/PNG/TIFF (arriving with opencv), and glad/glfw3/imgui/Python3/BREAKPAD which
     # only matter for the viewer and bindings this build disables.
+    #
+    # zlib, not libzlib: conda-forge splits the runtime library from the headers, and
+    # OpenMVS includes <zlib.h> directly in libs/IO/ImagePNG.cpp. An earlier attempt
+    # dropped zlib because PINNING it conflicted with the colmap package; unpinned,
+    # and with colmap now built from source, it resolves cleanly.
     # opencv is pinned to 4.x. conda-forge now defaults to OpenCV 5.0.0, and OpenMVS
     # 2.4.0 (January 2026) predates it. OpenMVS does a bare FIND_PACKAGE(OpenCV REQUIRED)
     # with NO version guard, so 5.0 is accepted at configure time and would fail later
