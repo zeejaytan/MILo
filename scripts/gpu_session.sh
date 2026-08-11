@@ -11,6 +11,8 @@
 # So instead: submit a job that does nothing but sleep, then push commands into it with
 # `srun --jobid=... --overlap`. Same node, same GPU, no queue between attempts.
 #
+# Workspace-wide helper: copy or symlink into any project that needs it.
+#
 # Usage (from the laptop or on Spartan):
 #   ./scripts/gpu_session.sh start [hours]     # default 4
 #   ./scripts/gpu_session.sh run  <command...>
@@ -70,7 +72,9 @@ case "${1:-status}" in
         echo "Session $ID is $(job_state "$ID"), not RUNNING." >&2; exit 1; }
     # --overlap is required: the allocation's own step is the sleep, and without it srun
     # waits forever for resources that its own job already holds.
-    exec srun --jobid="$ID" --overlap --pty=false bash -lc "$*"
+    # No --pty at all: srun is non-interactive by default, and "--pty=false" is rejected
+    # ("must be numeric file descriptor") rather than treated as off.
+    exec srun --jobid="$ID" --overlap bash -lc "$*"
     ;;
 
   shell)
