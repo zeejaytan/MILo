@@ -12,12 +12,15 @@ Two things about this that are easy to get wrong and silent when you do:
   the wrong region. Masks here are built from the STORED pixels, never exif_transposed.
 
   REFLECTIONS. The backdrop is glossy black and reflects the rig. Those reflections are
-  bright, move when the rig turns, and are exactly the kind of feature that would defeat
-  the purpose. Keeping only the largest connected region removes them, since a reflection
-  is separated from the rig by dark backdrop.
+  bright, move when the rig turns, and would defeat the purpose if kept. They are dropped
+  by a size floor, NOT by keeping only the largest region -- the sherds hang out on arms
+  with dark background between them, so each sherd is its own region and "largest only"
+  discards every one of them. That was the first version's behaviour: it masked out the
+  pottery, kept the rig, removed 90% of the features, and reported nothing wrong.
 
 Nothing here is trusted without a picture: --overlays writes a contact sheet with the mask
-edge drawn on the photograph, at a resolution that shows whether sherd edges are cut.
+edge drawn on the photograph, at a resolution that shows whether sherd edges are cut. The
+error above was invisible in every statistic and obvious in the first frame of the sheet.
 
 Usage:
     python build_masks.py --images <dir> --out <mask-dir> --overlays <dir>
@@ -46,6 +49,15 @@ def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True):
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,
                             cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
 
+    # Keep EVERY region above a size floor, not just the largest.
+    #
+    # The first version kept only the largest, to drop the rig's reflections in the glossy
+    # backdrop. Looking at the contact sheet showed what that actually did: the sherds hang
+    # out on arms and are separated from the central rod by dark background, so each one is
+    # its own region and all of them were discarded. It masked out the pottery and kept the
+    # rig -- the exact opposite of the intent -- and removed 90% of the features while
+    # reporting nothing wrong. A size floor drops reflections, which are small and dim,
+    # without dropping sherds, which are neither.
     n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
     if n > 1:
         areas = stats[1:, cv2.CC_STAT_AREA]
@@ -54,6 +66,8 @@ def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True):
         else:
             keep = {1 + i for i, a in enumerate(areas)
                     if a >= min_area_frac * mask.size}
+            if not keep:                      # never return an empty mask
+                keep = {1 + int(np.argmax(areas))}
         mask = np.isin(labels, list(keep)).astype(np.uint8) * 255
 
     # Fill interior holes so dark patches inside a sherd are not excluded.
@@ -76,12 +90,15 @@ def main():
     ap.add_argument("--overlays", type=Path, help="write contact sheets to look at")
     ap.add_argument("--threshold", type=int, default=28,
                     help="minimum grey level counted as foreground")
-    ap.add_argument("--min-area-frac", type=float, default=0.002)
+    ap.add_argument("--min-area-frac", type=float, default=0.0004,
+                    help="size floor for a kept region, as a fraction of the frame: low "
+                         "enough to keep a small sherd, high enough to drop a reflection")
     ap.add_argument("--dilate", type=int, default=12,
                     help="pixels to grow the mask, to keep silhouette features")
-    ap.add_argument("--keep-all-large", action="store_true",
-                    help="keep every region above --min-area-frac instead of only the "
-                         "largest; use if the rig genuinely separates into pieces")
+    ap.add_argument("--largest-only", action="store_true",
+                    help="keep ONLY the largest region. Wrong for this rig -- the sherds "
+                         "hang on arms separated from the rod by dark background, so each "
+                         "is its own region and this discards all of them.")
     ap.add_argument("--overlay-every", type=int, default=22)
     args = ap.parse_args()
 
@@ -102,7 +119,7 @@ def main():
         if bgr is None:
             sys.exit(f"Could not read {p}")
         mask = build_mask(bgr, args.threshold, args.min_area_frac, args.dilate,
-                          keep_largest=not args.keep_all_large)
+                          keep_largest=args.largest_only)
         # COLMAP wants <image filename>.png, keeping the original extension.
         cv2.imwrite(str(args.out / (p.name + ".png")), mask)
         frac = float((mask > 0).mean())
