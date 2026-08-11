@@ -59,10 +59,16 @@ def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True, win=
 
     # Close first: the rig is thin metal with dark gaps, and without this the clamps
     # fragment into dozens of pieces and "keep the largest" throws most of them away.
-    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31))
+    # Deliberately generous. The job of this mask is to drop the bulk of the STATIC
+    # backdrop, not to trace a sherd outline. Including some backdrop costs a few useless
+    # features; clipping a sherd removes the evidence we actually depend on, and the
+    # conservator found exactly that in the previous version. So: close hard enough to
+    # bridge the dark gaps between a sherd and its clamp, open only enough to drop
+    # single-pixel speckle, and grow the result well past the silhouette.
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (61, 61))
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,
-                            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
+                            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
 
     # Keep EVERY region above a size floor, not just the largest.
     #
@@ -98,21 +104,26 @@ def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True, win=
     return mask
 
 
+def coverage_report(mask, bgr):
+    """How much of the frame survives -- printed per frame so a failure is visible."""
+    return float((mask > 0).mean())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--images", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--overlays", type=Path, help="write contact sheets to look at")
-    ap.add_argument("--threshold", type=float, default=6.0,
+    ap.add_argument("--threshold", type=float, default=2.5,
                     help="minimum local standard deviation counted as detail. Not a "
                          "brightness: the backdrop is smooth in both lighting setups "
                          "used in this capture, while the rig and sherds are not.")
     ap.add_argument("--window", type=int, default=9,
                     help="window size for the local texture measure, in pixels")
-    ap.add_argument("--min-area-frac", type=float, default=0.0004,
+    ap.add_argument("--min-area-frac", type=float, default=0.00008,
                     help="size floor for a kept region, as a fraction of the frame: low "
                          "enough to keep a small sherd, high enough to drop a reflection")
-    ap.add_argument("--dilate", type=int, default=12,
+    ap.add_argument("--dilate", type=int, default=45,
                     help="pixels to grow the mask, to keep silhouette features")
     ap.add_argument("--largest-only", action="store_true",
                     help="keep ONLY the largest region. Wrong for this rig -- the sherds "
