@@ -5,6 +5,12 @@ rather than a hand-tracing one. 177 photographs take a couple of minutes.
 
 Two things about this that are easy to get wrong and silent when you do:
 
+  LIGHTING. Two backdrops were used in this capture: black for most frames and a lit grey
+  one for the 44 A14_* frames, shot from a lower angle. A brightness threshold cannot
+  serve both -- on the grey frames 94% of the image is above any workable level, so the
+  whole frame is kept and the mask silently does nothing. Local texture serves both,
+  because the backdrop is smooth either way and the rig never is.
+
   ORIENTATION. COLMAP does not rotate images by their EXIF tag -- it reads the tag into a
   gravity prior and leaves the pixels as stored (doc/faq.rst, "Image orientation and
   EXIF"). These photographs carry orientation 8, so a mask built from an upright copy
@@ -33,14 +39,23 @@ import cv2
 import numpy as np
 
 
-def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True):
-    """Bright rig on a dark backdrop -> uint8 mask, 255 = keep, 0 = ignore."""
-    grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    # Otsu picks the split from the image itself; a floor stops it inventing a split on a
-    # frame that happens to be almost entirely backdrop.
-    otsu, _ = cv2.threshold(grey, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    level = max(otsu, threshold)
-    mask = (grey >= level).astype(np.uint8) * 255
+def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True, win=9):
+    """Textured rig against a smooth backdrop -> uint8 mask, 255 = keep, 0 = ignore.
+
+    Keyed on local texture, not brightness. Brightness worked for the frames shot against
+    the black backdrop and failed completely for the 44 A14_* frames, which were taken
+    against a LIT GREY backdrop from a lower angle: 94% of that frame is brighter than any
+    workable threshold, so the whole image was kept and the mask did nothing.
+
+    Texture separates both setups with one rule. The backdrop is smooth whether it is flat
+    black or a soft grey gradient, while sherds, clamps and rod all carry detail.
+    """
+    grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    # Local standard deviation: sqrt(E[x^2] - E[x]^2) over a small window.
+    mean = cv2.boxFilter(grey, -1, (win, win))
+    sq = cv2.boxFilter(grey * grey, -1, (win, win))
+    std = np.sqrt(np.maximum(sq - mean * mean, 0))
+    mask = (std >= threshold).astype(np.uint8) * 255
 
     # Close first: the rig is thin metal with dark gaps, and without this the clamps
     # fragment into dozens of pieces and "keep the largest" throws most of them away.
@@ -88,8 +103,12 @@ def main():
     ap.add_argument("--images", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--overlays", type=Path, help="write contact sheets to look at")
-    ap.add_argument("--threshold", type=int, default=28,
-                    help="minimum grey level counted as foreground")
+    ap.add_argument("--threshold", type=float, default=6.0,
+                    help="minimum local standard deviation counted as detail. Not a "
+                         "brightness: the backdrop is smooth in both lighting setups "
+                         "used in this capture, while the rig and sherds are not.")
+    ap.add_argument("--window", type=int, default=9,
+                    help="window size for the local texture measure, in pixels")
     ap.add_argument("--min-area-frac", type=float, default=0.0004,
                     help="size floor for a kept region, as a fraction of the frame: low "
                          "enough to keep a small sherd, high enough to drop a reflection")
@@ -119,7 +138,7 @@ def main():
         if bgr is None:
             sys.exit(f"Could not read {p}")
         mask = build_mask(bgr, args.threshold, args.min_area_frac, args.dilate,
-                          keep_largest=args.largest_only)
+                          keep_largest=args.largest_only, win=args.window)
         # COLMAP wants <image filename>.png, keeping the original extension.
         cv2.imwrite(str(args.out / (p.name + ".png")), mask)
         frac = float((mask > 0).mean())
