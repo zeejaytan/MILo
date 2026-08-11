@@ -110,6 +110,49 @@ DB="$W/database.db"
 
 step() { echo; echo "=== $* ($(date +%H:%M:%S)) ==="; }
 
+# COLMAP 4.1.1 segfaults in __run_exit_handlers AFTER completing its work — feature
+# extraction processed all 68 images, wrote a 205 MB database with keypoints for every
+# one, and then crashed on the way out. `set -e` killed the job on a step that had
+# succeeded.
+#
+# So exit codes are not the test here; results are. That is the better instrument anyway:
+# every other failure today came from a check that reported something other than what it
+# claimed to measure. run_colmap tolerates the crash and the CALLER must verify the
+# artefact it wanted.
+COLMAP_EXIT_CRASH=0
+run_colmap() {
+    local rc=0
+    "$@" || rc=$?
+    if [[ $rc -ne 0 ]]; then
+        if [[ $rc -eq 139 || $rc -eq $((128+11)) ]]; then
+            echo "  [colmap exited with SIGSEGV ($rc) — known shutdown crash;" \
+                 "judging by output instead]"
+            COLMAP_EXIT_CRASH=1
+        else
+            echo "  [colmap exited $rc]" >&2
+            return $rc
+        fi
+    fi
+    return 0
+}
+
+# How many images have keypoints, straight out of the database.
+db_images_with_features() {
+    "$MILO_PY" - "$1" <<'PY' 2>/dev/null || echo 0
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+print(c.execute("select count(*) from keypoints where rows>0").fetchone()[0])
+PY
+}
+
+db_verified_pairs() {
+    "$MILO_PY" - "$1" <<'PY' 2>/dev/null || echo 0
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+print(c.execute("select count(*) from two_view_geometries where rows>0").fetchone()[0])
+PY
+}
+
 # ---------------------------------------------------------------------------- features
 if [[ "$STAGE" == "mvs" ]]; then
     DENSE="$W/dense"
@@ -128,7 +171,7 @@ if [[ ! -f "$DB" ]]; then
     # with "unrecognised option '--SiftExtraction.use_gpu'" and then segfault in its exit
     # handler, which looks like a crash but is only a parse failure.
     step "feature extraction"
-    colmap feature_extractor \
+    run_colmap colmap feature_extractor \
         --database_path "$DB" --image_path "$IMAGES" \
         --ImageReader.single_camera 1 \
         --FeatureExtraction.use_gpu 1 \
@@ -136,11 +179,20 @@ if [[ ! -f "$DB" ]]; then
         --SiftExtraction.max_num_features "$MAX_FEAT" \
         --SiftExtraction.domain_size_pooling "$DSP"
 
+    FEAT_IMAGES=$(db_images_with_features "$DB")
+    echo "  images with features: $FEAT_IMAGES of $N"
+    [[ "$FEAT_IMAGES" -ge "$N" ]] || {
+        echo "Feature extraction did not cover every photograph." >&2; exit 1; }
+
     step "exhaustive matching"
-    colmap exhaustive_matcher \
+    run_colmap colmap exhaustive_matcher \
         --database_path "$DB" \
         --FeatureMatching.use_gpu 1 \
         --FeatureMatching.guided_matching "$GUIDED"
+
+    PAIRS=$(db_verified_pairs "$DB")
+    echo "  geometrically verified image pairs: $PAIRS"
+    [[ "$PAIRS" -gt 0 ]] || { echo "Matching produced no verified pairs." >&2; exit 1; }
 else
     echo "reusing existing database $DB (delete it to redo features and matches)"
 fi
@@ -151,11 +203,11 @@ rm -rf "$SPARSE"; mkdir -p "$SPARSE"
 
 if [[ "$MAPPER" == "global" ]]; then
     step "global mapper (GLOMAP)"
-    colmap global_mapper \
+    run_colmap colmap global_mapper \
         --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE"
 else
     step "incremental mapper (multiple models allowed)"
-    colmap mapper \
+    run_colmap colmap mapper \
         --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE" \
         --Mapper.multiple_models 1 \
         --Mapper.init_min_tri_angle "$TRI_ANGLE" \
@@ -208,7 +260,7 @@ fi
 step "undistort"
 DENSE="$W/dense"
 rm -rf "$DENSE"
-colmap image_undistorter \
+run_colmap colmap image_undistorter \
     --image_path "$IMAGES" --input_path "$BEST" --output_path "$DENSE" \
     --max_image_size "$UNDIST_MAX"
 
