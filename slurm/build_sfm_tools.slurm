@@ -332,8 +332,22 @@ else
 fi
 
 echo "--- global mapper present (the reason for upgrading)"
-if colmap help 2>&1 | grep -q global_mapper || colmap global_mapper -h >/dev/null 2>&1; then
+# `colmap -h` lists the subcommands; `colmap help` is not a command and errors out. The
+# first version of this check used `colmap help`, so the grep always failed, and its
+# fallback ran `colmap global_mapper -h >/dev/null 2>&1`, which segfaults with output
+# redirected — reporting the feature MISSING when it works perfectly. A verification that
+# fails on a working build is as bad as one that passes a broken one: it would have sent
+# us rebuilding something that was already correct.
+COLMAP_COMMANDS=$(colmap -h 2>&1 || true)
+if grep -qw global_mapper <<< "$COLMAP_COMMANDS"; then
     echo "    global_mapper: available"
+    # Prove it runs, not merely that it is listed. Output is piped, never redirected to
+    # /dev/null, for the reason above.
+    if colmap global_mapper -h 2>&1 | grep -q "project_path"; then
+        echo "    global_mapper: runs and accepts options"
+    else
+        echo "    global_mapper: listed but does not run" >&2; FAILED=1
+    fi
 else
     echo "    global_mapper: MISSING — this build cannot do global SfM" >&2; FAILED=1
 fi
