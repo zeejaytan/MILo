@@ -311,8 +311,10 @@ for tool in DensifyPointCloud ReconstructMesh RefineMesh InterfaceCOLMAP Texture
         echo "    $tool: runs"
     else
         # --help exits non-zero in some OpenMVS tools; a missing library does not even
-        # get that far, so distinguish the two.
-        if "$OPENMVS_PREFIX/bin/OpenMVS/$tool" --help 2>&1 | grep -qi "cannot open shared object"; then
+        # get that far, so distinguish the two. Captured, not piped — see the note by the
+        # global_mapper check.
+        TOOL_OUT=$("$OPENMVS_PREFIX/bin/OpenMVS/$tool" --help 2>&1 || true)
+        if grep -qi "cannot open shared object" <<< "$TOOL_OUT"; then
             echo "    $tool: FAILED to load libraries" >&2; FAILED=1
         else
             echo "    $tool: runs (non-zero exit from --help, which is normal)"
@@ -324,8 +326,14 @@ echo "--- COLMAP sees the GPU"
 # Feature extraction with use_gpu 1 on an empty database exercises the CUDA/OpenGL path
 # far enough to fail loudly if the GPU is unusable, without needing any images.
 TMPDB=$(mktemp -d)/probe.db
-if colmap feature_extractor --database_path "$TMPDB" --image_path "$TOOLS/src" \
-        --SiftExtraction.use_gpu 1 2>&1 | grep -qiE "cuda error|no cuda|failed to initialize"; then
+# Captured rather than piped into grep -q. Piping here would be actively dangerous: grep
+# exits on its first match, colmap dies of SIGPIPE, pipefail marks the pipeline failed,
+# and the `if` therefore reads FALSE — reporting "GPU initialised" precisely when a CUDA
+# error WAS found. A safety check that inverts under its own failure mode is worse than
+# no check.
+GPU_PROBE=$(colmap feature_extractor --database_path "$TMPDB" --image_path "$TOOLS/src" \
+        --SiftExtraction.use_gpu 1 2>&1 || true)
+if grep -qiE "cuda error|no cuda|failed to initialize" <<< "$GPU_PROBE"; then
     echo "    COLMAP could not use the GPU" >&2; FAILED=1
 else
     echo "    COLMAP GPU path initialised"
@@ -341,9 +349,15 @@ echo "--- global mapper present (the reason for upgrading)"
 COLMAP_COMMANDS=$(colmap -h 2>&1 || true)
 if grep -qw global_mapper <<< "$COLMAP_COMMANDS"; then
     echo "    global_mapper: available"
-    # Prove it runs, not merely that it is listed. Output is piped, never redirected to
-    # /dev/null, for the reason above.
-    if colmap global_mapper -h 2>&1 | grep -q "project_path"; then
+    # Prove it runs, not merely that it is listed.
+    #
+    # CAPTURE FIRST, THEN GREP. `cmd | grep -q x` exits the moment grep matches, which
+    # closes the pipe, kills cmd with SIGPIPE, and under `set -o pipefail` marks the whole
+    # pipeline failed — so a WORKING command tests as broken. This trap has now bitten
+    # three times in this script (colmap -h | head, and twice here). Never pipe a
+    # long-output command into an early-exiting reader inside a pipefail script.
+    GLOBAL_MAPPER_HELP=$(colmap global_mapper -h 2>&1 || true)
+    if grep -q "project_path" <<< "$GLOBAL_MAPPER_HELP"; then
         echo "    global_mapper: runs and accepts options"
     else
         echo "    global_mapper: listed but does not run" >&2; FAILED=1
