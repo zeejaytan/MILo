@@ -121,20 +121,26 @@ if [[ "$STAGE" == "mvs" ]]; then
 else
 
 if [[ ! -f "$DB" ]]; then
+    # COLMAP 4.x SPLIT these options: generic ones (use_gpu, max_image_size, gpu_index,
+    # num_threads, type) moved to FeatureExtraction.* / FeatureMatching.*, while
+    # SIFT-specific ones (max_num_features, domain_size_pooling, peak_threshold) stayed
+    # under SiftExtraction.* / SiftMatching.*. Passing the 3.9 names makes 4.1.1 abort
+    # with "unrecognised option '--SiftExtraction.use_gpu'" and then segfault in its exit
+    # handler, which looks like a crash but is only a parse failure.
     step "feature extraction"
     colmap feature_extractor \
         --database_path "$DB" --image_path "$IMAGES" \
         --ImageReader.single_camera 1 \
-        --SiftExtraction.use_gpu 1 \
-        --SiftExtraction.max_image_size "$MAX_IMG" \
+        --FeatureExtraction.use_gpu 1 \
+        --FeatureExtraction.max_image_size "$MAX_IMG" \
         --SiftExtraction.max_num_features "$MAX_FEAT" \
         --SiftExtraction.domain_size_pooling "$DSP"
 
     step "exhaustive matching"
     colmap exhaustive_matcher \
         --database_path "$DB" \
-        --SiftMatching.use_gpu 1 \
-        --SiftMatching.guided_matching "$GUIDED"
+        --FeatureMatching.use_gpu 1 \
+        --FeatureMatching.guided_matching "$GUIDED"
 else
     echo "reusing existing database $DB (delete it to redo features and matches)"
 fi

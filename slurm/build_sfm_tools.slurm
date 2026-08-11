@@ -332,8 +332,14 @@ TMPDB=$(mktemp -d)/probe.db
 # error WAS found. A safety check that inverts under its own failure mode is worse than
 # no check.
 GPU_PROBE=$(colmap feature_extractor --database_path "$TMPDB" --image_path "$TOOLS/src" \
-        --SiftExtraction.use_gpu 1 2>&1 || true)
-if grep -qiE "cuda error|no cuda|failed to initialize" <<< "$GPU_PROBE"; then
+        --FeatureExtraction.use_gpu 1 2>&1 || true)
+# 'unrecognised option' is checked too, and this is why. The first version passed
+# --SiftExtraction.use_gpu, COLMAP 3.9's name; 4.x moved the generic options to
+# FeatureExtraction.*, so the probe aborted on a parse error, printed no CUDA text, and
+# this check reported "GPU path initialised" for a command that never ran. A probe that
+# passes when its own invocation is invalid tests nothing at all.
+if grep -qiE "cuda error|no cuda|failed to initialize|unrecognised option|unrecognized option" \
+        <<< "$GPU_PROBE"; then
     echo "    COLMAP could not use the GPU" >&2; FAILED=1
 else
     echo "    COLMAP GPU path initialised"
