@@ -32,7 +32,7 @@ TAG="${TAG:-incremental}"
 
 TOOLS=/data/gpfs/projects/punim2657/tools
 SFM_ENV=$TOOLS/sfm
-OPENMVS_BIN=$TOOLS/openmvs/bin/OpenMVS
+OPENMVS_BIN=$TOOLS/openmvs-2.4.0/bin/OpenMVS
 PHOTO_ROOT=/data/gpfs/projects/punim2657/Rabati2025
 MILO=/data/gpfs/projects/punim2657/MILo
 
@@ -43,6 +43,16 @@ DENSE="$W/dense_$TAG"
 
 echo "=== dense reconstruction of $GROUP from $MODEL_REL started $(date) on $(hostname) ==="
 [[ -d "$MODEL" ]] || { echo "No model at $MODEL" >&2; exit 1; }
+
+# Check the tools exist BEFORE doing anything expensive. The first run of this job had the
+# OpenMVS path wrong, so every stage printed "No such file or directory", nothing was
+# built, and Slurm still recorded the job as COMPLETED with exit 0 -- because the stages
+# are deliberately not run under `set -e` (colmap segfaults in its exit handlers). A job
+# that does nothing must not report success.
+for tool in InterfaceCOLMAP DensifyPointCloud ReconstructMesh RefineMesh; do
+    [[ -x "$OPENMVS_BIN/$tool" ]] || {
+        echo "Missing $OPENMVS_BIN/$tool -- check OPENMVS_BIN" >&2; exit 1; }
+done
 
 module purge
 module load Miniforge3/24.7.1-2
@@ -59,10 +69,18 @@ step() { echo; echo "=== $* ($(date +%H:%M:%S)) ==="; }
 step "turntable check"
 python "$MILO/repo/scripts/check_turntable.py" "$MODEL" | tee /tmp/turntable_$$.txt
 if grep -q "COLLAPSED" /tmp/turntable_$$.txt; then
-    echo
-    echo "This model collapsed the turntable rotation. Meshing it would reproduce the" >&2
-    echo "duplicated-sherd result. Stopping." >&2
-    exit 1
+    if [[ "${ALLOW_COLLAPSED:-0}" == "1" ]]; then
+        echo
+        echo ">>> This model FAILED the turntable check, and ALLOW_COLLAPSED=1 was set."
+        echo ">>> Proceeding deliberately, to mesh it as a comparison against a model that"
+        echo ">>> passed. Expect duplicated sherds and a round base -- that is the point."
+    else
+        echo
+        echo "This model collapsed the turntable rotation. Meshing it would reproduce the" >&2
+        echo "duplicated-sherd result. Set ALLOW_COLLAPSED=1 to do it anyway, deliberately," >&2
+        echo "e.g. to compare mappers under identical OpenMVS settings. Stopping." >&2
+        exit 1
+    fi
 fi
 
 step "undistort from $MODEL_REL"
@@ -98,6 +116,11 @@ step "OpenMVS: refine (decimation DISABLED)"
 
 step "done"
 ls -lh "$DENSE"/*.ply 2>/dev/null | awk '{print $5, $9}'
+
+# Judge by artefact, not by exit code -- and make a run that produced nothing fail loudly.
+[[ -s "$DENSE/scene_dense_mesh.ply" ]] || {
+    echo; echo "No mesh was produced. See the stage output above." >&2; exit 1; }
+
 echo
 echo "Open scene_dense_mesh.ply and scene_refined_mesh.ply and look at them:"
 echo "  is the base square rather than round, and does each sherd appear once?"
