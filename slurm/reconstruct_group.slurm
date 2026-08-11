@@ -40,6 +40,15 @@ set -euo pipefail
 
 GROUP="${1:?usage: sbatch reconstruct_group.slurm <date>/<group>}"
 MAPPER="${MAPPER:-global}"
+# colmap | mvs | all. Splitting matters for scheduling, not just tidiness: gpu-a100 has
+# 336 jobs queued and estimates a start ~23 hours out, while gpu-a100-short has 3 queued
+# and a 4-hour limit. The COLMAP stage finishes well inside 4 hours AND carries the
+# decisive result — how many photographs register — so running it alone on the short
+# partition answers the question today instead of tomorrow. The dense stage, which is the
+# genuinely long part, then queues separately.
+#   STAGE=colmap sbatch --partition=gpu-a100-short --time=4:00:00 ...
+#   STAGE=mvs    sbatch ...
+STAGE="${STAGE:-all}"
 
 TOOLS=/data/gpfs/projects/punim2657/tools
 SFM_ENV=$TOOLS/sfm
@@ -102,6 +111,15 @@ DB="$W/database.db"
 step() { echo; echo "=== $* ($(date +%H:%M:%S)) ==="; }
 
 # ---------------------------------------------------------------------------- features
+if [[ "$STAGE" == "mvs" ]]; then
+    DENSE="$W/dense"
+    [[ -d "$DENSE/images" && -d "$DENSE/sparse" ]] || {
+        echo "STAGE=mvs but no undistorted workspace at $DENSE." >&2
+        echo "Run STAGE=colmap first." >&2; exit 1; }
+    echo "STAGE=mvs: reusing the undistorted workspace from the COLMAP stage"
+    echo "  views: $(ls "$DENSE/images" | wc -l)"
+else
+
 if [[ ! -f "$DB" ]]; then
     step "feature extraction"
     colmap feature_extractor \
@@ -187,6 +205,18 @@ rm -rf "$DENSE"
 colmap image_undistorter \
     --image_path "$IMAGES" --input_path "$BEST" --output_path "$DENSE" \
     --max_image_size "$UNDIST_MAX"
+
+fi   # end of the COLMAP stage (skipped entirely when STAGE=mvs)
+
+if [[ "$STAGE" == "colmap" ]]; then
+    echo
+    echo "=== STAGE=colmap: stopping after undistortion ==="
+    echo "Registered $REG of $N photographs into $(basename "$BEST")."
+    echo "Dense reconstruction next:"
+    echo "  STAGE=mvs sbatch slurm/reconstruct_group.slurm $GROUP"
+    echo "=== finished $(date) ==="
+    exit 0
+fi
 
 # ----------------------------------------------------------------------------- OpenMVS
 export LD_LIBRARY_PATH="$SFM_ENV/lib:${LD_LIBRARY_PATH:-}"
