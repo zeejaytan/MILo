@@ -135,6 +135,7 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
     # bundle adjustment does not use — it goes through SuiteSparse — so nothing is lost.
     conda install -y -p "$ENV_PREFIX" -c conda-forge \
         cmake ninja pkg-config git \
+        "gcc_linux-64=14.*" "gxx_linux-64=14.*" \
         "ceres-solver=2.2.0=h*" suitesparse eigen openimageio glew glog gflags \
         flann metis sqlite lz4 curl openssl \
         opencv cgal-cpp libboost-devel gmp mpfr
@@ -148,9 +149,28 @@ else
 fi
 conda activate "$ENV_PREFIX"
 
-# CUDA comes from the module system for everything compiled here, so the binaries need
-# exactly the driver this cluster has.
-module load GCC/11.3.0 OpenMPI/4.1.4 CUDA/12.8.0
+# CUDA comes from the module system, so the binaries need exactly the driver this cluster
+# has. The COMPILER comes from conda, which is the opposite choice and deliberate.
+#
+# COLMAP compiled 360 of 412 objects with the GCC/11.3.0 module and then failed at the
+# final link:
+#   undefined reference to ...@GLIBCXX_3.4.31 / @GLIBCXX_3.4.32
+#   undefined reference to __extendhfdf2@GCC_12.0.0
+#   undefined reference to __cxa_call_terminate@CXXABI_1.3.15
+# Those symbols do not exist in GCC 11's runtime: every conda-forge library here is built
+# against a much newer libstdc++. The module system cannot fix it — GCC/13.3.0 appears in
+# `module avail` but loading it is a silent no-op that leaves the system compiler in place
+# (verified: `module purge; module load GCC/13.3.0` exits 0 and loads nothing).
+#
+# Compiling with conda's own toolchain removes the mismatch by construction, since that is
+# what conda-forge's packages were built with. GCC 14 is the newest CUDA 12.8 accepts as a
+# host compiler. OpenMPI is dropped: nothing here uses MPI; it existed only to satisfy the
+# module hierarchy for COLMAP 3.9.
+module load CUDA/12.8.0
+export CC="$ENV_PREFIX/bin/x86_64-conda-linux-gnu-gcc"
+export CXX="$ENV_PREFIX/bin/x86_64-conda-linux-gnu-g++"
+[[ -x "$CC" && -x "$CXX" ]] || { echo "conda compilers missing from $ENV_PREFIX" >&2; exit 1; }
+"$CXX" --version | head -1
 export CUDA_HOME="${EBROOTCUDA:?}"
 export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}"
@@ -173,6 +193,9 @@ if [[ "$COLMAP_FROM_SOURCE" == "1" ]]; then
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$ENV_PREFIX" \
         -DCMAKE_PREFIX_PATH="$ENV_PREFIX" \
+        -DCMAKE_C_COMPILER="$CC" \
+        -DCMAKE_CXX_COMPILER="$CXX" \
+        -DCMAKE_CUDA_HOST_COMPILER="$CXX" \
         -DCUDA_ENABLED=ON \
         -DCMAKE_CUDA_ARCHITECTURES="80;89;90" \
         -DGUI_ENABLED=OFF \
@@ -224,6 +247,9 @@ cmake -S "$OPENMVS_SRC" -B "$OPENMVS_BUILD" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$OPENMVS_PREFIX" \
     -DCMAKE_PREFIX_PATH="$ENV_PREFIX" \
+    -DCMAKE_C_COMPILER="$CC" \
+    -DCMAKE_CXX_COMPILER="$CXX" \
+    -DCMAKE_CUDA_HOST_COMPILER="$CXX" \
     -DVCG_ROOT="$VCG_SRC" \
     -DOpenMVS_USE_CUDA=ON \
     -DOpenMVS_USE_OPENMP=ON \
