@@ -231,11 +231,25 @@ if [[ "$MAPPER" == "global" ]]; then
     #   skip_retriangulation + relaxed filters  38,370
     #   ditto, very lax                         46,431
     #
-    # Retriangulation is the stage that discards the structure; the reprojection filters
-    # only matter in combination. The relaxed-not-lax setting is chosen deliberately:
-    # loosening filters admits points by lowering the bar for a valid observation, so a
-    # higher count is not self-evidently a better reconstruction. For comparison the
-    # incremental mapper makes 70,947 points from this same database.
+    # RETRIANGULATION IS LEFT ON. Skipping it looked like the fix — it was the single
+    # biggest lever on the point count — but reprojection error shows those points are
+    # worthless:
+    #
+    #   setting                     points   mean reproj err
+    #   relaxed_all (retri ON)       2,464       0.53 px      <- the only honest geometry
+    #   skip_retriangulation        19,027      19.47 px
+    #   skip_retri + relaxed        38,370      65.61 px
+    #   skip_retri + very lax       46,431     161.31 px
+    #
+    # A sound reconstruction is sub-pixel. Error rises monotonically with the point count,
+    # so every "improvement" from loosening was admitting noise. Retriangulation was
+    # correctly rejecting tracks that do not agree with the solved poses, and switching it
+    # off silenced a valid complaint rather than fixing a bug.
+    #
+    # What remains is a small, geometrically sound cloud: 2,464 points at 0.53 px, against
+    # the incremental mapper's 70,947. That is thin for seeding dense matching, so if
+    # OpenMVS struggles, MAPPER=incremental is the honest fallback rather than turning
+    # retriangulation off again.
     #
     # random_seed is pinned because it is NOT fixed by default: identical settings gave
     # 15,779 and then 19,027 points on consecutive runs, and a reconstruction that cannot
@@ -243,7 +257,6 @@ if [[ "$MAPPER" == "global" ]]; then
     run_colmap colmap global_mapper \
         --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE" \
         --GlobalMapper.random_seed 0 \
-        --GlobalMapper.skip_retriangulation 1 \
         --GlobalMapper.max_angular_reproj_error_deg 5 \
         --GlobalMapper.max_normalized_reproj_error 0.05 \
         --GlobalMapper.min_tri_angle_deg 0.25
