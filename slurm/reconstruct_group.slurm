@@ -219,8 +219,34 @@ rm -rf "$SPARSE"; mkdir -p "$SPARSE"
 
 if [[ "$MAPPER" == "global" ]]; then
     step "global mapper (GLOMAP)"
+    # Stock settings register all 68 photographs and produce ZERO 3D points on this
+    # material: 53,016 tracks are established and then filtered away entirely, leaving
+    # "Cannot run bundle adjustment: no 3D points to optimize". Measured on A11, jobs
+    # 29080708 and 29081007:
+    #
+    #   stock                                        0 points
+    #   each reprojection filter relaxed alone       0 points   (none is the culprit)
+    #   all three relaxed together               2,464
+    #   skip_retriangulation alone              15,779 / 19,027 (see seed note)
+    #   skip_retriangulation + relaxed filters  38,370
+    #   ditto, very lax                         46,431
+    #
+    # Retriangulation is the stage that discards the structure; the reprojection filters
+    # only matter in combination. The relaxed-not-lax setting is chosen deliberately:
+    # loosening filters admits points by lowering the bar for a valid observation, so a
+    # higher count is not self-evidently a better reconstruction. For comparison the
+    # incremental mapper makes 70,947 points from this same database.
+    #
+    # random_seed is pinned because it is NOT fixed by default: identical settings gave
+    # 15,779 and then 19,027 points on consecutive runs, and a reconstruction that cannot
+    # be reproduced cannot be compared against anything.
     run_colmap colmap global_mapper \
-        --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE"
+        --database_path "$DB" --image_path "$IMAGES" --output_path "$SPARSE" \
+        --GlobalMapper.random_seed 0 \
+        --GlobalMapper.skip_retriangulation 1 \
+        --GlobalMapper.max_angular_reproj_error_deg 5 \
+        --GlobalMapper.max_normalized_reproj_error 0.05 \
+        --GlobalMapper.min_tri_angle_deg 0.25
 else
     step "incremental mapper (multiple models allowed)"
     run_colmap colmap mapper \
