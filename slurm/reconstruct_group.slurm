@@ -52,6 +52,17 @@ STAGE="${STAGE:-all}"
 # Allowed epipolar error during two-view geometry estimation. GLOMAP's guide recommends
 # 4 or 10 for high-resolution or blurry images; these frames are 5568x3712.
 EPIPOLAR_ERROR="${EPIPOLAR_ERROR:-10}"
+# Affine-covariant features. COLMAP's FAQ names this, with domain-size pooling, as the
+# remedy when a reconstruction registers poorly, and its own "extreme" quality preset
+# turns it on. It matters here specifically: a sherd clamped on a rotating tree is seen
+# edge-on from most positions, and plain SIFT copes with rotation and scale but not with
+# that foreshortening. Extraction is slower with it on.
+AFFINE_SHAPE="${AFFINE_SHAPE:-1}"
+# Feature-detection resolution. The config asks for 4096, which downscales these 5568 px
+# frames by about a quarter in each direction — on surfaces where the detail IS the
+# result. COLMAP's "extreme" preset uses -1, meaning full resolution. Set FULL_RES=1 to
+# override the config with -1.
+FULL_RES="${FULL_RES:-0}"
 
 TOOLS=/data/gpfs/projects/punim2657/tools
 SFM_ENV=$TOOLS/sfm
@@ -106,7 +117,13 @@ print(fe.get("max_image_size",4096), fe.get("max_num_features",16000),
       rf.get("scales",2))
 PY
 )"
+if [[ "$FULL_RES" == "1" ]]; then
+    echo "FULL_RES=1: detecting features at full resolution instead of ${MAX_IMG}px"
+    MAX_IMG=-1
+fi
 echo "capture settings from your config: features=$MAX_FEAT dsp=$DSP tri=$TRI_ANGLE dens_level=$DENS_LEVEL"
+echo "  feature detection: max_image_size=$MAX_IMG  estimate_affine_shape=$AFFINE_SHAPE"
+echo "  matching:          epipolar max_error=$EPIPOLAR_ERROR"
 
 mkdir -p "$W"
 DB="$W/database.db"
@@ -192,7 +209,8 @@ if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
         --FeatureExtraction.use_gpu 1 \
         --FeatureExtraction.max_image_size "$MAX_IMG" \
         --SiftExtraction.max_num_features "$MAX_FEAT" \
-        --SiftExtraction.domain_size_pooling "$DSP"
+        --SiftExtraction.domain_size_pooling "$DSP" \
+        --SiftExtraction.estimate_affine_shape "$AFFINE_SHAPE"
 
     FEAT_IMAGES=$(db_images_with_features "$DB")
     echo "  images with features: $FEAT_IMAGES of $N"
