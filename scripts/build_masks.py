@@ -1,0 +1,145 @@
+"""Build background masks for a turntable capture, and render them to be looked at.
+
+The rig is lit against a black backdrop, so separating them is a brightness problem
+rather than a hand-tracing one. 177 photographs take a couple of minutes.
+
+Two things about this that are easy to get wrong and silent when you do:
+
+  ORIENTATION. COLMAP does not rotate images by their EXIF tag -- it reads the tag into a
+  gravity prior and leaves the pixels as stored (doc/faq.rst, "Image orientation and
+  EXIF"). These photographs carry orientation 8, so a mask built from an upright copy
+  would be 90 degrees out. It would still load, still be the wrong shape, and simply mask
+  the wrong region. Masks here are built from the STORED pixels, never exif_transposed.
+
+  REFLECTIONS. The backdrop is glossy black and reflects the rig. Those reflections are
+  bright, move when the rig turns, and are exactly the kind of feature that would defeat
+  the purpose. Keeping only the largest connected region removes them, since a reflection
+  is separated from the rig by dark backdrop.
+
+Nothing here is trusted without a picture: --overlays writes a contact sheet with the mask
+edge drawn on the photograph, at a resolution that shows whether sherd edges are cut.
+
+Usage:
+    python build_masks.py --images <dir> --out <mask-dir> --overlays <dir>
+"""
+import argparse
+import sys
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+
+def build_mask(bgr, threshold, min_area_frac, dilate_px, keep_largest=True):
+    """Bright rig on a dark backdrop -> uint8 mask, 255 = keep, 0 = ignore."""
+    grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    # Otsu picks the split from the image itself; a floor stops it inventing a split on a
+    # frame that happens to be almost entirely backdrop.
+    otsu, _ = cv2.threshold(grey, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    level = max(otsu, threshold)
+    mask = (grey >= level).astype(np.uint8) * 255
+
+    # Close first: the rig is thin metal with dark gaps, and without this the clamps
+    # fragment into dozens of pieces and "keep the largest" throws most of them away.
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,
+                            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
+
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if n > 1:
+        areas = stats[1:, cv2.CC_STAT_AREA]
+        if keep_largest:
+            keep = {1 + int(np.argmax(areas))}
+        else:
+            keep = {1 + i for i, a in enumerate(areas)
+                    if a >= min_area_frac * mask.size}
+        mask = np.isin(labels, list(keep)).astype(np.uint8) * 255
+
+    # Fill interior holes so dark patches inside a sherd are not excluded.
+    ff = mask.copy()
+    cv2.floodFill(ff, np.zeros((mask.shape[0] + 2, mask.shape[1] + 2), np.uint8), (0, 0), 255)
+    mask = mask | cv2.bitwise_not(ff)
+
+    # Grow slightly: a feature ON the silhouette is real and useful, and a mask cut exactly
+    # at the edge would discard it.
+    if dilate_px > 0:
+        mask = cv2.dilate(mask, cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (2 * dilate_px + 1, 2 * dilate_px + 1)))
+    return mask
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--images", required=True, type=Path)
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--overlays", type=Path, help="write contact sheets to look at")
+    ap.add_argument("--threshold", type=int, default=28,
+                    help="minimum grey level counted as foreground")
+    ap.add_argument("--min-area-frac", type=float, default=0.002)
+    ap.add_argument("--dilate", type=int, default=12,
+                    help="pixels to grow the mask, to keep silhouette features")
+    ap.add_argument("--keep-all-large", action="store_true",
+                    help="keep every region above --min-area-frac instead of only the "
+                         "largest; use if the rig genuinely separates into pieces")
+    ap.add_argument("--overlay-every", type=int, default=22)
+    args = ap.parse_args()
+
+    images = sorted([p for p in args.images.iterdir()
+                     if p.suffix.lower() in (".jpg", ".jpeg", ".png")])
+    if not images:
+        sys.exit(f"No photographs in {args.images}")
+    args.out.mkdir(parents=True, exist_ok=True)
+    if args.overlays:
+        args.overlays.mkdir(parents=True, exist_ok=True)
+
+    print(f"{len(images)} photographs from {args.images}")
+    fracs, tiles = [], []
+    for i, p in enumerate(images):
+        # cv2.imread ignores EXIF orientation, which is what COLMAP does too. Do not
+        # "fix" this: the mask must match the pixels COLMAP reads.
+        bgr = cv2.imread(str(p), cv2.IMREAD_COLOR)
+        if bgr is None:
+            sys.exit(f"Could not read {p}")
+        mask = build_mask(bgr, args.threshold, args.min_area_frac, args.dilate,
+                          keep_largest=not args.keep_all_large)
+        # COLMAP wants <image filename>.png, keeping the original extension.
+        cv2.imwrite(str(args.out / (p.name + ".png")), mask)
+        frac = float((mask > 0).mean())
+        fracs.append(frac)
+
+        if args.overlays and i % args.overlay_every == 0:
+            small = cv2.resize(bgr, (0, 0), fx=0.22, fy=0.22)
+            m = cv2.resize(mask, (small.shape[1], small.shape[0]),
+                           interpolation=cv2.INTER_NEAREST)
+            edges = cv2.dilate(cv2.Canny(m, 50, 150), np.ones((3, 3), np.uint8))
+            small[edges > 0] = (0, 0, 255)
+            dark = small.copy(); dark[m == 0] = (dark[m == 0] * 0.25).astype(np.uint8)
+            tiles.append(np.hstack([small, dark]))
+        if (i + 1) % 25 == 0:
+            print(f"  {i + 1}/{len(images)}", flush=True)
+
+    fr = np.array(fracs)
+    print(f"\nfraction of each photograph kept: "
+          f"min {fr.min():.3f}  median {np.median(fr):.3f}  max {fr.max():.3f}")
+    print(f"  so roughly {100 * (1 - np.median(fr)):.0f}% of each frame is excluded")
+    odd = [(images[i].name, f) for i, f in enumerate(fracs)
+           if f < 0.02 or f > 0.85]
+    if odd:
+        print(f"\n  {len(odd)} frame(s) look wrong -- LOOK AT THESE:")
+        for n, f in odd[:10]:
+            print(f"    {n}: {f:.3f} kept")
+
+    if args.overlays and tiles:
+        w = max(t.shape[1] for t in tiles)
+        tiles = [cv2.copyMakeBorder(t, 0, 0, 0, w - t.shape[1], cv2.BORDER_CONSTANT)
+                 for t in tiles]
+        sheet = np.vstack(tiles)
+        cv2.imwrite(str(args.overlays / "contact_sheet.png"), sheet)
+        print(f"\nwrote {args.overlays / 'contact_sheet.png'} "
+              f"({len(tiles)} frames, mask edge in red, excluded area darkened)")
+        print("LOOK AT IT before running structure-from-motion on these masks.")
+
+
+if __name__ == "__main__":
+    main()
