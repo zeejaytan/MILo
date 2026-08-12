@@ -41,12 +41,14 @@ def _parse_header(fh):
         if parts[0] == b"format":
             fmt = parts[1].decode()
         elif parts[0] == b"element":
-            if parts[1] == b"vertex":
-                in_vertex, count = True, int(parts[2])
-            else:
-                in_vertex = False
-                if count is not None:
-                    break
+            # Stop RECORDING at the next element, but keep READING to end_header.
+            # Breaking out here left the remaining header lines ("property list uchar int
+            # vertex_indices", "end_header") in the byte stream, where they were read as
+            # vertex data. Every coordinate came out NaN, which looked exactly like a
+            # broken mesh rather than a broken reader.
+            in_vertex = parts[1] == b"vertex"
+            if in_vertex:
+                count = int(parts[2])
         elif parts[0] == b"property" and in_vertex:
             if parts[1] == b"list":
                 # ("name", None, count_type, item_type) -- variable length
