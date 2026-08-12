@@ -86,13 +86,18 @@ if [[ "$NDEPTH" -lt "$NIMG" ]]; then
     exit 1
 fi
 
+# The fused cloud MUST be written as <workspace>/fused.ply. delaunay_mesher with
+# --input_type dense takes no point-cloud path: it reads the workspace by convention and
+# looks for exactly that filename. Calling it colmap_fused.ply made it abort one second
+# after starting -- "Could not open .../fused.ply" -- while stereo fusion before it and
+# the Poisson mesher after it both worked, so the job still reported a mesh.
 step "stereo fusion"
 colmap stereo_fusion --workspace_path "$DENSE" --workspace_format COLMAP \
-    --input_type geometric --output_path "$DENSE/colmap_fused.ply" \
+    --input_type geometric --output_path "$DENSE/fused.ply" \
     --StereoFusion.cache_size "$CACHE_GB"
 echo "  (exit $?)"
-ls -lh "$DENSE/colmap_fused.ply" 2>/dev/null | awk '{print "  fused cloud:", $5}'
-[[ -s "$DENSE/colmap_fused.ply" ]] || { echo "Fusion produced nothing." >&2; exit 1; }
+ls -lh "$DENSE/fused.ply" 2>/dev/null | awk '{print "  fused cloud:", $5}'
+[[ -s "$DENSE/fused.ply" ]] || { echo "Fusion produced nothing." >&2; exit 1; }
 
 step "delaunay mesher (keeps sharp edges)"
 colmap delaunay_mesher --input_path "$DENSE" --input_type dense \
@@ -100,7 +105,7 @@ colmap delaunay_mesher --input_path "$DENSE" --input_type dense \
 echo "  (exit $?)"
 
 step "poisson mesher (watertight, smoother)"
-colmap poisson_mesher --input_path "$DENSE/colmap_fused.ply" \
+colmap poisson_mesher --input_path "$DENSE/fused.ply" \
     --output_path "$DENSE/colmap_poisson_mesh.ply"
 echo "  (exit $?)"
 
