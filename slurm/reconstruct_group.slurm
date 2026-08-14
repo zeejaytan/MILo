@@ -79,6 +79,14 @@ EPIPOLAR_ERROR="${EPIPOLAR_ERROR:-10}"
 # edge-on from most positions, and plain SIFT copes with rotation and scale but not with
 # that foreshortening. Extraction is slower with it on.
 AFFINE_SHAPE="${AFFINE_SHAPE:-1}"
+# Optional background masks. COLMAP wants one PNG per photograph named "<image>.png" with
+# the ORIGINAL EXTENSION KEPT -- A21_0891.JPG -> A21_0891.JPG.png -- and black meaning
+# "extract no features here". Two ways this fails silently and both have happened:
+# a wrong filename is simply not found and the mask does nothing, and a mask built from an
+# EXIF-upright copy is 90 degrees out because COLMAP reads the stored pixels and ignores
+# the orientation tag. The feature counts below are checked against an unmasked run for
+# exactly that reason.
+MASK_PATH="${MASK_PATH:-}"
 # Feature-detection resolution. The config asks for 4096, which downscales these 5568 px
 # frames by about a quarter in each direction — on surfaces where the detail IS the
 # result. COLMAP's "extreme" preset uses -1, meaning full resolution. Set FULL_RES=1 to
@@ -224,9 +232,27 @@ if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
     # with "unrecognised option '--SiftExtraction.use_gpu'" and then segfault in its exit
     # handler, which looks like a crash but is only a parse failure.
     step "feature extraction"
+    MASK_ARGS=()
+    if [[ -n "$MASK_PATH" ]]; then
+        NMASK=$(find "$MASK_PATH" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l)
+        echo "  masks: $NMASK in $MASK_PATH (for $N photographs)"
+        [[ "$NMASK" -ge "$N" ]] || {
+            echo "Only $NMASK masks for $N photographs — refusing to run partly masked." >&2
+            exit 1; }
+        # Prove the naming matches before trusting it: COLMAP needs <image>.JPG.png, and a
+        # name it cannot find produces no error at all.
+        FIRST_IMG=$(find "$IMAGES" -maxdepth 1 -iname '*.jpg' -printf '%f\n' | sort | head -1)
+        [[ -f "$MASK_PATH/${FIRST_IMG}.png" ]] || {
+            echo "Expected $MASK_PATH/${FIRST_IMG}.png and it is not there." >&2
+            echo "COLMAP matches '<image filename>.png', keeping the original extension." >&2
+            exit 1; }
+        MASK_ARGS=(--ImageReader.mask_path "$MASK_PATH")
+    fi
+
     run_colmap colmap feature_extractor \
         --database_path "$DB" --image_path "$IMAGES" \
         --ImageReader.single_camera 1 \
+        "${MASK_ARGS[@]}" \
         --FeatureExtraction.use_gpu 1 \
         --FeatureExtraction.max_image_size "$MAX_IMG" \
         --SiftExtraction.max_num_features "$MAX_FEAT" \
@@ -237,6 +263,23 @@ if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
     echo "  images with features: $FEAT_IMAGES of $N"
     [[ "$FEAT_IMAGES" -ge "$N" ]] || {
         echo "Feature extraction did not cover every photograph." >&2; exit 1; }
+
+    # A mask that removes nothing is a mask that is not being applied. Say so loudly:
+    # the earlier masking attempt cut 90% of features and still reported success, and the
+    # opposite error -- masks silently ignored -- looks identical to not masking at all.
+    if [[ -n "$MASK_PATH" ]]; then
+        "$MILO_PY" - "$DB" <<'PY'
+import sqlite3, sys, numpy as np
+db = sqlite3.connect(sys.argv[1])
+n = np.array([r[0] for r in db.execute("SELECT rows FROM keypoints")])
+db.close()
+if n.size:
+    print(f"  masked features/image: median {np.median(n):,.0f} "
+          f"(min {n.min():,}, max {n.max():,})")
+    print("  unmasked A01 ran ~25,600/image; a similar figure here means the masks are")
+    print("  NOT being applied, and a very small one means they are too tight.")
+PY
+    fi
 else
     echo "features already present for all $N photographs — skipping extraction"
 fi

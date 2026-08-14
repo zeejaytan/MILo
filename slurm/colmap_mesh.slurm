@@ -99,13 +99,26 @@ echo "  (exit $?)"
 ls -lh "$DENSE/fused.ply" 2>/dev/null | awk '{print "  fused cloud:", $5}'
 [[ -s "$DENSE/fused.ply" ]] || { echo "Fusion produced nothing." >&2; exit 1; }
 
+# max_proj_dist is a MERGE RADIUS IN PIXELS. COLMAP's default of 20 collapsed 6.9M fused
+# points to 270k vertices on A01 and the sherds read as lumps; 5 gives 2.67M faces,
+# comparable to the other methods. Below 5 gains little -- the point cloud's own density is
+# the ceiling, and 20 -> 10 -> 5 roughly doubled rather than quadrupled the face count.
 step "delaunay mesher (keeps sharp edges)"
 colmap delaunay_mesher --input_path "$DENSE" --input_type dense \
+    --DelaunayMeshing.max_proj_dist "${DELAUNAY_PROJ_DIST:-5}" \
     --output_path "$DENSE/colmap_delaunay_mesh.ply"
 echo "  (exit $?)"
 
+# COLMAP defaults to octree depth 13 against Poisson's own default of 8, and each level
+# roughly quadruples the faces: on A01 that gave 47.2M faces / 1.2 GB from 6.9M measured
+# points -- about seven faces per point measured, the rest interpolation. Depth 11 gives
+# 3.06M. trim discards surface whose density falls below the value (the header is explicit;
+# COLMAP's own FAQ states the direction backwards), so 12 removes the shell Poisson invents
+# over space it never saw.
 step "poisson mesher (watertight, smoother)"
 colmap poisson_mesher --input_path "$DENSE/fused.ply" \
+    --PoissonMeshing.depth "${POISSON_DEPTH:-11}" \
+    --PoissonMeshing.trim "${POISSON_TRIM:-12}" \
     --output_path "$DENSE/colmap_poisson_mesh.ply"
 echo "  (exit $?)"
 
