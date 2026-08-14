@@ -110,37 +110,46 @@ def main():
         print(f"  {torch.cuda.get_device_name(0)}")
     processor = load_model()
 
+    # SAM 3 must run under bfloat16 autocast. Its weights are bf16 and the processor does
+    # NOT set this itself, so calling it exactly as the README's minimal example shows
+    # fails with "mat1 and mat2 must have the same dtype, but got BFloat16 and Float".
+    # All six example notebooks in the repo open this context first; the README does not
+    # mention it. The examples are the real reference here, not the README.
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    autocast = torch.autocast(dev, dtype=torch.bfloat16, enabled=(dev == "cuda"))
+
     rows = []
-    for path in paths:
-        raw = Image.open(path).convert("RGB")
-        for orient in ("stored", "upright"):
-            # ImageOps.exif_transpose applies the tag; cv2/COLMAP do not. See the docstring.
-            img = ImageOps.exif_transpose(raw) if orient == "upright" else raw
-            img = img.copy()
-            img.thumbnail((args.max_side, args.max_side))
-            state = processor.set_image(img)
-            for prompt in PROMPTS:
-                t = time.time()
-                out = processor.set_text_prompt(state=state, prompt=prompt)
-                dt = time.time() - t
-                masks = out.get("masks", [])
-                scores = np.asarray(out.get("scores", [])).ravel()
-                vis, kept = overlay(img, masks, scores, args.min_score)
-                cov = 0.0
-                if kept:
-                    acc = [np.asarray(m)[0] if np.asarray(m).ndim == 3 else np.asarray(m)
-                           for m, s in zip(masks, scores) if s >= args.min_score]
-                    cov = float(np.any(np.stack(acc) > 0, axis=0).mean())
-                tag = f"{path.stem}__{orient}__{prompt.replace(' ', '_')}"
-                Image.fromarray(vis).save(args.out / f"{tag}.jpg", quality=88)
-                rows.append(dict(frame=path.stem, orientation=orient, prompt=prompt,
-                                 instances=int(len(scores)), kept=kept,
-                                 best=float(scores.max()) if len(scores) else 0.0,
-                                 coverage=round(cov, 4), seconds=round(dt, 2)))
-                print(f"  {path.stem:12s} {orient:8s} {prompt:24s} "
-                      f"{len(scores):3d} found, {kept:3d} kept, "
-                      f"best {rows[-1]['best']:.2f}, covers {100*cov:5.1f}%, {dt:5.2f}s",
-                      flush=True)
+    with torch.inference_mode(), autocast:
+      for path in paths:
+          raw = Image.open(path).convert("RGB")
+          for orient in ("stored", "upright"):
+              # ImageOps.exif_transpose applies the tag; cv2/COLMAP do not. See the docstring.
+              img = ImageOps.exif_transpose(raw) if orient == "upright" else raw
+              img = img.copy()
+              img.thumbnail((args.max_side, args.max_side))
+              state = processor.set_image(img)
+              for prompt in PROMPTS:
+                  t = time.time()
+                  out = processor.set_text_prompt(state=state, prompt=prompt)
+                  dt = time.time() - t
+                  masks = out.get("masks", [])
+                  scores = np.asarray(out.get("scores", [])).ravel()
+                  vis, kept = overlay(img, masks, scores, args.min_score)
+                  cov = 0.0
+                  if kept:
+                      acc = [np.asarray(m)[0] if np.asarray(m).ndim == 3 else np.asarray(m)
+                             for m, s in zip(masks, scores) if s >= args.min_score]
+                      cov = float(np.any(np.stack(acc) > 0, axis=0).mean())
+                  tag = f"{path.stem}__{orient}__{prompt.replace(' ', '_')}"
+                  Image.fromarray(vis).save(args.out / f"{tag}.jpg", quality=88)
+                  rows.append(dict(frame=path.stem, orientation=orient, prompt=prompt,
+                                   instances=int(len(scores)), kept=kept,
+                                   best=float(scores.max()) if len(scores) else 0.0,
+                                   coverage=round(cov, 4), seconds=round(dt, 2)))
+                  print(f"  {path.stem:12s} {orient:8s} {prompt:24s} "
+                        f"{len(scores):3d} found, {kept:3d} kept, "
+                        f"best {rows[-1]['best']:.2f}, covers {100*cov:5.1f}%, {dt:5.2f}s",
+                        flush=True)
 
     (args.out / "results.json").write_text(json.dumps(rows, indent=2))
 
