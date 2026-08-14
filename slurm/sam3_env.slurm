@@ -86,6 +86,18 @@ cd "$SRC" && pip install --quiet -e . 2>&1 | tail -5
 echo "  (exit $?)"
 
 echo
+# Three fixes found by building it, none of which the README mentions.
+#
+# setuptools<81: the repo's model_builder.py imports pkg_resources, which setuptools
+# REMOVED (a fresh Python 3.12 env lands on 84.0.0 and the import fails outright).
+#
+# einops, pycocotools, psutil: imported by sam3 but absent from its pyproject.toml
+# dependency list, so `pip install -e .` does not pull them in.
+echo "=== dependencies the upstream package does not declare ==="
+pip install --quiet "setuptools<81" einops pycocotools psutil 2>&1 | tail -3
+python -c "import pkg_resources, einops, pycocotools, psutil; print('  undeclared deps OK')" 2>&1 | tail -1
+
+echo
 echo "=== import check (no weights needed) ==="
 python - <<'PY'
 try:
@@ -109,7 +121,14 @@ print('  token present' if t else '  no token -- run: hf auth login')
 echo
 echo "NEXT, and only you can do it:"
 echo "  1. Request access at https://huggingface.co/facebook/sam3.1"
-echo "  2. Once approved, on Spartan:  conda activate $ENV_PREFIX && hf auth login"
+echo "  2. Once approved, on Spartan, ALL FOUR LINES -- conda is not on PATH by default"
+echo "     here, so 'conda activate' alone fails with 'command not found':"
+echo
+echo "       module load Miniforge3/24.7.1-2"
+echo "       eval \"\$(conda shell.bash hook)\""
+echo "       conda activate $ENV_PREFIX"
+echo "       hf auth login"
+echo
 echo "     (paste the token into that prompt, not into a chat)"
 echo "  3. Then the 6-frame test can run."
 echo "=== finished $(date) ==="
