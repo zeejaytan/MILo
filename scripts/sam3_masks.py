@@ -198,8 +198,8 @@ def main():
     med = float(np.median(cov))
     thin = [r["frame"] for r in rows if r["sherd_coverage"] < 0.4 * med]
     if thin:
-        print(f"
-  {len(thin)} frame(s) cover less than 40% of the median -- look at these:")
+        print(f"\n  {len(thin)} frame(s) cover less than 40% of the median "
+              f"({100*med:.1f}%) -- look at these:")
         for t in thin[:12]:
             print(f"    {t}")
     bad = [r["frame"] for r in rows if r["sherd_instances"] == 0]
