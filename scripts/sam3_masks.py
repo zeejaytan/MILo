@@ -193,6 +193,15 @@ def main():
 
     # A frame with nothing found is the failure that matters, and it is invisible in an
     # average. Name them so they can be looked at.
+    # Coverage collapsing is the failure that matters; a frame finding "nothing" is only
+    # its extreme case.
+    med = float(np.median(cov))
+    thin = [r["frame"] for r in rows if r["sherd_coverage"] < 0.4 * med]
+    if thin:
+        print(f"
+  {len(thin)} frame(s) cover less than 40% of the median -- look at these:")
+        for t in thin[:12]:
+            print(f"    {t}")
     bad = [r["frame"] for r in rows if r["sherd_instances"] == 0]
     if bad:
         print(f"\n  {len(bad)} FRAME(S) WITH NO SHERDS FOUND -- look at these:")
