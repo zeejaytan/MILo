@@ -17,6 +17,7 @@ Usage:
     python mediaflux_fetch_tree.py --capture 17062025/A02 --dest <dir> --dry-run
 """
 import argparse
+import csv
 import os
 import subprocess
 import sys
@@ -31,31 +32,37 @@ def run(cmd, **kw):
     return subprocess.run(cmd, text=True, capture_output=True, **kw)
 
 
-def list_namespace(ns):
-    """Asset paths and sizes directly under a namespace, via unimelb-mf-check's inventory."""
-    out = run(["unimelb-mf-download", "--mf.config", str(TOKEN), "--help"])
-    if out.returncode not in (0, 1):
-        sys.exit("unimelb-mf-download not available -- module load unimelb-mf-clients")
-    # aterm is the only thing that enumerates without downloading.
-    q = f'asset.query :where "namespace>=\'{ns}\'" :action get-values ' \
-        f':xpath -ename path path :xpath -ename size content/size :size infinity'
-    r = run(["unimelb-mf-aterm.sh", "--mf.config", str(TOKEN), "nogui", q])
-    if r.returncode != 0:
-        sys.exit(f"aterm query failed:\n{r.stderr[:800]}")
-    paths, cur = [], {}
-    for line in r.stdout.splitlines():
-        line = line.strip()
-        if line.startswith(":path "):
-            cur["path"] = line[6:].strip().strip('"')
-        elif line.startswith(":size "):
+def load_inventory(capture, inventory):
+    """Asset paths and sizes, from the CSV that `mediaflux_fetch.sh --list` writes.
+
+    NOT via aterm. mediaflux_fetch.sh records why, and it is worth not rediscovering:
+    the project role is not granted ACCESS to asset.namespace.list, so the namespace
+    cannot be enumerated that way. unimelb-mf-check can, and writes this CSV as a
+    side effect of comparing remote against local.
+    """
+    date = capture.split("/", 1)[0]
+    csv_path = Path(inventory) if inventory else         Path(f"/data/gpfs/projects/punim2657/MILo/logs/mediaflux/list_{date}.csv")
+    if not csv_path.exists():
+        script = Path(__file__).resolve().parent / "mediaflux_fetch.sh"
+        if not script.exists():
+            script = Path("/data/gpfs/projects/punim2657/MILo/repo/scripts/mediaflux_fetch.sh")
+        print(f"no inventory at {csv_path}; running {script.name} --list {date} ...",
+              flush=True)
+        r = subprocess.run([str(script), "--list", date], text=True)
+        if r.returncode != 0 or not csv_path.exists():
+            sys.exit(f"could not build an inventory for {date}")
+    rows = []
+    with open(csv_path, encoding="utf-8", errors="replace") as f:
+        for row in csv.DictReader(f):
+            path = (row.get("SRC_PATH") or "").strip().strip('"')
+            if not path.startswith("asset:"):
+                continue
             try:
-                cur["size"] = int(line[6:].strip().strip('"'))
+                size = int(row.get("SRC_LENGTH") or 0)
             except ValueError:
-                cur["size"] = 0
-            if "path" in cur:
-                paths.append((cur["path"], cur["size"]))
-            cur = {}
-    return paths
+                size = 0
+            rows.append((path[len("asset:"):], size))
+    return rows
 
 
 def main():
@@ -66,17 +73,18 @@ def main():
                     help="also fetch the Metashape project stored alongside (its .obj "
                          "model and its masks are a useful reference)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--inventory", default=None,
+                    help="CSV from mediaflux_fetch.sh --list; found automatically if absent")
     args = ap.parse_args()
 
     if not TOKEN.exists():
         sys.exit(f"no Mediaflux token at {TOKEN} -- run scripts/mediaflux_token.sh")
 
-    ns = f"{ROOT}/{args.capture}"
     tree = args.capture.rsplit("/", 1)[-1]
-    print(f"enumerating {ns} ...", flush=True)
-    assets = list_namespace(ns)
+    assets = [(p, n) for p, n in load_inventory(args.capture, args.inventory)
+              if f"/{args.capture}/" in p or f"/{tree}.files/" in p]
     if not assets:
-        sys.exit(f"nothing found under {ns}")
+        sys.exit(f"nothing found for {args.capture} in the inventory")
 
     photos, project, skipped = [], [], []
     for path, size in assets:
