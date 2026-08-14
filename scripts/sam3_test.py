@@ -58,6 +58,13 @@ def load_model():
     return Sam3Processor(model)
 
 
+def to_np(x):
+    """SAM 3 returns CUDA tensors; numpy cannot touch them directly."""
+    if hasattr(x, "detach"):
+        return x.detach().float().cpu().numpy()
+    return np.asarray(x)
+
+
 def overlay(img_rgb, masks, scores, min_score):
     """Tint each accepted instance and outline it, so boundaries are judgeable."""
     import cv2
@@ -68,7 +75,7 @@ def overlay(img_rgb, masks, scores, min_score):
     for i, (m, s) in enumerate(zip(masks, scores)):
         if s < min_score:
             continue
-        m = np.asarray(m).astype(np.uint8)
+        m = to_np(m).astype(np.uint8)
         if m.ndim == 3:
             m = m[0]
         if m.shape != out.shape[:2]:
@@ -133,11 +140,11 @@ def main():
                   out = processor.set_text_prompt(state=state, prompt=prompt)
                   dt = time.time() - t
                   masks = out.get("masks", [])
-                  scores = np.asarray(out.get("scores", [])).ravel()
+                  scores = to_np(out.get("scores", [])).ravel()
                   vis, kept = overlay(img, masks, scores, args.min_score)
                   cov = 0.0
                   if kept:
-                      acc = [np.asarray(m)[0] if np.asarray(m).ndim == 3 else np.asarray(m)
+                      acc = [to_np(m)[0] if to_np(m).ndim == 3 else to_np(m)
                              for m, s in zip(masks, scores) if s >= args.min_score]
                       cov = float(np.any(np.stack(acc) > 0, axis=0).mean())
                   tag = f"{path.stem}__{orient}__{prompt.replace(' ', '_')}"
