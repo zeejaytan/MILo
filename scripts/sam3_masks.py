@@ -187,14 +187,21 @@ def main():
     ns = np.array([r["sherd_instances"] for r in rows])
     cov = np.array([r["sherd_coverage"] for r in rows])
     print(f"\n=== {len(rows)} frames in {time.time()-t0:.0f}s ===")
-    print(f"  sherd instances per frame: min {ns.min()} median {int(np.median(ns))} max {ns.max()}")
-    print(f"  sherd coverage: min {100*cov.min():.1f}% median {100*np.median(cov):.1f}% "
-          f"max {100*cov.max():.1f}%")
+    # INSTANCE COUNT IS NOT A SHERD COUNT, and reading it as one misleads. A pottery tree
+    # is a single loading, so it holds a FIXED number of sherds in every frame -- A02 holds
+    # 10. Yet the median instance count there is 11 and the maximum 16, because a clamp jaw
+    # crossing a sherd splits the visible pottery into disconnected regions and each is
+    # reported separately. Measured on A02: the correlation between instance count and
+    # coverage is r = -0.05, and frames reporting more than 10 average the same coverage
+    # (5.07%) as those reporting 10 or fewer (5.08%) -- the extra instances carry no extra
+    # pottery. Harmless for the mask, which is a union, but useless as a quality signal.
+    print(f"  sherd COVERAGE (the meaningful one): min {100*cov.min():.1f}% "
+          f"median {100*np.median(cov):.1f}% max {100*cov.max():.1f}%")
+    print(f"  instance blobs per frame: min {ns.min()} median {int(np.median(ns))} "
+          f"max {ns.max()}   <- blobs, NOT sherds: occlusion splits one sherd into several")
 
-    # A frame with nothing found is the failure that matters, and it is invisible in an
-    # average. Name them so they can be looked at.
-    # Coverage collapsing is the failure that matters; a frame finding "nothing" is only
-    # its extreme case.
+    # Coverage collapsing is the failure that matters; a frame finding literally nothing is
+    # only its extreme case, and an average hides both.
     med = float(np.median(cov))
     thin = [r["frame"] for r in rows if r["sherd_coverage"] < 0.4 * med]
     if thin:
