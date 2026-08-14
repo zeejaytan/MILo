@@ -39,18 +39,49 @@ import numpy as np
 import torch
 from PIL import Image
 
-SHERD_PROMPTS = ["clay fragment"]
-RIG_PROMPTS = ["metal rod", "metal"]
+# Every prompt below was chosen by sweeping, not guessing, because the obvious word keeps
+# returning nothing: "pottery"/"ceramic"/"sherd" score ZERO, and so do "blue plate" and
+# "turntable". Scores are from tree A01, black backdrop / lit grey backdrop.
+SHERD_PROMPTS = ["clay fragment"]                       # 0.93 / 0.92
+
+# Everything below is rig-side and lands in one combined mask, so over-inclusion between
+# these is harmless -- only grabbing backdrop would hurt.
+RIG_PROMPTS = [
+    "metal rod",            # 0.84 / 0.79  the rod, arms and clamps
+    "metal",
+    "blue board",           # 0.94 / 0.77  THE SCALE REFERENCE: a known 13 x 19 cm plate,
+    "blue metal plate",     # 0.84 / 0.53  which sherd measurements are derived from
+    "dial",                 # 0.81 / 0.36  the turntable: graduated, rotates with the tree,
+    "round base",           # 0.54 / 0.74  strongly textured, so useful rigid features
+]
 
 
-def union_mask(processor, model, image, prompts, device, threshold, target_hw):
-    """Union of all instances matched by any prompt, at the original image size."""
+def encode_image(processor, model, image, device):
+    """Encode the photograph ONCE. Sam3Model.forward accepts vision_embeds, so the vision
+    tower does not have to re-run for every prompt -- which is what made the first
+    transformers version 13.5 s/frame against 0.04 s on the standalone API."""
+    inputs = processor(images=image, return_tensors="pt").to(device)
+    with torch.inference_mode():
+        return model.get_vision_features(inputs["pixel_values"])
+
+
+def union_mask(processor, model, vision_embeds, prompts, device, threshold, target_hw):
+    """Union of all instances matched by any prompt, at the SEGMENTATION size.
+
+    Deliberately not at full resolution. post_process_instance_segmentation upsamples
+    every instance separately, and "metal rod" alone returns 24-89 of them; asking for
+    5568x3712 each meant up to 1.8 billion pixels of mask resampling per frame, which is
+    what actually made this slow -- not the vision encoder. The union is one mask, so it
+    is cheaper to combine here and upscale once afterwards.
+    """
     total = np.zeros(target_hw, bool)
     detail = {}
     for prompt in prompts:
-        inputs = processor(images=image, text=prompt, return_tensors="pt").to(device)
+        txt = processor(text=prompt, return_tensors="pt").to(device)
         with torch.inference_mode():
-            outputs = model(**inputs)
+            outputs = model(vision_embeds=vision_embeds,
+                            input_ids=txt["input_ids"],
+                            attention_mask=txt.get("attention_mask"))
         res = processor.post_process_instance_segmentation(
             outputs, threshold=threshold, mask_threshold=0.5,
             target_sizes=[target_hw])[0]
@@ -118,14 +149,17 @@ def main():
         small = full.copy()
         small.thumbnail((args.seg_side, args.seg_side))
 
-        sherds, sd = union_mask(processor, model, small, SHERD_PROMPTS,
-                                device, args.threshold, (H, W))
-        rig, rd = union_mask(processor, model, small, RIG_PROMPTS,
-                             device, args.threshold, (H, W))
+        sw, sh = small.size
+        vision_embeds = encode_image(processor, model, small, device)
+        sherds, sd = union_mask(processor, model, vision_embeds, SHERD_PROMPTS,
+                                device, args.threshold, (sh, sw))
+        rig, rd = union_mask(processor, model, vision_embeds, RIG_PROMPTS,
+                             device, args.threshold, (sh, sw))
         obj = sherds | rig
 
         for name, m in (("masks_sherds", sherds), ("masks_object", obj)):
-            out = (m.astype(np.uint8) * 255)
+            out = cv2.resize(m.astype(np.uint8) * 255, (W, H),
+                             interpolation=cv2.INTER_NEAREST)
             if args.dilate:
                 out = cv2.dilate(out, kern)
             cv2.imwrite(str(dirs[name] / (path.name + ".png")), out)
@@ -138,10 +172,7 @@ def main():
 
         if i % args.overlay_every == 0:
             vis = np.asarray(small).copy()
-            sm = cv2.resize(sherds.astype(np.uint8), small.size,
-                            interpolation=cv2.INTER_NEAREST)
-            rm = cv2.resize(rig.astype(np.uint8), small.size,
-                            interpolation=cv2.INTER_NEAREST)
+            sm, rm = sherds.astype(np.uint8), rig.astype(np.uint8)
             vis[rm > 0] = (0.7 * vis[rm > 0] + 0.3 * np.array([80, 80, 255])).astype(np.uint8)
             vis[sm > 0] = (0.55 * vis[sm > 0] + 0.45 * np.array([255, 80, 80])).astype(np.uint8)
             Image.fromarray(vis).save(dirs["overlays"] / f"{path.stem}.jpg", quality=85)
