@@ -90,9 +90,25 @@ J_MVS=$(sbatch --parsable --dependency=afterok:$J_SFM \
     "$REPO/slurm/dense_from_model.slurm" "$CAPTURE" sparse/0)
 echo "  3. OpenMVS        $J_MVS   (1 mesh)"
 
+# Measure the blue base and put the model into millimetres. BEST EFFORT, NEVER SILENT.
+# The measurement refuses unless the fitted top face has the base's known 1.462 aspect
+# ratio AND both edges give scale factors agreeing within 2%. If it refuses, the tree
+# stays in arbitrary units and says so. A wrong scale is far worse than none: nothing
+# downstream reveals it, and every measurement taken from all four meshes inherits it.
+#
+# Validated on A02 at 377.53 mm/unit, aspect 1.446 against 1.462, edges agreeing to 1.0%,
+# with the rig coming out 59 cm tall -- about 3x the base's 19 cm, matching the
+# photographs. That is PRECISION, not accuracy: every check derives from the top face
+# really being 190 x 130 mm, so calipers on the physical plate would upgrade every tree.
+J_SCALE=$(sbatch --parsable --dependency=afterok:$J_MVS \
+    --job-name=measure-base --partition=sapphire --ntasks=1 --cpus-per-task=16 \
+    --mem=128G --time=3:00:00 --output="$MILO/logs/measure_base_%j.log" \
+    "$REPO/slurm/measure_base.slurm" "$CAPTURE" "dense_$TAG")
+echo "  4. base scale     $J_SCALE   (refuses rather than guess)"
+
 J_COL=$(sbatch --parsable --dependency=afterok:$J_MVS \
     "$REPO/slurm/colmap_mesh.slurm" "$CAPTURE" "dense_$TAG")
-echo "  4. COLMAP meshes  $J_COL   (2 meshes)"
+echo "  5. COLMAP meshes  $J_COL   (2 meshes)"
 
 if [[ "$NO_MILO" == 0 ]]; then
     J_MILO=$(sbatch --parsable --dependency=afterok:$J_MVS \
