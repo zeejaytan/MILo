@@ -177,24 +177,34 @@ def main():
     if len(B) < 2000:
         sys.exit("Too few points survived the vote -- SAM 3 did not find a stable plate.")
 
-    # The plate is a tapered solid; the record's 13 x 19 is the TOP face. Fit the dominant
-    # plane, then keep the face whose points lie on the side nearer the rest of the rig.
+    # The plate is a tapered solid and the record's 13 x 19 is the TOP face, so the face
+    # has to be chosen, not averaged over. The base sits on the turntable with the rod
+    # rising from it, so the top face is the extreme along the plate normal in the
+    # direction of the rest of the rig.
     ctr = B.mean(0)
-    _, S, Vt = np.linalg.svd(B - ctr, full_matrices=False)
+    _, _, Vt = np.linalg.svd(B - ctr, full_matrices=False)
     n = Vt[2]
+    rig_dir = xyz.mean(0) - ctr                       # from the plate toward the tree
+    if n @ rig_dir < 0:
+        n = -n
     d = (B - ctr) @ n
-    face = B[np.abs(d - np.median(d)) < 0.25 * np.std(d) + 1e-9] if np.std(d) > 0 else B
+    top = np.percentile(d, 97)
+    face = B[d > top - 0.12 * (d.max() - d.min())]
     if len(face) < 1000:
-        face = B[np.abs(d) < np.percentile(np.abs(d), 60)]
+        face = B[d > np.percentile(d, 80)]
 
-    e1 = Vt[0]; e2 = np.cross(n, e1)
-    uv = np.stack([(face - face.mean(0)) @ e1, (face - face.mean(0)) @ e2], 1)
-    _, _, V2 = np.linalg.svd(uv - uv.mean(0), full_matrices=False)
-    ab = (uv - uv.mean(0)) @ V2.T
-    L = np.percentile(ab[:, 0], 99) - np.percentile(ab[:, 0], 1)
-    Sh = np.percentile(ab[:, 1], 99) - np.percentile(ab[:, 1], 1)
-    if Sh <= 0:
-        sys.exit("Degenerate fit.")
+    # Measure a real bounding rectangle, not percentile extents along PCA axes. The plate
+    # has corners; percentiles of a principal axis trim them unevenly and that is what
+    # turned a correctly isolated plate into an aspect of 1.316 instead of ~1.46.
+    e1 = Vt[0] - (Vt[0] @ n) * n; e1 /= np.linalg.norm(e1)
+    e2 = np.cross(n, e1)
+    uv = np.stack([(face - face.mean(0)) @ e1, (face - face.mean(0)) @ e2], 1).astype(np.float32)
+    # Trim a thin outer shell first: single stray points would otherwise set the rectangle.
+    c2 = np.median(uv, axis=0)
+    keep2 = np.linalg.norm(uv - c2, axis=1) < np.percentile(np.linalg.norm(uv - c2, axis=1), 99.5)
+    rect = cv2.minAreaRect(uv[keep2])
+    (w_r, h_r) = rect[1]
+    L, Sh = (max(w_r, h_r), min(w_r, h_r))
     aspect = L / Sh
     s_long, s_short = LONG_MM / L, SHORT_MM / Sh
     disagree = abs(s_long - s_short) / ((s_long + s_short) / 2)
