@@ -21,10 +21,28 @@ NAMING. COLMAP wants "<image filename>.png", keeping the original extension:
 A11_0704.JPG -> A11_0704.JPG.png. The existing maskbuild tool writes "<stem>.png", which
 COLMAP will not match, and a mask it cannot find is a mask it silently ignores.
 
-TWO MASK SETS, because the two downstream uses want different things:
-  masks_sherds/  just the sherds -- for a sherds-only dense reconstruction
-  masks_object/  sherds AND rig, i.e. everything but the backdrop -- for SfM and for MILo,
-                 which otherwise spends its capacity modelling the room
+THREE MASK SETS, because the stages want different things and the difference is the whole
+point of masking twice:
+
+  masks_object/   sherds AND the whole rig -- everything but the backdrop. FOR SOLVING THE
+                  CAMERAS. The rod, clamps, base and dial all turn WITH the sherds, so in
+                  the object's frame they never move and their features are consistent; the
+                  painted metal and machined threads are the best-conditioned features in
+                  the frame. Only the static room hurts, and removing it took A02 from a
+                  folded 262 deg solve to a correct 348 deg one.
+  masks_measure/  sherds AND the blue base, but NOT the clamps or rod. FOR BUILDING THE
+                  SURFACE. The clamps are what has to be edited out of every mesh by hand,
+                  and a clamp jaw resting on a sherd fuses to it, so they cannot be
+                  separated afterwards as connected components. Removing them in 2D, before
+                  any geometry exists, is the only point at which they come apart cleanly.
+                  The base stays because it is the scale reference.
+  masks_sherds/   sherds only. Kept for a sherds-only variant; note it has NO base, so a
+                  mesh built from it cannot be checked against the 190 x 130 mm plate.
+
+WHY THE BASE IS SUBTRACTED, NOT JUST PROMPTED. The clamps are painted the same blue as the
+base plate, so "blue board" also lands on clamp bodies. Prompting alone cannot separate two
+objects of the same colour and material; subtracting the hardware mask from the base mask
+can, and the per-frame figures printed at the end say how much of the base survived it.
 
 Usage:
     python sam3_masks.py --images <dir> --out <dir> [--overlay-every 20]
@@ -44,16 +62,22 @@ from PIL import Image
 # "turntable". Scores are from tree A01, black backdrop / lit grey backdrop.
 SHERD_PROMPTS = ["clay fragment"]                       # 0.93 / 0.92
 
-# Everything below is rig-side and lands in one combined mask, so over-inclusion between
-# these is harmless -- only grabbing backdrop would hurt.
-RIG_PROMPTS = [
-    "metal rod",            # 0.84 / 0.79  the rod, arms and clamps
+# The rig is now split three ways, because masks_measure needs to keep the base while
+# dropping the hardware. For masks_object they are unioned straight back together, so
+# over-inclusion BETWEEN these groups is still harmless there -- only grabbing backdrop
+# would hurt. It is masks_measure that depends on the split being right.
+HARDWARE_PROMPTS = [
+    "metal rod",            # 0.84 / 0.79  the rod, the arms and the clamps: what has to go
     "metal",
-    "blue board",           # 0.94 / 0.77  THE SCALE REFERENCE: a known 13 x 19 cm plate,
-    "blue metal plate",     # 0.84 / 0.53  which sherd measurements are derived from
-    "dial",                 # 0.81 / 0.36  the turntable: graduated, rotates with the tree,
-    "round base",           # 0.54 / 0.74  strongly textured, so useful rigid features
 ]
+BASE_PROMPTS = [
+    "blue board",           # 0.94 / 0.77  THE SCALE REFERENCE: a known 190 x 130 mm plate,
+    "blue metal plate",     # 0.84 / 0.53  which every sherd measurement is derived from
+]
+TURNTABLE_PROMPTS = [
+    "dial",                 # 0.81 / 0.36  graduated, rotates with the tree, strongly
+    "round base",           # 0.54 / 0.74  textured -- useful rigid features for SOLVING,
+]                           #              but not wanted in the finished surface
 
 
 def encode_image(processor, model, image, device):
@@ -113,6 +137,11 @@ def main():
                     help="grow each mask, so features ON the silhouette survive")
     ap.add_argument("--overlay-every", type=int, default=20)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--no-subtract-hardware", dest="subtract_hardware",
+                    action="store_false",
+                    help="keep every pixel the base prompts claimed, including the clamp "
+                         "bodies they bleed onto. Diagnostic only -- the subtraction is "
+                         "the whole reason masks_measure can drop the clamps.")
     args = ap.parse_args()
 
     import cv2
@@ -134,7 +163,8 @@ def main():
     model.eval()
     print(f"  {args.model} loaded")
 
-    dirs = {k: args.out / k for k in ("masks_sherds", "masks_object", "overlays")}
+    dirs = {k: args.out / k for k in
+            ("masks_sherds", "masks_object", "masks_measure", "overlays")}
     for d in dirs.values():
         d.mkdir(parents=True, exist_ok=True)
 
@@ -153,11 +183,24 @@ def main():
         vision_embeds = encode_image(processor, model, small, device)
         sherds, sd = union_mask(processor, model, vision_embeds, SHERD_PROMPTS,
                                 device, args.threshold, (sh, sw))
-        rig, rd = union_mask(processor, model, vision_embeds, RIG_PROMPTS,
-                             device, args.threshold, (sh, sw))
+        hardware, hd = union_mask(processor, model, vision_embeds, HARDWARE_PROMPTS,
+                                  device, args.threshold, (sh, sw))
+        base_raw, bd = union_mask(processor, model, vision_embeds, BASE_PROMPTS,
+                                  device, args.threshold, (sh, sw))
+        table, td = union_mask(processor, model, vision_embeds, TURNTABLE_PROMPTS,
+                               device, args.threshold, (sh, sw))
+        rig = hardware | base_raw | table
         obj = sherds | rig
 
-        for name, m in (("masks_sherds", sherds), ("masks_object", obj)):
+        # The base plate minus anything the hardware prompts also claimed. The clamps are
+        # painted the same blue, so "blue board" lands on them too and no prompt separates
+        # two objects of one colour. A sherd is never subtracted: sherds win over hardware,
+        # because a clamp jaw crossing a sherd must not punch a hole in the pottery.
+        base = base_raw & ~hardware if args.subtract_hardware else base_raw
+        measure = sherds | base          # sherds unioned last: subtraction can never eat one
+
+        for name, m in (("masks_sherds", sherds), ("masks_object", obj),
+                        ("masks_measure", measure)):
             out = cv2.resize(m.astype(np.uint8) * 255, (W, H),
                              interpolation=cv2.INTER_NEAREST)
             if args.dilate:
@@ -168,13 +211,23 @@ def main():
         rows.append(dict(frame=path.name, sherd_instances=n_sherd,
                          sherd_best=max(v["best"] for v in sd.values()),
                          sherd_coverage=round(float(sherds.mean()), 4),
-                         object_coverage=round(float(obj.mean()), 4)))
+                         object_coverage=round(float(obj.mean()), 4),
+                         measure_coverage=round(float(measure.mean()), 4),
+                         base_raw_coverage=round(float(base_raw.mean()), 4),
+                         base_kept_coverage=round(float(base.mean()), 4),
+                         base_best=max(v["best"] for v in bd.values())))
 
         if i % args.overlay_every == 0:
+            # Three colours, because the whole question is whether the base and the
+            # hardware came apart. Painted last wins, so green over blue means a pixel the
+            # base prompts claimed and the hardware prompts did not.
             vis = np.asarray(small).copy()
-            sm, rm = sherds.astype(np.uint8), rig.astype(np.uint8)
-            vis[rm > 0] = (0.7 * vis[rm > 0] + 0.3 * np.array([80, 80, 255])).astype(np.uint8)
-            vis[sm > 0] = (0.55 * vis[sm > 0] + 0.45 * np.array([255, 80, 80])).astype(np.uint8)
+            def tint(m, rgb, a):
+                sel = m.astype(bool)
+                vis[sel] = ((1 - a) * vis[sel] + a * np.array(rgb)).astype(np.uint8)
+            tint(hardware | table, (80, 80, 255), 0.30)     # blue  = dropped from the mesh
+            tint(base, (80, 235, 120), 0.40)                # green = base plate, KEPT
+            tint(sherds, (255, 80, 80), 0.45)               # red   = sherds, KEPT
             Image.fromarray(vis).save(dirs["overlays"] / f"{path.stem}.jpg", quality=85)
 
         if (i + 1) % 20 == 0 or i == len(paths) - 1:
@@ -217,8 +270,39 @@ def main():
     else:
         print("\n  every frame found at least one sherd")
 
+    # THE BASE IS THE SCALE REFERENCE. If subtracting the hardware ate it, every mesh built
+    # from masks_measure loses the one object that can be checked against a known size --
+    # and it would go unnoticed, because the sherds would look perfectly fine.
+    braw = np.array([r["base_raw_coverage"] for r in rows])
+    bkept = np.array([r["base_kept_coverage"] for r in rows])
+    survived = np.where(braw > 0, bkept / np.maximum(braw, 1e-9), 1.0)
+    print(f"\n  BASE PLATE (the scale reference):")
+    print(f"    found on {int((braw > 0.002).sum())} of {len(rows)} frames, "
+          f"covering median {100*np.median(braw):.1f}% of the frame")
+    print(f"    after subtracting the clamps and rod, {100*np.median(survived):.0f}% of it "
+          f"survives (worst frame {100*survived.min():.0f}%)")
+    lost = [r["frame"] for r, s in zip(rows, survived) if s < 0.5 and r["base_raw_coverage"] > 0.002]
+    if lost:
+        print(f"    {len(lost)} frame(s) lost more than half the base to the subtraction --")
+        print(f"    the hardware prompts are landing on the plate itself. Look at these:")
+        for f in lost[:8]:
+            print(f"      {f}")
+    gone = [r["frame"] for r in rows if r["base_kept_coverage"] < 0.002]
+    if gone:
+        print(f"    {len(gone)} FRAME(S) HAVE NO BASE AT ALL in masks_measure -- a mesh from")
+        print(f"    these cannot be checked against the 190 x 130 mm plate.")
+
+    mcov = np.array([r["measure_coverage"] for r in rows])
+    ocov = np.array([r["object_coverage"] for r in rows])
+    print(f"\n  what each set keeps (median over {len(rows)} frames):")
+    print(f"    masks_object  {100*np.median(ocov):5.1f}%   sherds + rig      -> solving the cameras")
+    print(f"    masks_measure {100*np.median(mcov):5.1f}%   sherds + base     -> building the surface")
+    print(f"    masks_sherds  {100*np.median(cov):5.1f}%   sherds only       -> variant, NO base")
+
     print(f"\nLOOK AT {dirs['overlays']} before using these.")
-    print("Red = sherds, blue = rig. The question is whether the outline stops at the clamp.")
+    print("RED = sherds and GREEN = base are kept in the mesh; BLUE = clamps, rod and dial")
+    print("are dropped. The question is whether green stops at the clamp instead of")
+    print("swallowing it -- they are painted the same blue, which is why it can fail.")
 
 
 if __name__ == "__main__":

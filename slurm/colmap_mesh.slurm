@@ -92,8 +92,23 @@ fi
 # after starting -- "Could not open .../fused.ply" -- while stereo fusion before it and
 # the Poisson mesher after it both worked, so the job still reported a mesh.
 step "stereo fusion"
+# The same surface masks the OpenMVS stage used, so all three meshes describe the same
+# object. stereo_fusion takes them directly (patch_match_stereo has no mask option, so the
+# depth maps still cover the rig -- fusion is where the clamps are dropped). COLMAP names
+# them "<image filename>.png" with the extension kept, and finds nothing, silently, if the
+# name is wrong: the dir is written and checked by undistort_masks.sh in the dense job.
+FUSION_MASK_ARGS=()
+if [[ -d "$DENSE/masks/colmap" ]]; then
+    NM=$(find "$DENSE/masks/colmap" -maxdepth 1 -name '*.png' | wc -l)
+    echo "  fusing with $NM surface masks (sherds + base, clamps and rod dropped)"
+    FUSION_MASK_ARGS=(--StereoFusion.mask_path "$DENSE/masks/colmap")
+else
+    echo "  no surface masks in this workspace -- fusing the whole rig"
+fi
+
 colmap stereo_fusion --workspace_path "$DENSE" --workspace_format COLMAP \
     --input_type geometric --output_path "$DENSE/fused.ply" \
+    "${FUSION_MASK_ARGS[@]}" \
     --StereoFusion.cache_size "$CACHE_GB"
 echo "  (exit $?)"
 ls -lh "$DENSE/fused.ply" 2>/dev/null | awk '{print "  fused cloud:", $5}'

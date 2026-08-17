@@ -89,7 +89,13 @@ print("  coverage and confidence are in line with the trees already checked")
 PY
 
 echo
-echo "  masks_object -> $OUT/masks_object   (sherds + rig + base + turntable; for SfM)"
-echo "  masks_sherds -> $OUT/masks_sherds   (sherds only; for a sherds-only dense stage)"
+echo "  masks_object  -> $OUT/masks_object    sherds + rig + base + dial"
+echo "                                          FOR SOLVING THE CAMERAS: the rig turns with"
+echo "                                          the sherds, so its features help the solve."
+echo "  masks_measure -> $OUT/masks_measure   sherds + blue base, NO clamps or rod"
+echo "                                          FOR BUILDING THE SURFACE: this is what"
+echo "                                          removes the hand-editing of clamps."
+echo "  masks_sherds  -> $OUT/masks_sherds    sherds only, NO base (variant; a mesh from"
+echo "                                          this cannot be checked against the plate)"
 echo "  LOOK AT $OUT/overlays"
 echo "=== finished $(date) ==="

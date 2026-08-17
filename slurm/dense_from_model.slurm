@@ -90,6 +90,40 @@ colmap image_undistorter --image_path "$IMAGES" --input_path "$MODEL" \
 echo "  (exit $? -- judged by the files below, not by the exit code)"
 ls "$DENSE/images" 2>/dev/null | wc -l | xargs echo "  undistorted images:"
 
+# SURFACE MASKS. A different mask from the one that solved the cameras, and deliberately:
+# the cameras were solved with the whole rig visible because the rod and clamps turn WITH
+# the sherds and are excellent features, but the clamps must not end up in the surface.
+# A clamp jaw resting on a sherd fuses to it, so no amount of connected-component work
+# separates them afterwards -- 2D, before any geometry exists, is the only clean cut.
+# masks_measure keeps the sherds and the blue base (the scale reference) and drops the
+# clamps, rod and dial. Set SURFACE_MASKS=0 to build the old way, rig and all.
+SURFACE_MASKS="${SURFACE_MASKS:-1}"
+MVS_MASK_ARGS=()
+COLMAP_MASK_DIR=""
+SRC_MASKS="$MILO/masks/$GROUP/${MASK_SET:-masks_measure}"
+if [[ "$SURFACE_MASKS" == "1" && -d "$SRC_MASKS" ]]; then
+    step "undistorting the surface masks (${MASK_SET:-masks_measure})"
+    "$MILO/repo/scripts/undistort_masks.sh" "$SRC_MASKS" "$DENSE" "$DENSE/masks" \
+        "${UNDIST_MAX:-3200}" || exit 1
+    # --ignore-mask-label 0: in these masks 0 is black, which is the region to ignore.
+    # The TRAILING SLASH is load-bearing. OpenMVS builds the mask filename by string
+    # concatenation -- strMaskPath + getFileName(image) + ".mask.png" -- so without it the
+    # path runs together into ".../openmvsA21_0891.mask.png", which simply does not exist,
+    # and a mask it cannot open is a mask it ignores without a word.
+    MVS_MASK_ARGS=(--mask-path "$DENSE/masks/openmvs/" --ignore-mask-label 0)
+    COLMAP_MASK_DIR="$DENSE/masks/colmap"
+    echo "  the surface will be built from sherds + base only"
+elif [[ "$SURFACE_MASKS" == "1" ]]; then
+    echo
+    echo "SURFACE_MASKS=1 but there are no masks at $SRC_MASKS." >&2
+    echo "Run slurm/sam3_masks.slurm first, or set SURFACE_MASKS=0 to build with the" >&2
+    echo "clamps and rod included. Refusing to quietly build the thing you asked to" >&2
+    echo "have removed." >&2
+    exit 1
+else
+    echo "  SURFACE_MASKS=0 -- building the whole rig into the surface"
+fi
+
 step "OpenMVS: interface"
 "$OPENMVS_BIN/InterfaceCOLMAP" -w "$DENSE" -i "$DENSE" -o "$DENSE/scene.mvs" \
     --image-folder "$DENSE/images"
@@ -98,7 +132,8 @@ step "OpenMVS: dense point cloud (ROI cropping OFF)"
 "$OPENMVS_BIN/DensifyPointCloud" -w "$DENSE" -i "$DENSE/scene.mvs" \
     -o "$DENSE/scene_dense.mvs" --cuda-device 0 \
     --resolution-level "${DENS_LEVEL:-0}" --number-views "${DENS_VIEWS:-8}" \
-    --number-views-fuse "${DENS_FUSE:-5}" --crop-to-roi 0
+    --number-views-fuse "${DENS_FUSE:-5}" --crop-to-roi 0 \
+    "${MVS_MASK_ARGS[@]}"
 
 step "OpenMVS: mesh"
 "$OPENMVS_BIN/ReconstructMesh" -w "$DENSE" -i "$DENSE/scene_dense.mvs" \
