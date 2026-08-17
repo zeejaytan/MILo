@@ -40,6 +40,31 @@ MAXSIZE="${5:-3200}"
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# COLMAP is a locally built binary here, not a module, so a fresh batch job has it on
+# no PATH at all. Resolve it up front and say so, rather than reaching line 71 and
+# failing with "colmap: command not found" after the staging copy has already run --
+# which is exactly how job 29332375 died two seconds in.
+#
+# The CUDA runtime it links (libcudart, libcublas) is bundled in the same tree, so this
+# also runs on a CPU node: image_undistorter never touches a device.
+COLMAP_TOOLS="${COLMAP_TOOLS:-/data/gpfs/projects/punim2657/tools/sfm}"
+if ! command -v colmap >/dev/null 2>&1; then
+    if [[ -x "$COLMAP_TOOLS/bin/colmap" ]]; then
+        export PATH="$COLMAP_TOOLS/bin:$PATH"
+        export LD_LIBRARY_PATH="$COLMAP_TOOLS/lib:$COLMAP_TOOLS/lib64:${LD_LIBRARY_PATH:-}"
+    else
+        echo "colmap is not on PATH and $COLMAP_TOOLS/bin/colmap does not exist." >&2
+        echo "Set COLMAP_TOOLS to the build tree (expects bin/colmap and lib/)." >&2
+        exit 1
+    fi
+fi
+colmap -h >/dev/null 2>&1 || {
+    echo "Found colmap at $(command -v colmap) but it will not run. Check that its" >&2
+    echo "bundled libraries are reachable via LD_LIBRARY_PATH." >&2
+    exit 1
+}
+echo "  colmap: $(command -v colmap) -- $(colmap -h 2>&1 | head -1)"
+
 [[ -d "$SRC" ]]          || { echo "No masks at $SRC" >&2; exit 1; }
 [[ -d "$MODEL" ]]        || { echo "No sparse model at $MODEL" >&2; exit 1; }
 [[ -d "$DENSE/images" ]] || { echo "No undistorted images at $DENSE/images" >&2; exit 1; }
