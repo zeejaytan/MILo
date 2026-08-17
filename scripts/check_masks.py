@@ -36,10 +36,12 @@ import numpy as np
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
-# Keypoints landing in the black region. Never exactly zero -- COLMAP extracts on a
-# downscaled copy and rescales the coordinates back, which can nudge a detection a pixel or
-# two across a boundary -- but a genuinely masked run sits far below this.
-MASKED_KEYPOINT_FRACTION_MAX = 0.02
+# Keypoints landing in the black region. Set from the pair of A02 databases, which are the
+# same 162 photographs extracted with and without the same masks: masked read 0.00%,
+# unmasked 5.81% (worst frame 9.13%). 1% therefore sits ~200x above a correct run and well
+# under an incorrect one. Boundary slop from extracting on a downscaled copy was the worry
+# and measured as nothing at all.
+MASKED_KEYPOINT_FRACTION_MAX = 0.01
 # A mask keeping less than this much of the frame is not isolating an object, it is
 # deleting one. The first hand-built attempt here kept 10% and cut 90% of the features.
 KEPT_AREA_MIN = 0.02
