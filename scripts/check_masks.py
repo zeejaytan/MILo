@@ -36,6 +36,26 @@ import numpy as np
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
+# The tools disagree about what a mask is called, and neither convention is ours to change.
+# Each entry is (what this tool wants, what it is most often confused with, why).
+#   colmap   feature_extractor and stereo_fusion: "<image filename>.png", extension KEPT.
+#   openmvs  DensifyPointCloud --mask-path: "<stem>.mask.png", extension STRIPPED, because
+#            it builds the name with Util::getFileName which cuts at the last dot. A widely
+#            repeated summary of that code says the extension is kept. It is not, and that
+#            wrong form is exactly what `alt` below looks for.
+NAMING = {
+    "colmap": dict(
+        want=lambda n: n + ".png",
+        alt=lambda n: Path(n).stem + ".png",
+        alt_why="the old '<stem>.png' form this project used to write",
+    ),
+    "openmvs": dict(
+        want=lambda n: Path(n).stem + ".mask.png",
+        alt=lambda n: n + ".mask.png",
+        alt_why="the '<image>.JPG.mask.png' form, which keeps the extension OpenMVS strips",
+    ),
+}
+
 # Keypoints landing in the black region. Set from the pair of A02 databases, which are the
 # same 162 photographs extracted with and without the same masks: masked read 0.00%,
 # unmasked 5.81% (worst frame 9.13%). 1% therefore sits ~200x above a correct run and well
@@ -130,47 +150,46 @@ def list_images(images_dir):
                   if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES)
 
 
-def check_naming(images, masks_dir, sample):
+def check_naming(images, masks_dir, sample, naming="colmap"):
     """Every photograph has a mask, correctly named, at the same size."""
     masks_dir = Path(masks_dir)
+    rule = NAMING[naming]
     problems = []
 
     present = sorted(masks_dir.glob("*.png"))
-    print(f"  {len(present)} masks in {masks_dir} for {len(images)} photographs")
+    print(f"  {len(present)} masks in {masks_dir} for {len(images)} photographs "
+          f"({naming} naming)")
     if not present:
         problems.append("There are no masks in that directory at all.")
         return problems
 
-    # COLMAP matches "<image filename>.png" -- the ORIGINAL EXTENSION KEPT, so
-    # A21_0891.JPG becomes A21_0891.JPG.png. The stem-only form A21_0891.png is the one
-    # this project used to write, and COLMAP finds none of it while saying nothing.
     missing, legacy = [], []
     for img in images:
-        if (masks_dir / (img.name + ".png")).exists():
+        if (masks_dir / rule["want"](img.name)).exists():
             continue
-        if (masks_dir / (img.stem + ".png")).exists():
+        if (masks_dir / rule["alt"](img.name)).exists():
             legacy.append(img.name)
         else:
             missing.append(img.name)
 
     if legacy:
+        n = legacy[0]
         problems.append(
-            f"{len(legacy)} masks use the old '<stem>.png' name (e.g. {Path(legacy[0]).stem}.png). "
-            f"COLMAP matches '<image filename>.png' with the extension kept "
-            f"({legacy[0]}.png) and silently ignores anything else -- these masks would "
-            f"do nothing while the run reported success.")
+            f"{len(legacy)} masks use {rule['alt_why']} (e.g. {rule['alt'](n)}). "
+            f"{naming} wants {rule['want'](n)} and silently ignores anything else -- "
+            f"these masks would do nothing while the run reported success.")
     if missing:
         problems.append(
             f"{len(missing)} photographs have no mask under either name, first "
             f"{missing[0]}. A partly masked run is not a comparison of anything.")
     if not legacy and not missing:
-        print(f"  naming OK: every photograph has <name>.png, COLMAP's convention")
+        print(f"  naming OK: every photograph has {rule['want']('<image>')}")
 
     # Dimensions, on a sample -- header reads only, so this costs nothing, but one wrong
     # size almost always means all of them are wrong the same way.
     bad, checked, unreadable = [], 0, []
     for img in sample:
-        mask = masks_dir / (img.name + ".png")
+        mask = masks_dir / rule["want"](img.name)
         if not mask.exists():
             continue
         si, sm = image_size(img), image_size(mask)
@@ -187,7 +206,7 @@ def check_naming(images, masks_dir, sample):
         detail = "; ".join(bad[:3])
         hint = ""
         if any("x" in b for b in bad) and len(sample):
-            si, sm = image_size(sample[0]), image_size(masks_dir / (sample[0].name + ".png"))
+            si, sm = image_size(sample[0]), image_size(masks_dir / rule["want"](sample[0].name))
             if si and sm and si == sm[::-1]:
                 hint = (" The two are transposed, which means the masks were built from "
                         "EXIF-upright copies. COLMAP reads the stored pixels, so the mask "
@@ -199,12 +218,13 @@ def check_naming(images, masks_dir, sample):
     return problems
 
 
-def check_content(images, masks_dir, sample):
+def check_content(images, masks_dir, sample, naming="colmap"):
     """A mask that keeps everything, or almost nothing, is not doing the job asked of it."""
     masks_dir = Path(masks_dir)
+    rule = NAMING[naming]
     kept = []
     for img in sample:
-        path = masks_dir / (img.name + ".png")
+        path = masks_dir / rule["want"](img.name)
         if not path.exists():
             continue        # already reported by the naming check; do not crash on top of it
         m = load_mask(path)
@@ -229,7 +249,7 @@ def check_content(images, masks_dir, sample):
     return problems
 
 
-def check_effect(database, images, masks_dir, sample):
+def check_effect(database, images, masks_dir, sample, naming="colmap"):
     """The question that does not depend on guessing the failure mode.
 
     Where did COLMAP actually put its keypoints? If any meaningful number of them sit in
@@ -238,13 +258,14 @@ def check_effect(database, images, masks_dir, sample):
     thought of yet.
     """
     masks_dir = Path(masks_dir)
+    rule = NAMING[naming]
     db = sqlite3.connect(str(database))
     ids = {name: (iid,) for iid, name in db.execute("SELECT image_id, name FROM images")}
 
     rows, fracs = [], []
     for img in sample:
         rec = ids.get(img.name)
-        mask = masks_dir / (img.name + ".png")
+        mask = masks_dir / rule["want"](img.name)
         if rec is None or not mask.exists():
             continue
         r = db.execute("SELECT rows, cols, data FROM keypoints WHERE image_id=?", rec).fetchone()
@@ -296,6 +317,9 @@ def main():
     ap.add_argument("--masks", required=True, type=Path)
     ap.add_argument("--database", type=Path,
                     help="COLMAP database. Given, the effect check runs too -- prefer it.")
+    ap.add_argument("--naming", choices=sorted(NAMING), default="colmap",
+                    help="which tool's mask filename convention to require. colmap: "
+                         "<image>.JPG.png. openmvs: <image>.mask.png, extension stripped.")
     ap.add_argument("--sample", type=int, default=12,
                     help="frames to open for the size/content/keypoint checks (0 = all)")
     args = ap.parse_args()
@@ -316,18 +340,19 @@ def main():
     sample = [images[i] for i in np.linspace(0, len(images) - 1, k).astype(int)]
 
     print(f"\nmasks for {args.images.name}")
-    problems = check_naming(images, args.masks, sample)
-    problems += check_content(images, args.masks, sample)
+    problems = check_naming(images, args.masks, sample, args.naming)
+    problems += check_content(images, args.masks, sample, args.naming)
     if args.database and args.database.exists():
-        problems += check_effect(args.database, images, args.masks, sample)
+        problems += check_effect(args.database, images, args.masks, sample, args.naming)
 
     print()
     if problems:
         print("-> PROBLEM")
         for p in problems:
             print(f"   {p}")
-        print("\n   Stopping here. COLMAP would not have said anything about any of this:")
-        print("   an unmatched or ineffective mask produces an ordinary successful run.")
+        print(f"\n   Stopping here. {args.naming} would not have said anything about any of")
+        print("   this: an unmatched or ineffective mask produces an ordinary, successful,")
+        print("   completely unmasked run. That is the whole reason this check exists.")
         return 1
     print("-> OK  the masks are present, correctly named and sized"
           + (", and demonstrably applied" if args.database else ""))

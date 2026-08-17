@@ -60,14 +60,17 @@ echo
 # segmenting twice gives SfM and MILo slightly different boundaries, and any disagreement
 # between them would be untraceable. Verified on A02: undistorted mask and undistorted
 # image both 3200x2133, outline following the sherds with no drift at the frame edges.
-# WHICH MASK SET. masks_object (sherds + rig) by default, NOT masks_measure, and the
-# difference is deliberate. For COLMAP and OpenMVS a mask simply excludes pixels from depth
-# fusion, so dropping the clamps is clean. For a radiance field it also removes those pixels
-# from the LOSS, leaving the region behind a clamp unsupervised -- which tends to fill with
-# floaters that the SDF extraction then turns into surface. Nothing here has been trained
-# masked yet, so the safe default is the set that only removes the room. Set
-# MASK_SET=masks_measure to drop the clamps from MILo too, and look at the result.
-SAM_MASKS="$MILO_ROOT/masks/$CAPTURE/${MASK_SET:-masks_object}"
+# WHICH MASK SET. masks_measure -- sherds + the blue base, no clamps or rod -- so MILo's
+# mesh needs the same hand-editing as the other three, which is none.
+#
+# WATCH FOR THIS. A mask does something different here than in the photogrammetry stages.
+# There it excludes pixels from depth fusion, and the clamp simply is not reconstructed.
+# Here it also removes those pixels from the TRAINING LOSS, so the region a clamp used to
+# occupy becomes unconstrained rather than empty: nothing penalises the model for putting
+# Gaussians there, and mesh_extract_sdf will turn whatever lands there into surface. The
+# symptom is floating blobs hanging in the gaps where the clamps were, not clamps.
+# Set MASK_SET=masks_object to go back to masking only the room.
+SAM_MASKS="$MILO_ROOT/masks/$CAPTURE/${MASK_SET:-masks_measure}"
 MASKS_USER="$WORK/masks_user"
 if [[ -d "$SAM_MASKS" ]]; then
     echo "=== undistorting the SAM 3 masks to match the training images ==="

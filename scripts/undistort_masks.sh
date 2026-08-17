@@ -65,6 +65,14 @@ for f in "$UND"/images/*; do
 done
 echo "  wrote $NUND masks to $OUT/colmap (COLMAP) and $OUT/openmvs (OpenMVS)"
 
-# Prove it before anything spends hours on it. No database at this point, so this is the
-# precondition half: naming, count, dimensions, and not blank.
-python "$REPO/scripts/check_masks.py" --images "$DENSE/images" --masks "$OUT/colmap" || exit 1
+# Prove BOTH sets before anything spends hours on either. No database at this point, so
+# this is the precondition half: naming, count, dimensions, and not blank.
+#
+# Checking both matters more than it looks. The two tools want different filenames, the
+# OpenMVS one is the counter-intuitive of the two, and NEITHER tool reports a mask it
+# cannot find -- it just runs unmasked and exits 0. Validating only the COLMAP set would
+# leave the riskier half of this script unguarded.
+python "$REPO/scripts/check_masks.py" --naming colmap \
+    --images "$DENSE/images" --masks "$OUT/colmap" || exit 1
+python "$REPO/scripts/check_masks.py" --naming openmvs \
+    --images "$DENSE/images" --masks "$OUT/openmvs" || exit 1
