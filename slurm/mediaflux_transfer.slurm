@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mflux-xfer
 #SBATCH --account=punim2657
-#SBATCH --partition=cascade
+#SBATCH --partition=sapphire
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
@@ -18,6 +18,8 @@ set -euo pipefail
 #
 # A CPU partition, not GPU: this is network and disk work. 4 threads, which is the
 # university's stated ceiling on shared infrastructure, so more cores would sit idle.
+# sapphire, not cascade: Spartan has removed the oldest CPU nodes from cascade and
+# now advises against submitting there, so a cascade job simply queues longer.
 #
 # Usage:
 #   ./scripts/remote/pull_and_sbatch.sh slurm/mediaflux_transfer.slurm down 16062025
