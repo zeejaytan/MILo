@@ -28,15 +28,17 @@
 #   ./scripts/run_tree.sh 17062025/A03
 #   ./scripts/run_tree.sh 17062025/A03 --no-milo      (skip the long training run)
 #   ./scripts/run_tree.sh 17062025/A03 --unmasked     (baseline, for comparison only)
+#   ./scripts/run_tree.sh 17062025/A03 --skip-masks   (masks already generated and checked)
 
 set -euo pipefail
 
 CAPTURE="${1:?usage: $0 <date>/<tree> [--no-milo] [--unmasked]}"; shift || true
-NO_MILO=0; UNMASKED=0
+NO_MILO=0; UNMASKED=0; SKIP_MASKS=0
 for a in "$@"; do
     case "$a" in
         --no-milo) NO_MILO=1 ;;
         --unmasked) UNMASKED=1 ;;
+        --skip-masks) SKIP_MASKS=1 ;;
         *) echo "unknown option: $a" >&2; exit 2 ;;
     esac
 done
@@ -69,14 +71,27 @@ echo "  repo at $(git log --oneline -1)"
 
 cd "$MILO"
 DEP=""
-if [[ "$UNMASKED" == 0 ]]; then
+if [[ "$UNMASKED" == 1 ]]; then
+    echo "  1. masks          SKIPPED (--unmasked; for baseline comparison only)"
+    MASK_EXPORT=""
+elif [[ "$SKIP_MASKS" == 1 ]]; then
+    # Reuse masks already on disk. Worth having as a flag rather than a hand-written
+    # sbatch chain: the masks are the stage most likely to need a second look, and
+    # re-segmenting 164 frames to re-run the reconstruction wastes ten GPU minutes.
+    # Both sets are checked here, because a half-present mask set fails much later.
+    NOBJ=$(find "$MASKS" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l)
+    NMEA=$(find "$MILO/masks/$CAPTURE/masks_measure" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l)
+    echo "  1. masks          REUSED: $NOBJ object, $NMEA measure, for $N photographs"
+    [[ "$NOBJ" -eq "$N" && "$NMEA" -eq "$N" ]] || {
+        echo "Mask counts do not match the $N photographs -- rerun sam3_masks.slurm." >&2
+        echo "A count mismatch usually means a photograph was added or removed since." >&2
+        exit 1; }
+    MASK_EXPORT=",MASK_PATH=$MASKS"
+else
     J_MASK=$(sbatch --parsable "$REPO/slurm/sam3_masks.slurm" "$CAPTURE")
     echo "  1. masks          $J_MASK"
     DEP="--dependency=afterok:$J_MASK"
     MASK_EXPORT=",MASK_PATH=$MASKS"
-else
-    echo "  1. masks          SKIPPED (--unmasked; for baseline comparison only)"
-    MASK_EXPORT=""
 fi
 
 J_SFM=$(sbatch --parsable $DEP \
