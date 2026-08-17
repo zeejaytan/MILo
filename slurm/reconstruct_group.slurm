@@ -234,18 +234,11 @@ if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
     step "feature extraction"
     MASK_ARGS=()
     if [[ -n "$MASK_PATH" ]]; then
-        NMASK=$(find "$MASK_PATH" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l)
-        echo "  masks: $NMASK in $MASK_PATH (for $N photographs)"
-        [[ "$NMASK" -ge "$N" ]] || {
-            echo "Only $NMASK masks for $N photographs — refusing to run partly masked." >&2
-            exit 1; }
-        # Prove the naming matches before trusting it: COLMAP needs <image>.JPG.png, and a
-        # name it cannot find produces no error at all.
-        FIRST_IMG=$(find "$IMAGES" -maxdepth 1 -iname '*.jpg' -printf '%f\n' | sort | head -1)
-        [[ -f "$MASK_PATH/${FIRST_IMG}.png" ]] || {
-            echo "Expected $MASK_PATH/${FIRST_IMG}.png and it is not there." >&2
-            echo "COLMAP matches '<image filename>.png', keeping the original extension." >&2
-            exit 1; }
+        # PRECONDITION. Names, count and pixel dimensions, before an hour of compute rather
+        # than after it. Cheap, but it only catches the ways of failing we thought of --
+        # the check that matters runs after extraction, below.
+        "$MILO_PY" "$MILO_REPO/scripts/check_masks.py" \
+            --images "$IMAGES" --masks "$MASK_PATH" || exit 1
         MASK_ARGS=(--ImageReader.mask_path "$MASK_PATH")
     fi
 
@@ -264,21 +257,13 @@ if [[ "$HAVE_FEATURES" -lt "$N" ]]; then
     [[ "$FEAT_IMAGES" -ge "$N" ]] || {
         echo "Feature extraction did not cover every photograph." >&2; exit 1; }
 
-    # A mask that removes nothing is a mask that is not being applied. Say so loudly:
-    # the earlier masking attempt cut 90% of features and still reported success, and the
-    # opposite error -- masks silently ignored -- looks identical to not masking at all.
+    # EFFECT. The check that does not depend on having guessed the failure mode: where did
+    # COLMAP actually put its keypoints? If they sit on the backdrop the masks were not
+    # applied, whatever the cause -- and a mask silently ignored looks exactly like no
+    # masking at all, which is how a masked run of A02 cost 1h37m and produced nothing.
     if [[ -n "$MASK_PATH" ]]; then
-        "$MILO_PY" - "$DB" <<'PY'
-import sqlite3, sys, numpy as np
-db = sqlite3.connect(sys.argv[1])
-n = np.array([r[0] for r in db.execute("SELECT rows FROM keypoints")])
-db.close()
-if n.size:
-    print(f"  masked features/image: median {np.median(n):,.0f} "
-          f"(min {n.min():,}, max {n.max():,})")
-    print("  unmasked A01 ran ~25,600/image; a similar figure here means the masks are")
-    print("  NOT being applied, and a very small one means they are too tight.")
-PY
+        "$MILO_PY" "$MILO_REPO/scripts/check_masks.py" \
+            --images "$IMAGES" --masks "$MASK_PATH" --database "$DB" || exit 1
     fi
 else
     echo "features already present for all $N photographs — skipping extraction"

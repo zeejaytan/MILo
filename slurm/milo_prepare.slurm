@@ -79,8 +79,11 @@ if [[ -d "$SAM_MASKS" ]]; then
     done
     rm -rf "$STAGE_DIR" "$UND"
     echo "  $n undistorted masks -> $MASKS_USER"
-    NIMG=$(ls "$WORK/$DENSE_DIR/images" | wc -l)
-    [[ "$n" -eq "$NIMG" ]] || { echo "Only $n masks for $NIMG images." >&2; exit 1; }
+    # The same gate as the SfM job. There is no database here, so this is the precondition
+    # half only: one mask per undistorted image, COLMAP's naming, matching dimensions, and
+    # not blank. MILo's own adapter then refuses any view whose mask it cannot resolve.
+    python "$REPO_DIR/scripts/check_masks.py" \
+        --images "$WORK/$DENSE_DIR/images" --masks "$MASKS_USER" || exit 1
     MASK_ARG=""
 else
     echo "  no SAM 3 masks at $SAM_MASKS -- training on the backdrop as well"
