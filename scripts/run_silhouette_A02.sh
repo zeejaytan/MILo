@@ -52,4 +52,5 @@ python scripts/silhouette_compare.py \
     --mesh openmvs="$DENSE/scene_refined_mesh.ply" \
     --mesh delaunay="$DENSE/colmap_delaunay_mesh.ply" \
     --mesh poisson="$DENSE/colmap_poisson_mesh.ply" \
-    --mesh milo="$MILO_ROOT/output/17062025/A02/mesh_learnable_sdf.ply"
+    --mesh milo="$MILO_ROOT/output/17062025/A02/mesh_learnable_sdf.ply" \
+    --crop-to openmvs --crop-pad 0.15

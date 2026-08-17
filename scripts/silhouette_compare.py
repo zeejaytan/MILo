@@ -161,9 +161,24 @@ def load_mesh(p: Path):
     if isinstance(m, trimesh.Scene):
         m = trimesh.util.concatenate(tuple(m.geometry.values()))
     m.metadata = {}
+    return m
+
+
+def as_arrays(m):
     return (np.ascontiguousarray(m.vertices, np.float32),
             np.ascontiguousarray(m.faces, np.int32),
             np.ptp(np.asarray(m.vertices), axis=0))
+
+
+def crop_to_box(m, lo, hi):
+    """Keep faces whose every vertex is inside the box."""
+    inside = np.all((m.vertices >= lo) & (m.vertices <= hi), axis=1)
+    fmask = inside[m.faces].all(axis=1)
+    if fmask.sum() < 20:
+        return None
+    sub = m.submesh([np.where(fmask)[0]], append=True, repair=False)
+    sub.metadata = {}
+    return sub
 
 
 def main() -> int:
@@ -174,6 +189,17 @@ def main() -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--mesh", action="append", required=True,
                     metavar="tag=path", help="repeat once per mesh")
+    ap.add_argument("--crop-to", metavar="TAG",
+                    help="crop every mesh to this mesh's bounding box, padded by "
+                         "--crop-pad. Needed for MILo, which reconstructs the whole "
+                         "ROOM: uncropped it covers the entire frame, so it 'invents' "
+                         "260%% of the mask and its score measures the room, not the pot.")
+    ap.add_argument("--crop-pad", type=float, default=0.15,
+                    help="fraction of the reference box to pad by (default 0.15). "
+                         "Deliberately generous: the crop is meant to remove the ROOM, "
+                         "not to trim a method's own overreach. Cropping tight would "
+                         "delete Poisson's invented halo, which is a real defect and "
+                         "must stay in its score.")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -213,8 +239,32 @@ def main() -> int:
     report = {"capture": str(args.capture), "n_held_out": len(held), "meshes": {}}
     extents = {}
 
-    for tag, path in meshes.items():
-        verts, faces, ext = load_mesh(path)
+    loaded = {t: load_mesh(p) for t, p in meshes.items()}
+
+    crop_lo = crop_hi = None
+    if args.crop_to:
+        if args.crop_to not in loaded:
+            raise SystemExit(f"--crop-to {args.crop_to} is not one of {list(loaded)}")
+        ref = loaded[args.crop_to]
+        lo = np.asarray(ref.vertices).min(axis=0)
+        hi = np.asarray(ref.vertices).max(axis=0)
+        pad = (hi - lo) * args.crop_pad
+        crop_lo, crop_hi = lo - pad, hi + pad
+        report["crop"] = {"reference": args.crop_to, "pad_frac": args.crop_pad,
+                          "min": crop_lo.tolist(), "max": crop_hi.tolist()}
+        print(f"cropping all meshes to {args.crop_to}'s box padded {args.crop_pad:.0%}")
+        for t in list(loaded):
+            before = len(loaded[t].vertices)
+            sub = crop_to_box(loaded[t], crop_lo, crop_hi)
+            if sub is None:
+                print(f"  {t}: nothing inside the box, left uncropped")
+                continue
+            loaded[t] = sub
+            print(f"  {t}: {before:,} -> {len(sub.vertices):,} verts "
+                  f"({len(sub.vertices)/before:.1%} kept)")
+
+    for tag in meshes:
+        verts, faces, ext = as_arrays(loaded[tag])
         extents[tag] = ext
         print(f"\n=== {tag} === {len(verts):,} verts, {len(faces):,} faces, "
               f"extent {np.round(ext, 4)}")
@@ -266,10 +316,14 @@ def main() -> int:
               f"misses {m['missing_mean']:.1%}")
 
     # TRAP 1: unequal extents mean at least one mesh is not in the cameras' frame.
+    out_of_frame = set()
     if len(extents) > 1:
         diags = {t: float(np.linalg.norm(e)) for t, e in extents.items()}
         lo, hi = min(diags.values()), max(diags.values())
         report["extent_diagonals"] = diags
+        med = float(np.median(list(diags.values())))
+        out_of_frame = {t for t, d in diags.items() if d / med > 1.5 or med / d > 1.5}
+        report["out_of_frame"] = sorted(out_of_frame)
         if hi / max(lo, 1e-9) > 1.5:
             print(f"\nWARNING: mesh sizes differ by {hi/lo:.2f}x {diags}.\n"
                   "At least one is not in the cameras' frame - most likely a scaled "
@@ -278,15 +332,22 @@ def main() -> int:
     (args.out / "silhouette.json").write_text(json.dumps(report, indent=2))
     scored = report["meshes"]
     if scored:
-        best = max(scored, key=lambda t: scored[t]["iou_mean"])
-        worst_iou = min(scored[t]["iou_mean"] for t in scored)
+        comparable = [t for t in scored if t not in out_of_frame] or list(scored)
+        best = max(comparable, key=lambda t: scored[t]["iou_mean"])
+        # Only meshes actually in the cameras' frame; otherwise one void score drags
+        # the minimum down and fires the camera-convention warning for everybody.
+        worst_iou = min(scored[t]["iou_mean"] for t in comparable)
         print("\n" + "=" * 72)
         for t in sorted(scored, key=lambda t: -scored[t]["iou_mean"]):
             s = scored[t]
+            flag = "  <- NOT in the cameras' frame, score void" if t in out_of_frame else ""
             print(f"  {t:10s} outline agreement {s['iou_mean']:.1%}   "
-                  f"invents {s['excess_mean']:.1%}   misses {s['missing_mean']:.1%}")
+                  f"invents {s['excess_mean']:.1%}   misses {s['missing_mean']:.1%}{flag}")
+        print("\nOutline agreement REWARDS COVERING THE MASK: a mesh that adds surface\n"
+              "misses less and therefore scores higher. Read the invents/misses split,\n"
+              "never the agreement figure alone. On A02 the ballooning mesh scores best.")
         if worst_iou < SUSPECT_IOU:
-            print(f"\nAll four score below {SUSPECT_IOU:.0%} at worst. Before concluding "
+            print(f"\nEvery in-frame mesh scores below {SUSPECT_IOU:.0%}. Before concluding "
                   "anything, check the overlays: a renderer pointing the wrong way, or a "
                   "mask covering different objects from the mesh, produces exactly this.")
         else:
