@@ -59,7 +59,8 @@ else
     echo "  That is the intended outcome when the checks fail, not a job failure: a scale"
     echo "  that is quietly 10% wrong would corrupt every measurement taken from all four"
     echo "  meshes and nothing downstream would ever show it."
-    echo "  LOOK AT $OUT/base_selection_*.png to see what was picked up, then measure the"
+    echo "  LOOK AT $OUT/base_dense_*.png AND $OUT/base_sparse_*.png -- comparing the"
+    echo "  two shows whether the plate itself reconstructed properly, then measure the"
     echo "  base by hand if it needs doing."
 fi
 echo "=== finished $(date) ==="
