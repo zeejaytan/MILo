@@ -49,10 +49,18 @@ NIMG=$(find "$DENSE/images" -maxdepth 1 -type f | wc -l)
 echo "  $NSRC source masks, $NIMG undistorted images, model $MODEL"
 [[ "$NSRC" -gt 0 ]] || { echo "No .png masks in $SRC" >&2; exit 1; }
 
+# Scratch space on the PROJECT filesystem, not /tmp. On a shared CPU node /tmp is small,
+# and image_undistorter does not fail when it runs out: it writes what fits, exits 0, and
+# says nothing. That is how the MILo job produced 20 masks for 164 images while the dense
+# job, on a GPU node with a roomier /tmp, produced all 164 from the same input.
+SCRATCH="$OUT/.undistort_work"
+rm -rf "$SCRATCH"
+STAGE="$SCRATCH/stage"; UND="$SCRATCH/und"; ERR="$SCRATCH/colmap.log"
+mkdir -p "$STAGE" "$UND"
+trap 'rm -rf "$SCRATCH"' EXIT
+
 # image_undistorter looks images up by the name held in the model, so stage each mask under
 # its image's name first: A21_0891.JPG.png -> A21_0891.JPG
-STAGE=$(mktemp -d); UND=$(mktemp -d); ERR=$(mktemp)
-trap 'rm -rf "$STAGE" "$UND" "$ERR"' EXIT
 for f in "$SRC"/*.png; do
     cp "$f" "$STAGE/$(basename "$f" .png)"
 done
@@ -67,8 +75,11 @@ rc=$?
 NUND=$(find "$UND/images" -maxdepth 1 -type f 2>/dev/null | wc -l)
 if [[ "$NUND" -ne "$NIMG" ]]; then
     echo "Undistorted $NUND masks for $NIMG images -- refusing a partly masked run." >&2
-    echo "colmap exited $rc. Its output:" >&2
-    tail -25 "$ERR" >&2
+    echo "colmap exited $rc (0 means it thought it had finished; it writes what fits" >&2
+    echo "and does not report running out of room). Free space where it was working:" >&2
+    df -h "$SCRATCH" /tmp 2>&1 | sed 's/^/    /' >&2
+    echo "colmap's last output:" >&2
+    tail -15 "$ERR" >&2
     exit 1
 fi
 
