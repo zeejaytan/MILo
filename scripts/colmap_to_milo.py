@@ -175,10 +175,24 @@ def build_masked_images(
 
     for idx, name in enumerate(sorted(image_names)):
         img_path = images_dir / name
-        mask_path = masks_dir / (Path(name).stem + ".png")
+        # COLMAP's convention, "<image filename>.png" with the original extension KEPT
+        # (A21_0891.JPG -> A21_0891.JPG.png), is the one to follow: it is fixed by an
+        # external tool, ours was arbitrary, and having two invited exactly the mistake it
+        # produced. The old "<stem>.png" form is still accepted so existing mask sets keep
+        # working, but nothing new should be written that way.
+        #
+        # Whichever form is used, a mask that cannot be found MUST be an error. COLMAP's
+        # own masking has the opposite behaviour -- an unmatched name is silently ignored,
+        # so no masking and mistyped masking look identical, which is how a "masked" run of
+        # A02 came back with none applied while reporting success.
+        mask_path = masks_dir / (name + ".png")
         if not mask_path.exists():
-            missing.append(name)
-            continue
+            legacy = masks_dir / (Path(name).stem + ".png")
+            if legacy.exists():
+                mask_path = legacy
+            else:
+                missing.append(name)
+                continue
 
         img = PILImage.open(img_path).convert("RGB")
         mask = PILImage.open(mask_path).convert("L")

@@ -71,11 +71,11 @@ if [[ -d "$SAM_MASKS" ]]; then
     UND=$(mktemp -d)
     colmap image_undistorter --image_path "$STAGE_DIR"         --input_path "$WORK/$DENSE_DIR/sparse" --output_path "$UND"         --max_image_size "${UNDIST_MAX:-3200}" >/dev/null 2>&1
     mkdir -p "$MASKS_USER"
-    # colmap_to_milo.py wants <stem>.png -- a DIFFERENT convention from COLMAP's
-    # <image>.JPG.png, and getting either wrong fails silently.
+    # ONE convention across the project: COLMAP's "<image filename>.png", extension kept.
+    # image_undistorter writes bare image names, so the .png is appended here.
     n=0
     for f in "$UND"/images/*; do
-        b=$(basename "$f"); cp "$f" "$MASKS_USER/${b%.*}.png" && n=$((n+1))
+        b=$(basename "$f"); cp "$f" "$MASKS_USER/$b.png" && n=$((n+1))
     done
     rm -rf "$STAGE_DIR" "$UND"
     echo "  $n undistorted masks -> $MASKS_USER"
