@@ -249,6 +249,23 @@ def main():
 
     (args.out / "masks.json").write_text(json.dumps(rows, indent=2))
 
+    # ORPHANS. A mask whose photograph is no longer in the capture. These appear whenever a
+    # file is removed and the masks are regenerated -- which is exactly what happened on
+    # A03 when the Metashape texture atlas was taken out: 164 photographs, 165 masks left
+    # over, and the count check downstream refused the whole set. Deleting the stale mask
+    # is right; leaving it to be found by a later job is not. Pruned by source name, so a
+    # --limit run does not touch the masks of photographs it simply did not visit.
+    have = {p.name for p in paths} | {p.name for p in args.images.iterdir() if p.is_file()}
+    pruned = 0
+    for key in ("masks_sherds", "masks_object", "masks_measure"):
+        for m in dirs[key].glob("*.png"):
+            if m.name[:-4] not in have:
+                m.unlink()
+                pruned += 1
+    if pruned:
+        print(f"\n  pruned {pruned} orphaned mask(s) whose photograph is no longer in "
+              f"the capture")
+
     ns = np.array([r["sherd_instances"] for r in rows])
     cov = np.array([r["sherd_coverage"] for r in rows])
     print(f"\n=== {len(rows)} frames in {time.time()-t0:.0f}s ===")
