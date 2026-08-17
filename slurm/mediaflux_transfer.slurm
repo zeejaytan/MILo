@@ -47,8 +47,31 @@ fi
 
 cd "$REPO_DIR"
 
+# PHOTOGRAPHS ONLY when a single tree is named. A tree's namespace is about three quarters
+# camera raws that nothing in this pipeline reads -- A03 is 165 JPG (1.41 GB) against 187
+# NEF (4.21 GB) -- and unimelb-mf-download has no extension filter, so the whole-namespace
+# route moves 4 GB in order to ignore it. mediaflux_fetch_tree.py enumerates first and
+# passes only the photographs. Set WITH_RAWS=1 for the whole namespace, and use the plain
+# whole-date form (e.g. "16062025") when that is genuinely what is wanted.
 case "$DIRECTION" in
-  down) ./scripts/mediaflux_fetch.sh "$TARGET" ${NAMESPACE:+"$NAMESPACE"} ;;
+  down)
+    if [[ "$TARGET" == */* && "${WITH_RAWS:-0}" != "1" ]]; then
+        DEST="/data/gpfs/projects/punim2657/Rabati2025/$TARGET"
+        echo "single tree: fetching photographs only -> $DEST"
+        module purge
+        module load Miniforge3/24.7.1-2
+        eval "$(conda shell.bash hook)"
+        conda activate /data/gpfs/projects/punim2657/tools/sfm
+        export PYTHONNOUSERSITE=1
+        python scripts/mediaflux_fetch_tree.py --capture "$TARGET" --dest "$DEST" \
+            ${WITH_PROJECT:+--with-project}
+        echo
+        echo "  photographs on disk: $(find "$DEST" -maxdepth 1 -iname '*.jpg' | wc -l)"
+        du -sh "$DEST" 2>/dev/null | awk '{print "  size:", $1}'
+    else
+        ./scripts/mediaflux_fetch.sh "$TARGET" ${NAMESPACE:+"$NAMESPACE"}
+    fi
+    ;;
   up)   ./scripts/mediaflux_fetch.sh --up "$TARGET" ${NAMESPACE:+"$NAMESPACE"} ;;
   *)    echo "Direction must be 'down' or 'up', got '$DIRECTION'" >&2; exit 1 ;;
 esac
