@@ -60,8 +60,17 @@ case "$DIRECTION" in
     if [[ "$TARGET" == */* && "${WITH_RAWS:-0}" != "1" ]]; then
         DEST="/data/gpfs/projects/punim2657/Rabati2025/$TARGET"
         echo "single tree: fetching photographs only -> $DEST"
+        # BOTH modules. mediaflux_fetch.sh loads unimelb-mf-clients itself, but this branch
+        # calls the Python filter directly and so has to load it here -- and `module purge`
+        # takes it away first. Omitting it fails four seconds in with
+        # "FileNotFoundError: 'unimelb-mf-download'", after the enumeration has already
+        # printed a convincing "downloading 165 assets ...".
         module purge
         module load Miniforge3/24.7.1-2
+        module load unimelb-mf-clients
+        command -v unimelb-mf-download >/dev/null || {
+            echo "unimelb-mf-download is not on PATH after loading unimelb-mf-clients." >&2
+            exit 1; }
         eval "$(conda shell.bash hook)"
         conda activate /data/gpfs/projects/punim2657/tools/sfm
         export PYTHONNOUSERSITE=1
