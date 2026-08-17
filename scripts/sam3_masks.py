@@ -137,11 +137,23 @@ def main():
                     help="grow each mask, so features ON the silhouette survive")
     ap.add_argument("--overlay-every", type=int, default=20)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--no-subtract-hardware", dest="subtract_hardware",
-                    action="store_false",
-                    help="keep every pixel the base prompts claimed, including the clamp "
-                         "bodies they bleed onto. Diagnostic only -- the subtraction is "
-                         "the whole reason masks_measure can drop the clamps.")
+    # OFF, because the risk it defended against was measured and does not exist, while the
+    # damage it does was measured and is severe. On tree A03 it destroyed 97% of the base
+    # plate: 112 of 165 frames ended with NO scale reference at all.
+    #
+    # The worry was that "blue board" would also land on the clamps, which are painted the
+    # same blue. sam3_prompt_diag.py says otherwise -- "blue board" claims 1.5% of the
+    # frame and 83-100% of the plate, i.e. the plate and nothing else. What actually
+    # happens is the reverse: "metal" claims 100% of the plate, because it is a blue METAL
+    # plate, so subtracting the hardware mask subtracts the base along with it.
+    #
+    # masks_measure is a KEEP mask, so precise base prompts are all it ever needed.
+    ap.add_argument("--subtract-hardware", action="store_true",
+                    help="subtract the hardware mask from the base mask. OFF by default: "
+                         "'metal' claims the blue metal plate, so this erases the scale "
+                         "reference. Only useful if a future tree's base prompts really "
+                         "do bleed onto the clamps -- check with sam3_prompt_diag.py "
+                         "before turning it on.")
     args = ap.parse_args()
 
     import cv2
@@ -197,7 +209,7 @@ def main():
         # two objects of one colour. A sherd is never subtracted: sherds win over hardware,
         # because a clamp jaw crossing a sherd must not punch a hole in the pottery.
         base = base_raw & ~hardware if args.subtract_hardware else base_raw
-        measure = sherds | base          # sherds unioned last: subtraction can never eat one
+        measure = sherds | base
 
         for name, m in (("masks_sherds", sherds), ("masks_object", obj),
                         ("masks_measure", measure)):
@@ -262,6 +274,20 @@ def main():
               f"({100*med:.1f}%) -- look at these:")
         for t in thin[:12]:
             print(f"    {t}")
+
+    # RUNAWAY masks matter as much as thin ones, and only thin ones were being reported.
+    # On A03 one frame scored 69.5% against a 2.2% median: it was A03.jpg, the Metashape
+    # TEXTURE ATLAS sitting beside the photographs -- a sheet of sherd surfaces, so "clay
+    # fragment" was right about it and it was not a photograph at all. Anything this far
+    # above the median is either not a photograph of the tree or a mask that has escaped.
+    fat = [r for r in rows if r["sherd_coverage"] > 4 * med]
+    if fat:
+        print(f"\n  {len(fat)} FRAME(S) COVER MORE THAN 4x THE MEDIAN ({100*med:.1f}%) --")
+        print("  a mask that has run away, or a file that is not a photograph of the tree:")
+        for r in sorted(fat, key=lambda x: -x["sherd_coverage"])[:12]:
+            print(f"    {r['frame']}  {100*r['sherd_coverage']:.1f}%")
+        print("  A texture atlas or a detail shot will land here. Remove it from the")
+        print("  capture rather than masking around it: COLMAP would try to match it too.")
     bad = [r["frame"] for r in rows if r["sherd_instances"] == 0]
     if bad:
         print(f"\n  {len(bad)} FRAME(S) WITH NO SHERDS FOUND -- look at these:")

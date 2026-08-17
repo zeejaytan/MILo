@@ -86,11 +86,20 @@ def main():
     if not assets:
         sys.exit(f"nothing found for {args.capture} in the inventory")
 
-    photos, project, skipped = [], [], []
+    photos, project, skipped, atlas = [], [], [], []
     for path, size in assets:
         rel = path.split(f"/{tree}/", 1)[-1] if f"/{tree}/" in path else os.path.basename(path)
         if f"/{tree}.files/" in path or f"{tree}.files" in rel:
             project.append((path, size))
+        elif "/" not in rel and Path(rel).stem.lower() == tree.lower():
+            # "A03.jpg" beside the photographs is the Metashape TEXTURE ATLAS -- a UV map
+            # of sherd surfaces, not a picture of the tree. It has to be kept out on both
+            # counts: COLMAP would try to match a texture sheet against the capture, and
+            # SAM 3 reads it as almost solid pottery. On A03 it scored 69.5% sherd
+            # coverage against a 2.2% median, because it genuinely IS all clay fragment.
+            # A02's copy was noticed and moved aside by hand; this stops that being
+            # something to remember per tree.
+            atlas.append((path, size))
         elif "/" not in rel and rel.lower().endswith((".jpg", ".jpeg")):
             photos.append((path, size))
         else:
@@ -98,6 +107,9 @@ def main():
 
     gb = lambda items: sum(s for _, s in items) / 1e9
     print(f"  photographs : {len(photos):4d}  {gb(photos):6.2f} GB   <- fetching")
+    if atlas:
+        for a, _ in atlas:
+            print(f"  texture atlas: {os.path.basename(a)}  <- SKIPPED, not a photograph")
     print(f"  project     : {len(project):4d}  {gb(project):6.2f} GB   "
           f"<- {'fetching' if args.with_project else 'skipped'}")
     print(f"  other/raws  : {len(skipped):4d}  {gb(skipped):6.2f} GB   <- skipped")
