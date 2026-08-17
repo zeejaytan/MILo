@@ -103,8 +103,12 @@ COLMAP_MASK_DIR=""
 SRC_MASKS="$MILO/masks/$GROUP/${MASK_SET:-masks_measure}"
 if [[ "$SURFACE_MASKS" == "1" && -d "$SRC_MASKS" ]]; then
     step "undistorting the surface masks (${MASK_SET:-masks_measure})"
-    "$MILO/repo/scripts/undistort_masks.sh" "$SRC_MASKS" "$DENSE" "$DENSE/masks" \
-        "${UNDIST_MAX:-3200}" || exit 1
+    # $MODEL, not $DENSE/sparse: the masks are at the camera's full resolution, so they
+    # must go through the ORIGINAL model with the SAME --max_image_size the photographs
+    # used. Passing the already-undistorted model aborts the undistorter outright --
+    # "distorted_camera.width == distorted_bitmap.Width() (3200 vs. 5568)".
+    "$MILO/repo/scripts/undistort_masks.sh" "$SRC_MASKS" "$MODEL" "$DENSE" \
+        "$DENSE/masks" "${UNDIST_MAX:-3200}" || exit 1
     # --ignore-mask-label 0: in these masks 0 is black, which is the region to ignore.
     # The TRAILING SLASH is load-bearing. OpenMVS builds the mask filename by string
     # concatenation -- strMaskPath + getFileName(image) + ".mask.png" -- so without it the

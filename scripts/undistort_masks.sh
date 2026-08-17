@@ -9,6 +9,14 @@
 # Undistorting the mask instead is exact by construction: same binary, same model, same
 # options as the images it has to line up with.
 #
+# WHICH MODEL. The ORIGINAL sparse model -- the one the photographs themselves were
+# undistorted FROM -- never the undistorted model in the dense workspace. The masks are at
+# the camera's full 5568 px, and the undistorted model's cameras are 3200 px wide, so
+# COLMAP aborts on
+#     Check failed: distorted_camera.width == distorted_bitmap.Width() (3200 vs. 5568)
+# The same --max_image_size must be passed as well, or the masks come out at a different
+# size from the images they are supposed to match.
+#
 # TWO NAMING CONVENTIONS, because the tools disagree and neither is ours to change:
 #   COLMAP   feature_extractor and stereo_fusion:  A21_0891.JPG.png   (extension KEPT)
 #   OpenMVS  DensifyPointCloud --mask-path:        A21_0891.mask.png  (extension STRIPPED)
@@ -17,44 +25,52 @@
 # tools: the mask is simply never found and the stage runs unmasked, successfully.
 #
 # Usage:
-#   undistort_masks.sh <src-mask-dir> <dense-dir> <out-root> [max-image-size]
+#   undistort_masks.sh <src-mask-dir> <sparse-model> <dense-dir> <out-root> [max-image-size]
 #
-# Writes <out-root>/colmap/ and <out-root>/openmvs/, and verifies the COLMAP set against
-# the undistorted images before returning.
+# Writes <out-root>/colmap/ and <out-root>/openmvs/, and verifies both against the
+# undistorted images before returning.
 
 set -uo pipefail
 
-SRC="${1:?usage: undistort_masks.sh <src-mask-dir> <dense-dir> <out-root> [max-size]}"
-DENSE="${2:?second argument is the dense workspace (containing images/ and sparse/)}"
-OUT="${3:?third argument is where to write colmap/ and openmvs/}"
-MAXSIZE="${4:-3200}"
+SRC="${1:?usage: undistort_masks.sh <src-masks> <sparse-model> <dense-dir> <out-root> [max-size]}"
+MODEL="${2:?second argument is the ORIGINAL sparse model, e.g. <work>/sparse/0}"
+DENSE="${3:?third argument is the dense workspace (containing images/)}"
+OUT="${4:?fourth argument is where to write colmap/ and openmvs/}"
+MAXSIZE="${5:-3200}"
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-[[ -d "$SRC" ]]            || { echo "No masks at $SRC" >&2; exit 1; }
-[[ -d "$DENSE/images" ]]   || { echo "No undistorted images at $DENSE/images" >&2; exit 1; }
-[[ -d "$DENSE/sparse" ]]   || { echo "No undistorted model at $DENSE/sparse" >&2; exit 1; }
+[[ -d "$SRC" ]]          || { echo "No masks at $SRC" >&2; exit 1; }
+[[ -d "$MODEL" ]]        || { echo "No sparse model at $MODEL" >&2; exit 1; }
+[[ -d "$DENSE/images" ]] || { echo "No undistorted images at $DENSE/images" >&2; exit 1; }
 
 NSRC=$(find "$SRC" -maxdepth 1 -name '*.png' | wc -l)
 NIMG=$(find "$DENSE/images" -maxdepth 1 -type f | wc -l)
-echo "  $NSRC source masks, $NIMG undistorted images"
+echo "  $NSRC source masks, $NIMG undistorted images, model $MODEL"
 [[ "$NSRC" -gt 0 ]] || { echo "No .png masks in $SRC" >&2; exit 1; }
 
 # image_undistorter looks images up by the name held in the model, so stage each mask under
 # its image's name first: A21_0891.JPG.png -> A21_0891.JPG
-STAGE=$(mktemp -d); UND=$(mktemp -d)
-trap 'rm -rf "$STAGE" "$UND"' EXIT
+STAGE=$(mktemp -d); UND=$(mktemp -d); ERR=$(mktemp)
+trap 'rm -rf "$STAGE" "$UND" "$ERR"' EXIT
 for f in "$SRC"/*.png; do
     cp "$f" "$STAGE/$(basename "$f" .png)"
 done
 
-colmap image_undistorter --image_path "$STAGE" --input_path "$DENSE/sparse" \
-    --output_path "$UND" --max_image_size "$MAXSIZE" >/dev/null 2>&1
+# Stderr goes to a file and is SHOWN if this fails. Sending it to /dev/null cost an hour
+# here: the undistorter aborted with a one-line explanation of exactly what was wrong and
+# the job printed only "Undistorted 0 masks".
+colmap image_undistorter --image_path "$STAGE" --input_path "$MODEL" \
+    --output_path "$UND" --max_image_size "$MAXSIZE" >"$ERR" 2>&1
+rc=$?
 
 NUND=$(find "$UND/images" -maxdepth 1 -type f 2>/dev/null | wc -l)
-[[ "$NUND" -eq "$NIMG" ]] || {
+if [[ "$NUND" -ne "$NIMG" ]]; then
     echo "Undistorted $NUND masks for $NIMG images -- refusing a partly masked run." >&2
-    exit 1; }
+    echo "colmap exited $rc. Its output:" >&2
+    tail -25 "$ERR" >&2
+    exit 1
+fi
 
 rm -rf "$OUT/colmap" "$OUT/openmvs"
 mkdir -p "$OUT/colmap" "$OUT/openmvs"

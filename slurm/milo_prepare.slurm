@@ -72,28 +72,19 @@ echo
 # Set MASK_SET=masks_object to go back to masking only the room.
 SAM_MASKS="$MILO_ROOT/masks/$CAPTURE/${MASK_SET:-masks_measure}"
 MASKS_USER="$WORK/masks_user"
+# The ORIGINAL model, the one the photographs were undistorted from -- not the undistorted
+# model inside the dense workspace. This job used to hold its own copy of the undistortion
+# and pointed it at the wrong one; it never showed up because the masked MILo run was
+# deferred, so the code had never actually executed. Sharing the script means the fix
+# lands in both places at once, which is the reason it is a script.
+SRC_MODEL_REL="${SRC_MODEL_REL:-sparse/0}"
 if [[ -d "$SAM_MASKS" ]]; then
     echo "=== undistorting the SAM 3 masks to match the training images ==="
-    STAGE_DIR=$(mktemp -d)
-    for f in "$SAM_MASKS"/*.png; do
-        cp "$f" "$STAGE_DIR/$(basename "$f" .png)"      # A21_0891.JPG.png -> A21_0891.JPG
-    done
-    UND=$(mktemp -d)
-    colmap image_undistorter --image_path "$STAGE_DIR"         --input_path "$WORK/$DENSE_DIR/sparse" --output_path "$UND"         --max_image_size "${UNDIST_MAX:-3200}" >/dev/null 2>&1
-    mkdir -p "$MASKS_USER"
-    # ONE convention across the project: COLMAP's "<image filename>.png", extension kept.
-    # image_undistorter writes bare image names, so the .png is appended here.
-    n=0
-    for f in "$UND"/images/*; do
-        b=$(basename "$f"); cp "$f" "$MASKS_USER/$b.png" && n=$((n+1))
-    done
-    rm -rf "$STAGE_DIR" "$UND"
-    echo "  $n undistorted masks -> $MASKS_USER"
-    # The same gate as the SfM job. There is no database here, so this is the precondition
-    # half only: one mask per undistorted image, COLMAP's naming, matching dimensions, and
-    # not blank. MILo's own adapter then refuses any view whose mask it cannot resolve.
-    python "$REPO_DIR/scripts/check_masks.py" \
-        --images "$WORK/$DENSE_DIR/images" --masks "$MASKS_USER" || exit 1
+    "$REPO_DIR/scripts/undistort_masks.sh" "$SAM_MASKS" "$WORK/$SRC_MODEL_REL" \
+        "$WORK/$DENSE_DIR" "$WORK/masks_milo" "${UNDIST_MAX:-3200}" || exit 1
+    rm -rf "$MASKS_USER"
+    cp -r "$WORK/masks_milo/colmap" "$MASKS_USER"
+    echo "  $(ls "$MASKS_USER" | wc -l) undistorted masks -> $MASKS_USER"
     MASK_ARG=""
 else
     echo "  no SAM 3 masks at $SAM_MASKS -- training on the backdrop as well"
