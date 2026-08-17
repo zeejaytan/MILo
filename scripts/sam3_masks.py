@@ -21,8 +21,8 @@ NAMING. COLMAP wants "<image filename>.png", keeping the original extension:
 A11_0704.JPG -> A11_0704.JPG.png. The existing maskbuild tool writes "<stem>.png", which
 COLMAP will not match, and a mask it cannot find is a mask it silently ignores.
 
-THREE MASK SETS, because the stages want different things and the difference is the whole
-point of masking twice:
+FOUR MASK SETS, because the stages want different things and the difference is the whole
+point of masking more than once:
 
   masks_object/   sherds AND the whole rig -- everything but the backdrop. FOR SOLVING THE
                   CAMERAS. The rod, clamps, base and dial all turn WITH the sherds, so in
@@ -36,6 +36,16 @@ point of masking twice:
                   separated afterwards as connected components. Removing them in 2D, before
                   any geometry exists, is the only point at which they come apart cleanly.
                   The base stays because it is the scale reference.
+  masks_dial/     sherds, the base AND the turntable dial, but still no clamps or rod.
+                  ALSO FOR BUILDING THE SURFACE, and the difference from masks_measure is
+                  not about what should end up in the mesh -- it is about what dense stereo
+                  needs in order to build the plate at all. OpenMVS applies masks BEFORE
+                  depth estimation, so masking down to the plate leaves a smooth, almost
+                  featureless surface with no textured neighbours to propagate depth from,
+                  and on A03 it reconstructed the plate twice, at an angle. The graduated
+                  dial sits directly behind the plate and is the nearest strongly textured
+                  thing to it. A02, whose dense stage saw the whole scene, had no such
+                  trouble with the same settings.
   masks_sherds/   sherds only. Kept for a sherds-only variant; note it has NO base, so a
                   mesh built from it cannot be checked against the 190 x 130 mm plate.
 
@@ -176,7 +186,7 @@ def main():
     print(f"  {args.model} loaded")
 
     dirs = {k: args.out / k for k in
-            ("masks_sherds", "masks_object", "masks_measure", "overlays")}
+            ("masks_sherds", "masks_object", "masks_measure", "masks_dial", "overlays")}
     for d in dirs.values():
         d.mkdir(parents=True, exist_ok=True)
 
@@ -210,9 +220,12 @@ def main():
         # because a clamp jaw crossing a sherd must not punch a hole in the pottery.
         base = base_raw & ~hardware if args.subtract_hardware else base_raw
         measure = sherds | base
+        # Same keep-set plus the dial, purely to give the featureless plate a textured
+        # neighbour for dense stereo to propagate depth from. The clamps and rod stay out.
+        measure_dial = measure | table
 
         for name, m in (("masks_sherds", sherds), ("masks_object", obj),
-                        ("masks_measure", measure)):
+                        ("masks_measure", measure), ("masks_dial", measure_dial)):
             out = cv2.resize(m.astype(np.uint8) * 255, (W, H),
                              interpolation=cv2.INTER_NEAREST)
             if args.dilate:
@@ -225,6 +238,7 @@ def main():
                          sherd_coverage=round(float(sherds.mean()), 4),
                          object_coverage=round(float(obj.mean()), 4),
                          measure_coverage=round(float(measure.mean()), 4),
+                         dial_coverage=round(float(measure_dial.mean()), 4),
                          base_raw_coverage=round(float(base_raw.mean()), 4),
                          base_kept_coverage=round(float(base.mean()), 4),
                          base_best=max(v["best"] for v in bd.values())))
@@ -257,7 +271,7 @@ def main():
     # --limit run does not touch the masks of photographs it simply did not visit.
     have = {p.name for p in paths} | {p.name for p in args.images.iterdir() if p.is_file()}
     pruned = 0
-    for key in ("masks_sherds", "masks_object", "masks_measure"):
+    for key in ("masks_sherds", "masks_object", "masks_measure", "masks_dial"):
         for m in dirs[key].glob("*.png"):
             if m.name[:-4] not in have:
                 m.unlink()
@@ -339,7 +353,9 @@ def main():
     ocov = np.array([r["object_coverage"] for r in rows])
     print(f"\n  what each set keeps (median over {len(rows)} frames):")
     print(f"    masks_object  {100*np.median(ocov):5.1f}%   sherds + rig      -> solving the cameras")
+    dcov = np.array([r["dial_coverage"] for r in rows])
     print(f"    masks_measure {100*np.median(mcov):5.1f}%   sherds + base     -> building the surface")
+    print(f"    masks_dial    {100*np.median(dcov):5.1f}%   + turntable dial  -> same, with depth support")
     print(f"    masks_sherds  {100*np.median(cov):5.1f}%   sherds only       -> variant, NO base")
 
     print(f"\nLOOK AT {dirs['overlays']} before using these.")
