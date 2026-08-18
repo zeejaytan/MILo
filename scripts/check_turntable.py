@@ -25,6 +25,13 @@ import numpy as np
 
 FULL_TURN_MIN_DEG = 270.0   # a capture that goes right round should clear this comfortably
 
+# Frame-order limits. A02, which is correct, steps 11.1 deg between consecutive frames and
+# has NO within-pass step above 30 deg. A03, which is bent, steps 11.6 deg in the median and
+# has sixteen, the worst 109 deg. Either term alone would be fragile: the multiple adapts to
+# how finely a tree was shot, the floor stops a coarsely shot one tripping on every frame.
+STEP_ABS_MIN_DEG = 30.0
+STEP_MEDIAN_MULT = 2.5
+
 
 def read_points(model_dir):
     path = Path(model_dir) / "points3D.bin"
@@ -40,14 +47,25 @@ def read_points(model_dir):
 
 
 def read_camera_centres(model_dir):
+    """Camera centres AND the filename each came from.
+
+    The name matters as much as the position: frame numbers run in shooting order as the
+    turntable is advanced, so they are the only record of what the rotation was SUPPOSED to
+    be. Without them a bent solve is indistinguishable from a correct one.
+    """
     path = Path(model_dir) / "images.bin"
-    centres = []
+    centres, names = [], []
     with open(path, "rb") as fh:
         (n,) = struct.unpack("<Q", fh.read(8))
         for _ in range(n):
             _, qw, qx, qy, qz, tx, ty, tz, _cam = struct.unpack("<idddddddi", fh.read(64))
-            while fh.read(1) != b"\x00":
-                pass
+            nm = b""
+            while True:
+                c = fh.read(1)
+                if c == b"\x00":
+                    break
+                nm += c
+            names.append(nm.decode("utf-8", "replace"))
             (pts,) = struct.unpack("<Q", fh.read(8))
             fh.seek(24 * pts, 1)
             R = np.array([
@@ -56,7 +74,7 @@ def read_camera_centres(model_dir):
                 [2 * (qx * qz - qy * qw), 2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)],
             ])
             centres.append(-R.T @ np.array([tx, ty, tz]))
-    return np.array(centres)
+    return np.array(centres), names
 
 
 def basis(direction):
@@ -68,9 +86,64 @@ def basis(direction):
     return np.stack([r, np.cross(r, f), f])
 
 
+def frame_order(names, ang_by_name):
+    """Do consecutive photographs sit next to each other around the turn?
+
+    Coverage alone cannot answer this, and that is the hole this fills. Tree A03 covered
+    321 deg -- comfortably past the collapse threshold -- with every photograph registered
+    and a mean reprojection error BETTER than a tree that was correct (0.809 vs 0.841 px).
+    It was still wrong: sixteen pairs of consecutive frames sat more than 30 deg apart, one
+    of them 109 deg, and the blue base plate was consequently built twice, 35 deg apart, in
+    the sparse model and in every mesh derived from it.
+
+    Frames are grouped by filename prefix, because each prefix is one pass of the turntable
+    at one camera height. Within a pass the turntable advances by one small step per shot,
+    so the angle must walk smoothly round; the jump BETWEEN passes is expected and is not
+    counted. What is measured is therefore the thing the capture actually controlled.
+    """
+    groups = {}
+    for nm in names:
+        groups.setdefault(nm.split("_")[0], []).append(nm)
+
+    steps, offenders = [], []
+    for pref, members in sorted(groups.items()):
+        members.sort()                      # frame numbers ascend in shooting order
+        for a, b in zip(members, members[1:]):
+            d = abs(ang_by_name[b] - ang_by_name[a]) % 360
+            d = min(d, 360 - d)
+            steps.append(d)
+            offenders.append((d, pref, a, b))
+    if not steps:
+        return None
+
+    steps = np.array(steps)
+    med = float(np.median(steps))
+    # A step is out of order when it is far beyond the pace the capture was shot at. Both
+    # terms matter: the multiple catches a fine-grained capture, the floor stops a very
+    # coarse one flagging every frame.
+    limit = max(STEP_ABS_MIN_DEG, STEP_MEDIAN_MULT * med)
+    bad = sorted((o for o in offenders if o[0] > limit), reverse=True)
+
+    print(f"  consecutive frames step {med:.1f} deg apart (median), "
+          f"{len(groups)} camera pass(es)")
+    if not bad:
+        print(f"  -> ORDER OK  no frame sits more than {limit:.0f} deg from the one before it")
+        return 0
+    print(f"  -> OUT OF ORDER  {len(bad)} consecutive pair(s) more than {limit:.0f} deg apart:")
+    for d, pref, a, b in bad[:6]:
+        print(f"       {a} -> {b}   {d:.0f} deg")
+    if len(bad) > 6:
+        print(f"       ... and {len(bad)-6} more")
+    print("     These were shot one turntable step apart, so they cannot be this far")
+    print("     around the rig. The solve is BENT: registered, low reprojection error,")
+    print("     and still placing frames at the wrong rotation. Geometry seen mainly by")
+    print("     the misplaced frames gets built more than once.")
+    return len(bad)
+
+
 def check(model_dir):
     xyz = read_points(model_dir)
-    C = read_camera_centres(model_dir)
+    C, names = read_camera_centres(model_dir)
     if len(xyz) < 100 or len(C) < 8:
         print(f"{model_dir}: too small to judge ({len(xyz)} points, {len(C)} images)")
         return None
@@ -100,6 +173,14 @@ def check(model_dir):
     else:
         print(f"  the camera sits in a {covered:.0f} deg arc, so the turntable's rotation")
         print("     has been absorbed into duplicated geometry instead")
+
+    # SECOND, INDEPENDENT QUESTION. Coverage asks how much of the circle was visited;
+    # this asks whether the frames were visited in the order they were shot. A solve can
+    # pass the first and fail the second, and A03 did.
+    ang_by_name = dict(zip(names, np.degrees(np.arctan2(q[:, 1], q[:, 0]))))
+    n_bad = frame_order(names, ang_by_name)
+    if n_bad:
+        print("  -> BENT")
     return covered
 
 
