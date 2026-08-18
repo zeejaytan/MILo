@@ -4,13 +4,17 @@
 #SBATCH --partition=sapphire
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --mem=96G
 #SBATCH --time=1:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/milo_prep_%j.log
 
 set -uo pipefail
 
 # Build the MILo dataset from an undistorted COLMAP workspace, then queue training.
+#
+# 96G, not 16G: this job died OUT_OF_MEMORY twice on A03. image_undistorter holds several
+# full-resolution images per thread while it works, and 164 of them at 5568x3712 does not
+# fit in 16G however the scratch is arranged.
 #
 # Split out from the training job so the dataset is validated on a cheap CPU node rather
 # than while holding a GPU: the adapter checks that every registered view resolves to a
