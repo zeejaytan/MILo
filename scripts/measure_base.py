@@ -310,20 +310,28 @@ def main():
         cross = abs(a - b) / ((a + b) / 2)
         print("\nsparse vs dense scale: %.1f%% apart" % (100 * cross))
         if cross > 0.03:
-            print("  THE TWO CLOUDS DISAGREE ABOUT THE SAME PLATE.")
-            print("  They share a coordinate frame and describe one physical object, so a")
-            print("  gap this size is a fault in the reconstruction, not in the measurement.")
-            print("  The usual cause is the dense stage building the plate more than once:")
-            print("  it is a smooth, low-texture surface, and dense stereo has to return a")
-            print("  depth for every pixel whether the photographs support one or not.")
-            print("  LOOK AT base_dense_face.png AND base_sparse_face.png side by side.")
+            print("  THE TWO CLOUDS DISAGREE ABOUT THE SAME PLATE. Two things cause this")
+            print("  and they lead opposite ways, so LOOK AT base_dense_face.png AND")
+            print("  base_sparse_face.png side by side before deciding which:")
+            print("    DENSE built the plate more than once. It is smooth and low-texture,")
+            print("      and dense stereo must return a depth for every pixel whether the")
+            print("      photographs support one or not. A03 did exactly this while its")
+            print("      camera solve was bent: aspect 2.341 against a true 1.462.")
+            print("    SPARSE has too few points to fit a rectangle. A featureless plate")
+            print("      yields features only at its edges and marks, so the fit rests on a")
+            print("      rim rather than a face. On A03 rebuilt correctly that was 8,467")
+            print("      points against 666,682 -- and the sparse figure was the wrong one.")
+            print("  The per-cloud edge disagreement above says which fit is internally")
+            print("  consistent, and that is a better guide than which stage produced it.")
         else:
             print("  they agree -- the scale is corroborated by two independent routes")
 
     ok = [r for r in results if r["accepted"]]
-    # Prefer SPARSE when both pass: it is built only from points many views agreed on,
-    # which is exactly the property that matters on a surface dense stereo struggles with.
-    chosen = next((r for r in ok if r["cloud"] == "sparse"), ok[0] if ok else None)
+    # When both pass, take whichever fit's OWN two edges agree best. That is a property of
+    # the fit rather than of the pipeline stage, and it is the honest tie-break: sparse is
+    # the more trustworthy cloud for WHERE a thing is, but not for how big a low-texture
+    # flat thing is, because it only carries points around its rim.
+    chosen = min(ok, key=lambda r: r["disagreement"]) if ok else None
     out = dict(measurements=results, cross_cloud_disagreement=cross,
                chosen=(chosen["cloud"] if chosen else None), accepted=bool(chosen))
     if chosen:
