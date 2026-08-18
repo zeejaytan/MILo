@@ -29,10 +29,13 @@ an angle, while its sparse model held one. Measuring only the dense cloud report
 nonsense aspect ratio with no indication of why. A gap between the two is therefore not a
 measurement problem to be tuned away -- it says the reconstruction is wrong, and which half.
 
-When both pass, the SPARSE figure is preferred: built only from multi-view-verified points,
-it is the more trustworthy of the two on exactly the kind of surface that defeats dense
-stereo. Use --dense-only to skip the cross-check, though that removes the check that
-catches a duplicated plate.
+When both pass, the figure taken is whichever fit's own two edges agree best -- a property
+of the fit, not of the stage that produced it. Sparse is the more trustworthy cloud for
+WHERE something is, but not for how big a low-texture flat thing is: a featureless plate
+gives features only at its rim, so its rectangle is fitted to an outline. On A03 rebuilt
+correctly that meant 8,467 sparse points against 666,682 dense, and the dense figure was
+the right one. Use --dense-only to skip the cross-check, though that removes the check
+that catches a duplicated plate.
 
 Usage:
     python measure_base.py --dense <dense_workspace> --cloud <fused .ply> \\
