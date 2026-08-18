@@ -170,6 +170,66 @@ def as_arrays(m):
             np.ptp(np.asarray(m.vertices), axis=0))
 
 
+def load_boxes(path: Path):
+    """Sherd boxes in mm -> the cameras' frame. Returns a list of (lo, hi)."""
+    doc = json.loads(path.read_text())
+    k = float(doc.get("mm_per_unit", 1.0))
+    return [(np.asarray(b["min_mm"], float) / k, np.asarray(b["max_mm"], float) / k)
+            for b in doc["boxes"]], doc
+
+
+def crop_to_boxes(m, boxes):
+    """Keep faces whose every vertex sits inside ANY of the boxes."""
+    V = m.vertices
+    inside = np.zeros(len(V), bool)
+    for lo, hi in boxes:
+        inside |= np.all((V >= lo) & (V <= hi), axis=1)
+    fmask = inside[m.faces].all(axis=1)
+    if fmask.sum() < 20:
+        return None
+    sub = m.submesh([np.where(fmask)[0]], append=True, repair=False)
+    sub.metadata = {}
+    return sub
+
+
+def boxes_region(boxes, im, cam, w, h, dilate=12):
+    """Where the sherd boxes land in THIS view, as a binary mask.
+
+    Both the render and the photograph's mask are restricted to this before scoring.
+    The masks cover every sherd on the tree; these boxes cover the seven that were
+    confirmed. Without this the missing three would score as material every method
+    failed to reconstruct, which is not what is being asked.
+    """
+    reg = np.zeros((h, w), bool)
+    for lo, hi in boxes:
+        c = np.array([[x, y, z] for x in (lo[0], hi[0])
+                      for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
+        px, ok = project_points(c, im, cam)
+        if ok.sum() < 4:
+            continue
+        u, v = px[ok, 0], px[ok, 1]
+        x0 = max(int(u.min()) - dilate, 0)
+        x1 = min(int(u.max()) + dilate, w)
+        y0 = max(int(v.min()) - dilate, 0)
+        y1 = min(int(v.max()) + dilate, h)
+        if x1 > x0 and y1 > y0:
+            reg[y0:y1, x0:x1] = True
+    return reg
+
+
+def project_points(P, im, cam):
+    """World points -> pixels for an undistorted pinhole camera."""
+    X = (im["R"] @ P.T).T + im["t"]
+    z = X[:, 2]
+    ok = z > 1e-6
+    out = np.full((len(P), 2), -1.0)
+    fx, fy, cx, cy = pinhole(cam)
+    pr = X[ok, :2] / z[ok, None]
+    out[ok, 0] = fx * pr[:, 0] + cx
+    out[ok, 1] = fy * pr[:, 1] + cy
+    return out, ok
+
+
 def crop_to_box(m, lo, hi):
     """Keep faces whose every vertex is inside the box."""
     inside = np.all((m.vertices >= lo) & (m.vertices <= hi), axis=1)
@@ -194,6 +254,12 @@ def main() -> int:
                          "--crop-pad. Needed for MILo, which reconstructs the whole "
                          "ROOM: uncropped it covers the entire frame, so it 'invents' "
                          "260%% of the mask and its score measures the room, not the pot.")
+    ap.add_argument("--boxes", type=Path, metavar="JSON",
+                    help="score SHERDS ONLY: crop every mesh to the union of these boxes "
+                         "AND restrict each view's comparison to where those boxes "
+                         "project. Without the second half the score is meaningless "
+                         "against a sherds-only mask, because every clamp in the mesh "
+                         "would count as invented material.")
     ap.add_argument("--crop-pad", type=float, default=0.15,
                     help="fraction of the reference box to pad by (default 0.15). "
                          "Deliberately generous: the crop is meant to remove the ROOM, "
@@ -241,6 +307,22 @@ def main() -> int:
 
     loaded = {t: load_mesh(p) for t, p in meshes.items()}
 
+    sherd_boxes = None
+    if args.boxes:
+        sherd_boxes, bdoc = load_boxes(args.boxes)
+        report["sherds_only"] = {"boxes": args.boxes.name, "n_boxes": len(sherd_boxes),
+                                 "note": bdoc.get("note", "")}
+        print(f"SHERDS ONLY: cropping to {len(sherd_boxes)} sherd boxes, and scoring only "
+              "where they project")
+        for t in list(loaded):
+            before = len(loaded[t].vertices)
+            sub = crop_to_boxes(loaded[t], sherd_boxes)
+            if sub is None:
+                print(f"  {t}: nothing inside the boxes")
+                continue
+            loaded[t] = sub
+            print(f"  {t}: {before:,} -> {len(sub.vertices):,} verts")
+
     crop_lo = crop_hi = None
     if args.crop_to:
         if args.crop_to not in loaded:
@@ -279,11 +361,16 @@ def main() -> int:
                 continue
             gt = np.asarray(Image.open(mp).convert("L")) > 127
             h, w = gt.shape
+            region = (boxes_region(sherd_boxes, im, cams[im["cam"]], w, h)
+                      if sherd_boxes is not None else None)
             fx, fy, cx, cy = pinhole(cams[im["cam"]])
             diag = float(np.linalg.norm(ext))
             mvp = projection(fx, fy, cx, cy, w, h,
                              diag * 1e-3, diag * 1e3) @ view_matrix(im)
             pred = renderer.mask(verts, faces, mvp, w, h)
+            if region is not None:
+                pred = pred & region
+                gt = gt & region
             inter = int(np.logical_and(pred, gt).sum())
             union = int(np.logical_or(pred, gt).sum())
             rows.append({
