@@ -155,7 +155,13 @@ echo "  feature detection: max_image_size=$MAX_IMG  estimate_affine_shape=$AFFIN
 echo "  matching:          epipolar max_error=$EPIPOLAR_ERROR"
 
 mkdir -p "$W"
-DB="$W/database.db"
+# SOLVE_TAG isolates an experimental solve so it cannot overwrite the reference one.
+# Empty by default, which keeps the usual database.db / sparse/ names. Set it and the run
+# writes database_<tag>.db and sparse_<tag>/ instead, leaving the existing solve intact --
+# which matters because the existing solve is the thing any experiment is compared against.
+SOLVE_TAG="${SOLVE_TAG:-}"
+DB="$W/database${SOLVE_TAG:+_$SOLVE_TAG}.db"
+[[ -n "$SOLVE_TAG" ]] && echo "  SOLVE_TAG=$SOLVE_TAG -> $(basename "$DB"), sparse_$SOLVE_TAG/"
 
 step() { echo; echo "=== $* ($(date +%H:%M:%S)) ==="; }
 
@@ -298,7 +304,7 @@ else
 fi
 
 # ----------------------------------------------------------------------------- mapping
-SPARSE="$W/sparse"
+SPARSE="$W/sparse${SOLVE_TAG:+_$SOLVE_TAG}"
 rm -rf "$SPARSE"; mkdir -p "$SPARSE"
 
 if [[ "$MAPPER" == "global" ]]; then
