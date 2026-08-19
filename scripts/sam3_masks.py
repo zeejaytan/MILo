@@ -49,6 +49,13 @@ point of masking more than once:
   masks_sherds/   sherds only. Kept for a sherds-only variant; note it has NO base, so a
                   mesh built from it cannot be checked against the 190 x 130 mm plate.
 
+GROWN FOR SOLVING, SHRUNK FOR BUILDING. masks_object is dilated so features sitting on the
+outline survive to be matched. Every other set is ERODED, because the same pixel is the
+worst one in the frame for stereo: it straddles object and clamp, the patch being matched is
+half of each, and the depth that comes back is wrong. Those wrong depths are what put spikes
+on A03's sherds, and the part of one close enough to lie inside the sherd's own outline
+survives silhouette carving -- which is blind there by construction.
+
 WHY THE BASE IS SUBTRACTED, NOT JUST PROMPTED. The clamps are painted the same blue as the
 base plate, so "blue board" also lands on clamp bodies. Prompting alone cannot separate two
 objects of the same colour and material; subtracting the hardware mask from the base mask
@@ -144,7 +151,21 @@ def main():
                          "resolution. Masks gate feature extraction, so a few pixels of "
                          "slop is harmless and the dilation below covers it.")
     ap.add_argument("--dilate", type=int, default=8,
-                    help="grow each mask, so features ON the silhouette survive")
+                    help="grow the SOLVING mask (masks_object), so features ON the "
+                         "silhouette survive to be matched")
+    ap.add_argument("--erode-surface", type=int, default=6,
+                    help="SHRINK the surface masks (masks_measure, masks_dial, "
+                         "masks_sherds) by this many pixels instead of growing them. "
+                         "Opposite directions on purpose. For SOLVING, a feature sitting on "
+                         "the outline is useful and worth keeping. For BUILDING SURFACE it "
+                         "is the worst pixel in the frame: it straddles object and clamp, "
+                         "stereo has to match a patch that is half each, and the depth it "
+                         "returns is wrong. Those wrong depths are what left a stub of "
+                         "clamp welded to A03's sherds after the long spikes were carved "
+                         "away -- the stub sits against the sherd, inside its outline, "
+                         "where silhouette carving is blind by construction. Eroding costs "
+                         "a known ~1 mm rim of real surface; not eroding costs an unknown "
+                         "lump of invented one. Set to 0 to keep the old behaviour.")
     ap.add_argument("--overlay-every", type=int, default=20)
     ap.add_argument("--limit", type=int, default=0)
     # OFF, because the risk it defended against was measured and does not exist, while the
@@ -192,6 +213,10 @@ def main():
 
     kern = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE, (2 * args.dilate + 1, 2 * args.dilate + 1))
+    kern_er = (cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE, (2 * args.erode_surface + 1, 2 * args.erode_surface + 1))
+        if args.erode_surface else None)
+    SOLVING = {"masks_object"}          # the only set that is matched, not built from
     rows, t0 = [], time.time()
 
     for i, path in enumerate(paths):
@@ -228,8 +253,11 @@ def main():
                         ("masks_measure", measure), ("masks_dial", measure_dial)):
             out = cv2.resize(m.astype(np.uint8) * 255, (W, H),
                              interpolation=cv2.INTER_NEAREST)
-            if args.dilate:
-                out = cv2.dilate(out, kern)
+            if name in SOLVING:
+                if args.dilate:
+                    out = cv2.dilate(out, kern)
+            elif kern_er is not None:
+                out = cv2.erode(out, kern_er)
             cv2.imwrite(str(dirs[name] / (path.name + ".png")), out)
 
         n_sherd = sum(v["instances"] for v in sd.values())
