@@ -116,9 +116,14 @@ def main():
                     help="dense workspace: sparse/ and images/ inside")
     ap.add_argument("--masks", required=True, type=Path,
                     help="UNDISTORTED masks matching the dense images (dense/masks/colmap)")
-    ap.add_argument("--tol", type=float, default=0.10,
+    ap.add_argument("--tol", type=float, default=0.40,
                     help="drop a vertex when it falls outside the outline in more than this "
-                         "fraction of the views that see it")
+                         "fraction of the views that see it. 0.40 is deliberately not a "
+                         "tight visual hull: masking the clamps means a real sherd point is "
+                         "occluded by a MASKED occluder in some views and reads as outside, "
+                         "so honest surface never scores 1.0. On A03 it sits at 0.80-1.00 "
+                         "with a flat tail below 0.65. Check the histogram this prints "
+                         "before trusting the default on a new tree.")
     ap.add_argument("--every", type=int, default=2, help="use every Nth view")
     ap.add_argument("--min-piece", type=int, default=200,
                     help="delete leftover fragments smaller than this many vertices")
@@ -169,6 +174,15 @@ def main():
     med = float(np.median(support))
     print(f"\n  support (fraction of views placing a vertex inside the outline): "
           f"median {med:.3f}, mean {support.mean():.3f}")
+    # PRINT THE DISTRIBUTION, because the threshold is a judgement about this tree and
+    # should be made while looking at it. Real surface forms the bulk near 1.0; what is
+    # worth carving is the flat tail. A tree with no tail has nothing to carve.
+    h, e = np.histogram(support, bins=20, range=(0, 1))
+    print("  distribution (the left tail is what gets carved):")
+    for c, lo in zip(h, e[:-1]):
+        bar = "#" * int(46 * c / max(h.max(), 1))
+        mark = "  <- cut here" if lo <= 1.0 - args.tol < lo + 0.05 else ""
+        print(f"    {lo:.2f}-{lo+0.05:.2f} {bar:<46} {c:>8,}{mark}")
     if med < SANITY_MEDIAN_SUPPORT:
         sys.exit(f"Median support {med:.3f} is below {SANITY_MEDIAN_SUPPORT}. On a real mesh "
                  "nearly every vertex sits inside the outline in nearly every view, so this "
