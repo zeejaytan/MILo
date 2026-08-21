@@ -29,8 +29,10 @@ SELF-CHECK, because the failure is silent. Projecting with the undistorted camer
 indexing masks at the ORIGINAL photograph resolution scales every coordinate by ~1.74 and
 quietly puts most of the object "outside" -- it would carve the mesh away and report a
 tidy-looking number. So the mask size is compared against the camera size up front, and the
-median support across all vertices is checked: on a real mesh it is near 1.0, and anything
-low means the projection is wrong rather than the mesh being bad.
+support DISTRIBUTION is checked for a coherent population of vertices sitting inside the
+outline in nearly every view. See the note by HIGH_SUPPORT for why the test is the upper mode
+and not the median: on a scene mesh most vertices are rig and room and score near zero, and a
+median test refuses the very job this script is for.
 
 Usage:
     python silhouette_filter.py --mesh in.ply --out out.ply \\
@@ -46,9 +48,23 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from measure_base import read_cameras, read_images, project          # noqa: E402
 
-# Below this median support the projection is wrong, not the mesh. A correct setup puts
-# essentially every vertex of a real object inside the outline in essentially every view.
-SANITY_MEDIAN_SUPPORT = 0.60
+# THE SANITY TEST IS ABOUT THE PROJECTION, NOT ABOUT HOW MUCH IS OBJECT.
+#
+# The first version demanded a high MEDIAN support, reasoning that nearly every vertex of a
+# real object sits inside the outline in nearly every view. That is true of a mesh which is
+# ALREADY only the object, and false of the other job this script exists to do: stripping the
+# rig and the room off a MILo scene mesh, where most vertices legitimately are not the object
+# and legitimately score near zero. On A03 the median came out at 0.036 and the script refused
+# to run on exactly the mesh its own docstring says it is for.
+#
+# What actually separates "the projection is broken" from "this mesh is mostly not the object"
+# is whether a COHERENT POPULATION lands inside the outline in nearly every view. A correct
+# projection on a scene mesh is bimodal: a mass near zero (rig, room) and a distinct mode near
+# 1.0 (the object). A broken projection has no upper mode at all -- everything is smeared low,
+# because vertices land in essentially arbitrary places. So the test is the size of the upper
+# mode, which is what the 1.74x scale error would have destroyed.
+HIGH_SUPPORT = 0.85          # "inside the outline in nearly every view that sees it"
+SANITY_HIGH_FRACTION = 0.02  # at least this share of vertices must reach it
 
 
 def read_ply_mesh(path):
@@ -183,11 +199,21 @@ def main():
         bar = "#" * int(46 * c / max(h.max(), 1))
         mark = "  <- cut here" if lo <= 1.0 - args.tol < lo + 0.05 else ""
         print(f"    {lo:.2f}-{lo+0.05:.2f} {bar:<46} {c:>8,}{mark}")
-    if med < SANITY_MEDIAN_SUPPORT:
-        sys.exit(f"Median support {med:.3f} is below {SANITY_MEDIAN_SUPPORT}. On a real mesh "
-                 "nearly every vertex sits inside the outline in nearly every view, so this "
-                 "says the projection is wrong -- wrong masks, wrong model, or a mesh in "
-                 "different units (see --scale-mm-per-unit). Refusing to carve.")
+    high = float((support >= HIGH_SUPPORT).mean())
+    print(f"  {100*high:.1f}% of vertices sit inside the outline in >= "
+          f"{100*HIGH_SUPPORT:.0f}% of the views that see them")
+    if high < SANITY_HIGH_FRACTION:
+        sys.exit(f"Only {100*high:.2f}% of vertices reach {HIGH_SUPPORT:.2f} support, below the "
+                 f"{100*SANITY_HIGH_FRACTION:.0f}% floor. A correct projection always leaves a "
+                 "clear population of vertices inside the outline in nearly every view -- even "
+                 "when most of the mesh is rig and room. Its absence means the projection is "
+                 "wrong: wrong masks, wrong model, or a mesh in different units (see "
+                 "--scale-mm-per-unit). Refusing to carve.")
+    if med < 0.60:
+        print(f"  NOTE median support is {med:.3f}. The upper mode is healthy, so the "
+              "projection is sound and this simply means most of the mesh is NOT the object "
+              "-- expected when carving rig and room off a MILo scene mesh, and a red flag on "
+              "a mesh that was supposed to be object-only already.")
 
     keep = (seen >= 3) & (support >= 1.0 - args.tol)
     print(f"  keeping {keep.sum():,} of {len(V):,} vertices "
