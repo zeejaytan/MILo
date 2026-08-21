@@ -121,7 +121,14 @@ def read_ply_mesh(path):
         if not (fa[:, 0] == k).all():
             sys.exit("mixed face sizes; expected triangles throughout")
         faces = fa[:, cs:].copy().view("<u4" if isz == 4 else "<i4").reshape(nf, k).astype(np.int64)
-    return V, faces, varr, stride, hdr, vprops
+
+    # KEEP THE COLOUR. Carving used to write bare XYZ, which is the wrong thing to hand
+    # someone who is about to look for a grey metal stub welded to a terracotta sherd:
+    # obvious in colour, invisible in shaded grey. The whole point of this script is that
+    # the mesh gets looked at afterwards.
+    have = [c for c in ("red", "green", "blue") if c in cols]
+    C = np.stack([cols[c].ravel() for c in have], 1) if len(have) == 3 else None
+    return V, faces, C, varr, stride, hdr, vprops
 
 
 def main():
@@ -148,7 +155,7 @@ def main():
                          "put back into the reconstruction units the cameras use")
     args = ap.parse_args()
 
-    V, F, varr, stride, hdr, vprops = read_ply_mesh(args.mesh)
+    V, F, C, varr, stride, hdr, vprops = read_ply_mesh(args.mesh)
     print(f"{args.mesh.name}: {len(V):,} vertices, {0 if F is None else len(F):,} faces")
 
     P = V / args.scale_mm_per_unit if args.scale_mm_per_unit else V
@@ -228,20 +235,24 @@ def main():
     else:
         F2 = None
 
-    # Prune the fragments the carving leaves behind.
+    import trimesh
+    out = trimesh.Trimesh(vertices=V[keep], faces=F2 if F2 is not None else None,
+                          process=False)
+    if C is not None:
+        out.visual.vertex_colors = C[keep]
+        print("  carrying vertex colour through")
+
+    # Prune the fragments the carving leaves behind. split()/concatenate() preserve the
+    # vertex colours, so this works on the coloured mesh rather than rebuilding a bare one.
     if F2 is not None and len(F2) and args.min_piece > 0:
-        import trimesh
-        mesh = trimesh.Trimesh(vertices=V[keep], faces=F2, process=False)
-        comps = mesh.split(only_watertight=False)
+        comps = out.split(only_watertight=False)
         big = [c for c in comps if len(c.vertices) >= args.min_piece]
         if big and len(big) < len(comps):
-            mesh = trimesh.util.concatenate(big)
+            out = trimesh.util.concatenate(big)
             print(f"  dropped {len(comps)-len(big)} fragment(s) under {args.min_piece} "
                   f"vertices; {len(big)} pieces remain")
-        Vk, F2 = np.asarray(mesh.vertices), np.asarray(mesh.faces)
-    else:
-        Vk = V[keep]
 
+    Vk = np.asarray(out.vertices)
     ext_before = np.ptp(V, 0); ext_after = np.ptp(Vk, 0)
     print(f"\n  extent before {ext_before[0]:.1f} x {ext_before[1]:.1f} x {ext_before[2]:.1f}")
     print(f"  extent after  {ext_after[0]:.1f} x {ext_after[1]:.1f} x {ext_after[2]:.1f}")
@@ -249,8 +260,6 @@ def main():
     print(f"  shrank by {100*shrink[0]:.1f}%, {100*shrink[1]:.1f}%, {100*shrink[2]:.1f}% "
           "-- a large drop here means real surface was carved, not just spikes")
 
-    import trimesh
-    out = trimesh.Trimesh(vertices=Vk, faces=F2, process=False)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     out.export(args.out)
     print(f"  wrote {args.out}")
