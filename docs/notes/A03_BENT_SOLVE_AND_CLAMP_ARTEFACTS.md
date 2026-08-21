@@ -1,7 +1,7 @@
 # Tree A03: a bent camera solve, and what masking the clamps costs
 
-Status: **the solve is fixed and verified; the clamp-contact question is open.**
-2026-08-17 to 2026-08-20. One tree, A03 (17062025), with A01 and A02 as comparisons.
+Status: **the MILo retrain is done and the starvation claim did not survive it; the solve is fixed and verified; 6-pixel mask shrink is at the limit on fracture ridges; clamp-contact surface is still unobserved.**
+2026-08-17 to 2026-08-21. One tree, A03 (17062025), with A01 and A02 as comparisons.
 
 ---
 
@@ -17,7 +17,9 @@ Three separate things went wrong, and for most of a day I treated them as one.
    measured off the doubled board. Once the solve was fixed the two agree to **1%**.
 3. **Masking the clamps leaves spikes on the sherds**, because a pixel on the object's
    outline straddles sherd and clamp and returns a wrong depth. Removing them afterwards is
-   possible but limited; not creating them is better.
+   possible but limited; not creating them is better. Shrinking the surface masks by 6
+   pixels stops the spikes from forming. On the photographs that shrink is already on the
+   fracture ridges — **0.6–0.9 mm**, not a safety margin. Do not shrink further.
 
 ---
 
@@ -207,43 +209,171 @@ Now `masks_object` is dilated 8 px and every surface set is **eroded 6 px**.
 Erosion removes the spikes **at source**, so carving becomes a safety net rather than a
 required step. That takes a destructive operation out of the normal path.
 
-### Open, and it matters
+It also closes the sherds. Measured 2026-08-20 on the eleven `eroded_sherd_*.ply`: **ten of
+eleven are watertight and genus 0 with no open boundary at all**, the eleventh being the
+192 × 226 mm base plate rather than a sherd. The carved route left all three of its sherds
+open, with eleven openings between them. Erosion also cleared a defect carving never
+addressed — `sherd_2.ply` was watertight but **genus 2**, carrying two tunnels straight
+through it, and after carving had a pinch vertex besides; `eroded_sherd_2` is a clean
+genus-0 shell. Both were artefacts of building against dilated masks and then cutting.
 
-- **The break edges have not been checked specifically.** Per-piece vertex counts and
-  extents look reassuring, but "the sherd is the same size" is not "the fracture surface
-  kept its detail" — and a 6-pixel rim taken off a fracture edge is exactly the geometry the
-  matcher consumes. Judging this by a global number would repeat the reprojection-error
-  mistake.
-- **Erosion costs proportionally more on small sherds**: 2.2% of the largest, 13.4% of the
-  smallest, and the smallest lost 2.8 mm of its longest dimension (29.6 → 26.8 mm). A
-  size-aware erosion may be needed.
+The catch is in the next two sections. Carving was honest and ugly: it left a hole where the
+data stopped, and anyone opening the mesh could see it. Erosion is tidy and silent — the
+mesher closes smoothly over the unobserved patch and the result looks identical to measured
+pottery. Better route, but the marker is gone while the missing data is not. And the
+reassuring size numbers did not ask whether the **break** survived.
+
+### How far shrinking actually goes (2026-08-20)
+
+Vertex counts and overall size said the sherds survived a 6-pixel shrink: **−4.7%** of
+vertices overall, 2.2–13.4% per sherd, longest dimension **≤0.3 mm on ten of eleven
+pieces**, 2.8 mm lost on the smallest (29.6 → 26.8 mm). Those numbers cannot speak for the
+ridges: a 6-pixel rim taken off a fracture edge is exactly the geometry a reassembly matcher
+reads. This test looks at the photographs, at a scale where 6 pixels are obvious.
+
+Design: `2026-08-20-erosion-fracture-overlay-design.md`. Script:
+`scripts/erode_fracture_overlay.py`. Unshrunk SAM 3 run: job **29448323**, written to
+`masks/17062025/A03_erode0`. Production `masks/17062025/A03` was not touched. Outlines at
+0 / 2 / 4 / 6 / 8 / 12 pixels, nearest-neighbour ×4. Millimetres from the corrected
+`sparse_nosherdrig` cameras and 373.733 mm per unit.
+
+Verdict, written before looking:
+
+| where the outline sits | call |
+|---|---|
+| still on the clamp | that amount is not enough *there* |
+| on the outer wall, short of the break ridges | usable |
+| across the break face, ridges inside the discarded rim | gone too far *there* |
+
+**What the pictures say.** Six pixels is already on the fracture, not a safety margin
+around it. On these crops it is **0.60–0.86 mm**, not the “~1 mm” first guessed. If
+those ridge pixels are discarded in the photograph they cannot appear in the mesh.
+
+| crop | photograph | what it is | 6 px in mm | call |
+|---|---|---|---|---|
+| `large_break.png` | A35_1240 @3027,1870 | large sherd, break facing the camera | **0.60** | 0–2 follow the jagged ridge; 4 starts rounding the finest peaks; **6 (current) bridges small crevices**; 8–12 are a smoothed cartoon |
+| `small_piece.png` | A34_1222 @1729,2190 | complete piece ~30 mm | **0.74** | same pattern; 12 px (1.5 mm) eats the break from every side |
+| `pin_clamp.png` | A32_1140 @2634,1481 | outline next to a clamp pin | **0.86** | SAM 3’s *unshrunk* line already stops at the pottery; 6 px then eats pottery, not clamp |
+| `small_prong.png` | A31_1115 @3916,3222 | another ~30 mm piece, clamp prongs in frame | **0.75** | same millimetre bite as `small_piece` |
+| `large_clamp.png` | A35_1239 @2775,2327 | left edge of the large sherd | **0.61** | same millimetre bite as `large_break`; clamp jaws less clear than `pin_clamp` |
+
+Discarded: `small_break.png` (A31_1102, 1667 px blob). It is a sliver beside a blue knob,
+not a complete sherd. Smallest-blob-by-area is the wrong way to pick a small *piece*.
+
+Pictures: `artifacts/A03_metric/erode_overlay/` (laptop) and
+`MILo/output/17062025/A03_erode_overlay/overlays/` (Spartan).
+
+Applied after looking: 0–2 px usable; 4 px borderline (major shape kept, finest ridges
+going); **6 px is the last amount that still resembles the break**; 8 and 12 have gone too
+far. Do not raise the default. If it changes, try 4, not 8.
+
+This is a photograph-outline result, not a rebuilt mesh. Whether stereo then smooths what
+remains was not asked here.
+
+**Which of the three this is.** The method is taking fracture-ridge pixels. The size
+numbers were the wrong instrument, not evidence that the sherds were unharmed.
+
+**Weight.** One tree, four crops kept. A lead, not a rule for every capture.
+
+**What it means for the work.** Keep 6 as a ceiling. Size-aware shrinking is still
+plausible — 0.74 mm is a larger fraction of a 30 mm sherd than 0.60 mm is of a large one —
+but the millimetre bite itself is similar; the pixel count is not the thing that changes.
+The remaining argument for shrinking at all is the mixed-pixel stereo band (a few pixels),
+not “get off the clamp”. That also argues for 4 rather than 6, untested on a rebuilt mesh.
+
+### Still open
+
 - **The clamp-contact surface was never observed by any method** and cannot be recovered
   (no rescan is possible). It is currently closed over by the reconstruction and not marked
   as interpolated. A per-vertex observed/never-observed flag would let the reassembly
   pipeline exclude it and would state plainly, in the file, which surface was measured. The
   heritage literature is direct about this: *"informed CH curators usually do not accept
-  that an algorithm is used to guess portions of a surface."*
+  that an algorithm is used to guess portions of a surface."* — source not recorded; find it
+  or drop the quote before this feeds a chapter.
+
+  Designed out in `2026-08-20-visibility-and-hole-fill-design.md`, as a per-vertex **count**
+  of observing views rather than a flag: photogrammetry cannot place a point it saw once, so
+  a yes/no would stamp thinly-seen surface as measured. Now the only thing being built —
+  erosion having removed the holes that the rest of that note was originally about.
+- **A rebuilt mesh at 4 pixels** — the photograph test says 4 is the next number to try,
+  not 8. That is a dense-stereo job on the existing corrected cameras, not a new solve. Not
+  done.
+
 
 ---
 
-## 4. MILo: masking starves it
+## 4. MILo: the "starvation" was mostly a counting error
+
+### What I claimed
 
 | | training mask | Gaussians | mesh |
 |---|---|---|---|
-| A01 | none | 116.6 MB | 179.7 MB |
-| A02 | none | 95.6 MB | 147.2 MB |
-| **A03** | `masks_measure` (4.1% of frame) | **4.2 MB** | **8.8 MB** |
+| A01 | none | 377,425 | 4.49 M verts |
+| A02 | none | 309,391 | 3.68 M verts |
+| **A03** | `masks_measure` (4.1% of frame) | **13,586** | **0.22 M verts** |
 
-**23× fewer Gaussians**, and a visibly coarser mesh. The mechanism is in our own fork: the
-loss replaces everything outside the mask with flat background, so 96% of every frame
-becomes trivially easy and gradient-driven densification barely fires.
+I read that as **23× fewer Gaussians** caused by masked training starving the densifier: the
+loss replaces everything outside the mask with flat background, 96% of the frame becomes
+trivially easy, and gradient-driven densification barely fires. The mechanism is real and is
+in our own fork. The size of the effect **on the sherds** was not.
 
-Retraining with `masks_object` (21.5% of frame — room removed, rig kept) and stripping the
-rig afterwards with the silhouette filter. **Train on more, keep less.**
+### What the retrain actually showed
 
-The risk in that plan: a clamp jaw resting against a sherd projects *inside* that sherd's
-outline from many angles, so carving may not remove all of it. If so, the answer is to carve
-against `masks_measure` while having trained on `masks_object`.
+Job **29434692**, `masks_object` (23.9% of frame — room removed, rig kept), same corrected
+solve, 6 h 01 m on one A100. Gaussians went 13,586 → **93,234**, a 6.9× rise, and the
+23× gap to A02 all but closed once you allow for coverage:
+
+| training mask coverage | Gaussians | Gaussians per unit coverage |
+|---|---|---|
+| 4.1% (`masks_measure`) | 13,586 | 331k |
+| 23.9% (`masks_object`) | 93,234 | 390k |
+| 100% (A02, unmasked) | 309,391 | 309k |
+
+**Gaussian count is very nearly proportional to how much of the frame is being modelled.**
+So the totals were never a statement about sherd detail; they were a statement about how much
+room was in the picture. Comparing A03's total against A02's compared a masked object with an
+entire studio.
+
+### The measurement that should have been made first
+
+Carve both A03 meshes down to the same object with the same masks, and measure the spacing
+between neighbouring vertices **on a sherd**, in millimetres:
+
+| | verts after carving | median vertex spacing on sherds |
+|---|---|---|
+| MILo, `masks_measure` (4%) | 186,162 | **0.58 mm** |
+| MILo, `masks_object` (24%) | 246,650 | **0.53 mm** |
+| Photogrammetry, `dense_eroded` | 315,358 | **0.45 mm** |
+
+A **6.9× rise in Gaussians bought about 10% finer sampling on the sherds** — 0.58 mm to
+0.53 mm. Almost all the new capacity went to the rig and the room, which is where the extra
+mask area was. Rendered side by side the two meshes are hard to tell apart; see
+`artifacts/milo_retrain/`.
+
+### And A03 was never coarser than A02
+
+Comparing like with like — both whole-scene MILo meshes, before any carving:
+
+| | verts | median edge |
+|---|---|---|
+| A02, unmasked | 3,675,831 | 0.713 mm |
+| A03, `masks_object` | 1,395,626 | **0.584 mm** |
+| A03, `masks_measure` | 219,114 | 0.655 mm |
+
+A03 is **finer** than A02 scene-wide. A02's much larger vertex count is entirely the room.
+
+### What this does and does not settle
+
+Vertex spacing is the **sampling rate**, not the amount of detail. A smooth blob sampled every
+0.5 mm is still a smooth blob. So this rules out the explanation "the mesh is too coarse to
+carry the detail" and does **not** establish that MILo's sherd surfaces carry as much real
+detail as the photogrammetry ones. That needs a detail measure — mesh-to-mesh distance
+against `dense_eroded`, and raking-light renders of the same fracture face at matched camera
+and scale — which has not been run.
+
+**Train on more, keep less** still looks right, and it is now the cheaper option too (the wide
+mask is what the solving mask already is). But it should be adopted because carving works, not
+because of a densification gain that turns out to be about a tenth of what the totals implied.
 
 ---
 
@@ -256,4 +386,6 @@ against `masks_measure` while having trained on `masks_object`.
 | the bent solve, kept for comparison | `sparse/0`, `dense_masked/`, `dense_dial/` |
 | metric meshes | `MILo/metric/17062025/A03/` at 373.733 mm per unit |
 | masked-training MILo, kept as evidence | `MILo/output/17062025/A03_masksmeasure` |
+| unshrunk masks (fracture overlay test) | `MILo/masks/17062025/A03_erode0` |
+| fracture-outline pictures | `MILo/output/17062025/A03_erode_overlay/overlays/` (Spartan); fetched `artifacts/A03_metric/erode_overlay/` |
 | dilated masks, kept for comparison | `MILo/masks/17062025/A03_dilated` |
