@@ -98,6 +98,10 @@ def main():
                          "is slow and SAM 3 resizes internally anyway; 2000 keeps the "
                          "sherd/clamp boundary resolvable while the test stays cheap.")
     ap.add_argument("--min-score", type=float, default=0.5)
+    ap.add_argument("--prompts", nargs="*", default=None,
+                    help="override PROMPTS. The sweep found the model has NO concept of "
+                         "pottery/ceramic/sherd (zero at every threshold) but scores "
+                         "'clay fragment' at 0.88 on both backdrops.")
     args = ap.parse_args()
 
     import cv2  # noqa: F401  (checked early, used in overlay)
@@ -135,7 +139,7 @@ def main():
               img = img.copy()
               img.thumbnail((args.max_side, args.max_side))
               state = processor.set_image(img)
-              for prompt in PROMPTS:
+              for prompt in (args.prompts or PROMPTS):
                   t = time.time()
                   out = processor.set_text_prompt(state=state, prompt=prompt)
                   dt = time.time() - t
@@ -163,7 +167,7 @@ def main():
     print("\n=== which prompt found the most, per orientation ===")
     for orient in ("stored", "upright"):
         sub = [r for r in rows if r["orientation"] == orient]
-        for prompt in PROMPTS:
+        for prompt in (args.prompts or PROMPTS):
             rs = [r for r in sub if r["prompt"] == prompt]
             if rs:
                 print(f"  {orient:8s} {prompt:24s} kept {np.mean([r['kept'] for r in rs]):5.1f} "

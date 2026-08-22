@@ -164,8 +164,10 @@ def main():
                          "clamp welded to A03's sherds after the long spikes were carved "
                          "away -- the stub sits against the sherd, inside its outline, "
                          "where silhouette carving is blind by construction. Eroding costs "
-                         "a known ~1 mm rim of real surface; not eroding costs an unknown "
-                         "lump of invented one. Set to 0 to keep the old behaviour.")
+                         "a measured 0.6-0.9 mm rim of real surface on A03 (6 px; see "
+                         "docs/notes/A03_BENT_SOLVE_AND_CLAMP_ARTEFACTS.md). Not eroding "
+                         "costs an unknown lump of invented one. Set to 0 to keep the old "
+                         "behaviour.")
     ap.add_argument("--overlay-every", type=int, default=20)
     ap.add_argument("--limit", type=int, default=0)
     # OFF, because the risk it defended against was measured and does not exist, while the
