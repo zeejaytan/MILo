@@ -83,6 +83,18 @@ Ask before submitting any job, per the workspace rules.
   sparse model is *already* metric and so is the MILo mesh — nothing further to do. If it
   has not, `<work>/scale/SCALE.txt` holds the factor and `scripts/apply_scale.py` applies it.
   Never compare two meshes before checking they are in the same units.
+- **The turntable marker is unusable before 2025-07-03 N01.** On every capture up to and
+  including M04 that day the marker was placed incorrectly; using it for feature
+  recognition or alignment pulls the solve off while still looking plausible. Align and
+  scale those from the 13x19 cm base. From N01 onwards (and all of 2026) the marker is on
+  the turntable and is the intended reference. The cutoff is a position in the record,
+  not a date — M01-M04 share the date and carry the bad marker. Per-capture answer:
+  `markers_usable` in `docs/reference/scanning-record.json`.
+- **The scanning record is a file, not a memory.** `docs/reference/scanning-record.json`
+  (and `.md`) is generated from the conservator's spreadsheets by
+  `scripts/build_scanning_record.py`. In 2026 tree IDs restart per day, so key a capture
+  by `capture_id` (`<date>/<set>`) — `2026-06-15/A01` and `2026-06-16/A01` are different
+  trees with **swapped** bags. See `docs/reference/capture-layout.md`.
 - **There is no ground truth.** No correct mesh exists for a Rabati sherd. Nothing in
   `scripts/compare_meshes.py` scores against one, and no result from it should be phrased
   as if one existed.
