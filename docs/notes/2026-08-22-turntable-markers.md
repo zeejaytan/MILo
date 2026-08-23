@@ -656,7 +656,7 @@ report the span and the number of steps.** Ten steps at 400 mm read to ±0.5 mm 
 which would pin the scale about ten times harder and would also detect a printer that
 scaled the page.
 
-`reference_N01.json` now carries the pitch, its provenance (who measured it, on what, when)
+`docs/reference/turntable-board-03072025-N01.json` now carries the pitch, its provenance (who measured it, on what, when)
 and the correction factor in its `scale` block.
 
 ---
@@ -828,6 +828,87 @@ now independently checked and half is not.
 | Board pitch → chunk scale | The **N01 Metashape chunk** only | −1.2 to −1.4 % | recorded in `docs/reference/turntable-board-03072025-N01.json`; apply if any N01 measurement is taken from Metashape |
 | Metashape `point 4` misplaced | The N01 `.psx`, in the conservator's hands | ~4.5 mm on one bar | **report to the conservator** — re-clicking that one point and refitting would remove the whole −1.37 % at source |
 | Blue plate = 190 × 130 mm | `measure_base.py`, A01–A04 | **none** — confirmed | caveat in `.scale.json` can be tightened from "capped by the record" to "long edge checked to 0.42 %" |
+
+
+## 11. Wiring it into the pipeline: what the gate now does, and the two gates that could not gate
+
+Tier 1's whole point is that the board becomes a *check the pipeline runs by itself*, not a
+report someone remembers to read. `slurm/reconstruct_group.slurm` now branches at the
+"turntable check" step:
+
+- **A reference exists for this capture** (`docs/reference/turntable-board-<date>-<tree>.json`,
+  derived from `$GROUP`) → the check is **strict**. The board was bolted to the turntable and
+  photographed; if the frames are not where it says they were, the job stops before the dense
+  stage. Nothing downstream gets built from a bent solve.
+- **No reference** (every capture before 3 July 2025, which is most of them) → the old
+  camera-arc check runs, and stays **advisory**. It catches a collapsed solve but demonstrably
+  not a bent one — A03 passed it — so it prints and does not stop.
+
+Before the strict branch runs, the scanning record is consulted. If the record says this
+capture's marker is unusable *and* a reference file exists anyway, the job stops: one of the
+two is wrong, and guessing which would be the worst of the three options.
+
+### Exit statuses, and why 3 is not 0
+
+| status | meaning | job |
+|---|---|---|
+| 0 | the solve agrees with the board | continues |
+| 1 | the solve **disagrees** with the board | stops |
+| 2 | no board; the inferred check failed | advisory — prints |
+| 3 | the check could not be made at all | stops |
+
+A model that has a reference is judged **only** on the reference. The inferred checks are
+noisier, and reporting them as failures beside a passing board reading would teach everyone
+here to ignore the exit code — which is how a gate stops being a gate.
+
+Status 3 deserves its own row. It means a reference was supplied and could not be applied:
+the usual cause is pointing one capture's board at another capture, or renamed frames. That
+is not a pass. The check the caller asked for did not happen, and a gate that was asked for
+and silently skipped is worse than no gate, because the log says it ran.
+
+### Both gates were broken in the same way, and neither would have shown it
+
+Two things had to be fixed before any of the above was true. They are worth recording
+together because they are the same mistake wearing different clothes — **a check that
+reports and a check that stops the job are not the same thing, and only one of them is a
+gate.**
+
+1. **`check_turntable.py` could not fail.** It was called with `|| true`, and `check()`
+   returned nothing but a coverage number. The strict branch above would have printed a full
+   page of disagreeing frames and then run the dense stage anyway. Fixed by giving the script
+   an exit status (`exit_code_for`), removing the `|| true`, and — this is the part that
+   matters — making the **self-test assert the status**, not the frame count. The frame count
+   was already correct while the status was 0.
+2. **`build_scanning_record.py --check` exited 1 for an environment reason.** It imported
+   `openpyxl` at module level; the cluster node where the gate runs has no `openpyxl`. "Please
+   pip install openpyxl" and "this capture's marker must not be used" are the same exit code
+   to a shell script. Fixed by importing lazily and reading the committed
+   `docs/reference/scanning-record.json`, which is what everything downstream already reads —
+   `--check` never needed the spreadsheets.
+
+A third, found while wiring: `compare_to_reference()` returned a bare `None` on the
+name-mismatch path, into a two-value unpack in the caller. That is a crash, in the exact path
+the N01 gate takes. Under `set -e` a crash does stop the job, so it would have failed *safe* —
+but with a Python traceback instead of a sentence, for a mistake (wrong reference file) whose
+fix is obvious the moment it is named. It is now status 3, and it is one of the self-test's
+four cases rather than an assurance.
+
+### Proven, on real data and on synthetic
+
+`python scripts/check_turntable.py --self-test --reference docs/reference/turntable-board-03072025-N01.json`
+**PASSES**, with the exit status checked on all four cases: a faithful solve in a different
+frame and scale → 0; a solve with six frames rotated 40° → 1; a solve squeezed into a 60° arc
+→ 1; a faithful solve judged against the wrong capture's reference → 3. The metric scale is
+asserted too, and recovers 1/3.4 to better than 0.01 % on the two cases where a true scale
+still exists.
+
+On the cluster, against a real 162-image, 139,950-point COLMAP model: the wrong-reference path
+prints *"reference names do not match this model (0 of 119 matched)"* and returns 3, and the
+advisory path reads 348.4° of turn and returns 0. Both without a traceback.
+
+`build_scanning_record.py --check` was verified on the node with no `openpyxl` present:
+`03072025/N01` → 0 (marker OK), `03072025/M04` → 2 (marker unusable), `17062025/A02` → 2,
+`nope/X99` → 3.
 
 
 ## Files
