@@ -143,9 +143,15 @@ def main():
     print(f"{len(images)} photographs from {args.images}")
     fracs, tiles = [], []
     for i, p in enumerate(images):
-        # cv2.imread ignores EXIF orientation, which is what COLMAP does too. Do not
-        # "fix" this: the mask must match the pixels COLMAP reads.
-        bgr = cv2.imread(str(p), cv2.IMREAD_COLOR)
+        # The mask must match the pixels COLMAP reads, which are the STORED pixels --
+        # COLMAP reads the EXIF orientation tag into a gravity prior and does not rotate
+        # (doc/faq.rst). This line used to say cv2.imread ignores EXIF orientation. It
+        # does not, and the comment saying so was written from memory rather than
+        # measured: on the OpenCV in envs/milo (5.0.0), plain IMREAD_COLOR on an N01
+        # frame returns 3712x5568 where the stored frame is 5568x3712 -- a mask rotated
+        # a quarter turn, which would still load and would simply mask the wrong region.
+        # IMREAD_IGNORE_ORIENTATION is what makes the promise above true.
+        bgr = cv2.imread(str(p), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
         if bgr is None:
             sys.exit(f"Could not read {p}")
         mask = build_mask(bgr, args.threshold, args.min_area_frac, args.dilate,

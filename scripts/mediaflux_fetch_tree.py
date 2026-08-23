@@ -91,7 +91,7 @@ def main():
         rel = path.split(f"/{tree}/", 1)[-1] if f"/{tree}/" in path else os.path.basename(path)
         if f"/{tree}.files/" in path or f"{tree}.files" in rel:
             project.append((path, size))
-        elif "/" not in rel and Path(rel).stem.lower() == tree.lower():
+        elif "/" not in rel and Path(rel).stem.lower().startswith(tree.lower()):
             # "A03.jpg" beside the photographs is the Metashape TEXTURE ATLAS -- a UV map
             # of sherd surfaces, not a picture of the tree. It has to be kept out on both
             # counts: COLMAP would try to match a texture sheet against the capture, and
@@ -99,6 +99,13 @@ def main():
             # coverage against a 2.2% median, because it genuinely IS all clay fragment.
             # A02's copy was noticed and moved aside by hand; this stops that being
             # something to remember per tree.
+            #
+            # STARTSWITH, not equality: N01 also carries "N01 model densefirst.jpg",
+            # "N01 model tiff.jpg" and five more like them -- Metashape SCREENSHOTS of the
+            # finished reconstruction, sitting in the same namespace as the photographs.
+            # They are the whole of the 126-vs-119 gap that the scanning record shows for
+            # this capture, and they are renders of the answer, not pictures of the object.
+            # Handing them to COLMAP is the atlas mistake wearing a different name.
             atlas.append((path, size))
         elif "/" not in rel and rel.lower().endswith((".jpg", ".jpeg")):
             photos.append((path, size))
