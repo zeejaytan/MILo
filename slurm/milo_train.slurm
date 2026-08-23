@@ -18,13 +18,18 @@ set -euo pipefail
 #
 # Expects scripts/colmap_to_milo.py to have built the dataset already.
 
-CAPTURE="${1:?usage: sbatch milo_train.slurm <capture> (e.g. 16062025)}"
+CAPTURE="${1:?usage: sbatch milo_train.slurm <capture> [images_dir] [output_name]}"
+# Optional 2nd argument: train on a different image set than the adapter chose --
+# "images" for the unmasked views. Optional 3rd: write somewhere other than
+# output/<capture>, so a second run of the same capture does not overwrite the first.
+IMAGES_OVERRIDE="${2:-}"
+OUT_NAME="${3:-$CAPTURE}"
 
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
 REPO_DIR=$MILO_ROOT/repo
 ENV_PREFIX=$MILO_ROOT/envs/milo
 DATA_DIR=$MILO_ROOT/data/$CAPTURE
-OUT_DIR=$MILO_ROOT/output/$CAPTURE
+OUT_DIR=$MILO_ROOT/output/$OUT_NAME
 
 echo "=== MILo training on $CAPTURE started $(date) on $(hostname) ==="
 nvidia-smi | head -15 || true
@@ -48,8 +53,23 @@ fi
 # Which image directory to train on is decided by the adapter, which refuses to write a
 # masked set it could not verify. Reading it back here rather than hard-coding it means a
 # capture that fell back to unmasked images cannot be silently trained as if it were masked.
-IMAGES_ARG=$(python -c "import json,sys; print(json.load(open('$DATA_DIR/capture.json'))['train_images_arg'])")
-echo "Training on image set: $IMAGES_ARG"
+if [[ -n "$IMAGES_OVERRIDE" ]]; then
+    IMAGES_ARG="$IMAGES_OVERRIDE"
+    [[ -d "$DATA_DIR/$IMAGES_ARG" ]] || {
+        echo "No image set at $DATA_DIR/$IMAGES_ARG" >&2; exit 1; }
+    echo "Training on image set: $IMAGES_ARG  (OVERRIDE -- not the adapter's choice)"
+else
+    IMAGES_ARG=$(python -c "import json,sys; print(json.load(open('$DATA_DIR/capture.json'))['train_images_arg'])")
+    echo "Training on image set: $IMAGES_ARG"
+fi
+
+# A finished run is six GPU-hours. Refuse to start on top of one rather than discover
+# afterwards that the mesh being compared was overwritten halfway through.
+if [[ -f "$OUT_DIR/mesh_learnable_sdf.ply" ]]; then
+    echo "$OUT_DIR already holds a finished mesh." >&2
+    echo "Pass a different output name as the 3rd argument, or move that run aside." >&2
+    exit 1
+fi
 python -c "
 import json
 c = json.load(open('$DATA_DIR/capture.json'))

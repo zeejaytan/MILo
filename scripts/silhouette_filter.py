@@ -15,11 +15,22 @@ WHAT IT IS FOR HERE, two problems with one instrument:
       so no "remove unsupported geometry" filter finds them, but they sit outside the
       silhouette and this does.
 
-  RIG AND ROOM on a MILo mesh trained WITHOUT masks. Masked training starves the model:
-      the loss replaces everything outside the mask with flat background, 96% of the frame
-      becomes trivially easy, and gradient-driven densification barely fires. A03 came out
-      with 4.2 MB of Gaussians against A02's 95.6 MB, 23x fewer. Training on the scene and
-      carving afterwards keeps the density and still ends with only the object.
+  RIG AND ROOM on a MILo mesh trained WITHOUT masks. Training on the whole scene and
+      carving afterwards is a legitimate route, and this is the tool that makes it end with
+      only the object.
+
+      An earlier version of this note justified it with A03 holding 23x fewer Gaussians
+      than A02. That comparison is withdrawn -- see docs/lessons.md, "A 23x difference that
+      was a difference in field of view". The totals were measuring how much of the ROOM
+      each run modelled: per unit of mask coverage the three runs agree within 25%. Widening
+      A03's mask from 4.1% to 23.9% of the frame then bought 0.58 mm vertex spacing against
+      0.53 mm on a sherd -- about 10% for six GPU-hours.
+
+      So do not expect unmasked training to buy sampling density; that was tested and it
+      does not. The untested reason to prefer it is the EDGE: masks are shrunk by 6 px
+      (0.6-0.9 mm of real sherd on A03) and the loss then paints background over that rim
+      in every view, which is the fracture surface a reassembly matcher reads. Judge such a
+      run on rendered break edges against the photographs, not on vertex counts.
 
 WHY NOT SIMPLY "OUTSIDE IN ANY ONE VIEW". Strict carving is the textbook rule and it is too
 brittle here: one bad mask frame would eat real sherd. A vertex is dropped only when it
