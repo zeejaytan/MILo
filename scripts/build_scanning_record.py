@@ -29,10 +29,19 @@ import re
 import sys
 from pathlib import Path
 
-try:
-    import openpyxl
-except ImportError:  # pragma: no cover
-    sys.exit("openpyxl is required:  pip install openpyxl")
+# Imported where it is used, not here. --check is a GATE, called from Slurm on a cluster
+# node whose environment has no openpyxl, and a gate that exits 1 saying "pip install
+# openpyxl" is indistinguishable from a gate that failed the capture. It does not need the
+# spreadsheets at all: docs/reference/scanning-record.json is the built artefact, it is
+# committed, and it is what everything downstream already reads.
+def _openpyxl():
+    try:
+        import openpyxl
+    except ImportError:  # pragma: no cover
+        sys.exit("openpyxl is required to REBUILD the record:  pip install "
+                 "openpyxl. --check does not need it -- it reads "
+                 "docs/reference/scanning-record.json)")
+    return openpyxl
 
 REPO = Path(__file__).resolve().parents[1]
 REFERENCE = REPO / "docs" / "reference"
@@ -142,7 +151,7 @@ def season_notes(rows):
 
 
 def parse_sheet(path: Path, season: int) -> dict:
-    wb = openpyxl.load_workbook(path, data_only=True)
+    wb = _openpyxl().load_workbook(path, data_only=True)
     ws = wb.worksheets[0]
     rows = [[norm(c) for c in r] for r in ws.iter_rows(values_only=True)]
 
@@ -421,6 +430,18 @@ def main() -> None:
         "name such as '16062026/A01' or '03072025/N01'.",
     )
     args = ap.parse_args()
+
+    # --check reads the BUILT RECORD, and takes the short path out before anything
+    # touches a spreadsheet. See the note by _openpyxl(): this is the branch that runs on
+    # a cluster node from slurm/, where the xlsx toolchain is not installed and where an
+    # environment failure would read as a verdict.
+    if args.check and not args.drive:
+        built = REFERENCE / "scanning-record.json"
+        if not built.exists():
+            sys.exit("no built record at {} -- run this script with no arguments first"
+                     .format(built))
+        sys.exit(check_capture(json.loads(built.read_text(encoding="utf-8"))["seasons"],
+                               args.check))
 
     seasons = []
     for season, fname in SEASONS.items():

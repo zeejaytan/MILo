@@ -473,6 +473,16 @@ fi
 step "turntable check"
 TURNTABLE_REFERENCE="${TURNTABLE_REFERENCE:-$MILO_REPO/docs/reference/turntable-board-${GROUP//\//-}.json}"
 if [[ -f "$TURNTABLE_REFERENCE" ]]; then
+    # Belt and braces. The reference is only ever built for a capture the conservator
+    # marked usable, so this should never fire -- which is the reason to have it. The
+    # markers on the M-batch were "placed incorrectly ... it will pull the solve off", and
+    # a reference file copied to the wrong name would turn that warning into a gate that
+    # fails every honest solve. Better to refuse than to argue with a bad ruler.
+    "$MILO_PY" "$MILO_REPO/scripts/build_scanning_record.py" --check "$GROUP" || {
+        echo >&2
+        echo "The scanning record says this capture's marker must not be used, but a" >&2
+        echo "reference exists at $TURNTABLE_REFERENCE. One of the two is wrong. Stopping." >&2
+        exit 1; }
     echo "  marker board reference: $TURNTABLE_REFERENCE"
     echo "  this gate is STRICT -- the board says where every photograph was."
     "$MILO_PY" "$MILO_REPO/scripts/check_turntable.py"         --reference "$TURNTABLE_REFERENCE" "$BEST" || {
