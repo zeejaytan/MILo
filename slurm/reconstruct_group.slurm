@@ -485,13 +485,26 @@ if [[ -f "$TURNTABLE_REFERENCE" ]]; then
         exit 1; }
     echo "  marker board reference: $TURNTABLE_REFERENCE"
     echo "  this gate is STRICT -- the board says where every photograph was."
-    "$MILO_PY" "$MILO_REPO/scripts/check_turntable.py"         --reference "$TURNTABLE_REFERENCE" "$BEST" || {
+    # Under set -e a bare call would abort with no explanation, and every non-zero would
+    # read as "the solve is wrong". They are not the same thing: 1 means the board and the
+    # solve disagree, 3 means the check never ran. Both stop the job, for opposite reasons.
+    rc=0
+    "$MILO_PY" "$MILO_REPO/scripts/check_turntable.py"         --reference "$TURNTABLE_REFERENCE" "$BEST" || rc=$?
+    if [[ $rc -eq 1 ]]; then
         echo >&2
         echo "The solve disagrees with the marker board. Stopping before the dense stage." >&2
         echo "This is not a self-consistency complaint -- the board was bolted to the" >&2
         echo "turntable and photographed, and these frames are not where it says they" >&2
         echo "were. Look at the frame list above and at $BEST before rerunning." >&2
-        exit 1; }
+        exit 1
+    elif [[ $rc -ne 0 ]]; then
+        echo >&2
+        echo "The marker check did not run (status $rc), so nothing was verified." >&2
+        echo "Status 3 usually means $TURNTABLE_REFERENCE describes a different capture" >&2
+        echo "than $GROUP, or the frames were renamed. Stopping: a gate that was asked for" >&2
+        echo "and silently skipped is worse than no gate." >&2
+        exit 1
+    fi
 else
     echo "  no marker board reference for $GROUP (looked for $TURNTABLE_REFERENCE)"
     echo "  falling back to the camera-arc check, which is ADVISORY: it catches a"

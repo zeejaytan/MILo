@@ -208,7 +208,11 @@ def compare_to_reference(model_dir, ref_path):
     if len(common) < 8:
         print(f"  -> reference names do not match this model "
               f"({len(common)} of {len(frames)} matched); nothing to compare")
-        return None
+        # (None, None), not None: the caller unpacks two values, and a reference that was
+        # SUPPLIED and could not be applied is a distinct outcome from no reference at
+        # all. It means someone pointed the wrong ruler at this model, and the gate has to
+        # say so rather than quietly falling back to the weaker inferred check.
+        return None, None
 
     th = np.radians([frames[k]["deg"] for k in common])
     r = np.array([frames[k]["radius_m"] for k in common])
@@ -323,7 +327,7 @@ def check(model_dir, reference=None):
     if reference:
         ref_bad, _ = compare_to_reference(model_dir, reference)
     return dict(covered=covered, collapsed=verdict != "OK", bent=bool(n_bad),
-                ref_bad=ref_bad)
+                ref_supplied=bool(reference), ref_bad=ref_bad)
 
 
 def exit_code_for(result):
@@ -335,7 +339,11 @@ def exit_code_for(result):
     """
     if result is None:
         return 3
-    if result["ref_bad"] is not None:
+    if result["ref_supplied"]:
+        # A reference was given. If it could not be applied -- wrong capture, renamed
+        # frames -- that is 3 and not 0: the check the caller asked for did not happen.
+        if result["ref_bad"] is None:
+            return 3
         return 1 if result["ref_bad"] else 0
     return 2 if (result["collapsed"] or result["bent"]) else 0
 
@@ -415,6 +423,22 @@ def self_test(reference):
                       f"({serr:.4f} % off)  -> {'OK' if sgood else 'WRONG'}")
                 ok &= bool(sgood)
             ok &= bool(good)
+
+        # Fourth case: the right kind of model, the WRONG reference. This is an operator
+        # slip -- pointing N01's board at some other capture -- and until 2026-08-23 it
+        # crashed the gate instead of reporting anything, because the name-mismatch path
+        # returned a bare None into a two-value unpack. It must come out as 3 ("could not
+        # judge"), never 0: the check the caller asked for did not happen.
+        d = Path(td) / "wrong_ref"
+        d.mkdir()
+        C = 3.4 * (R @ P.T).T + np.array([5.0, -2.0, 9.0])
+        _write_images_bin(d, [f"NOTN01_{i:04d}.JPG" for i in range(len(names))], C)
+        _write_points_bin(d, C)
+        print()
+        print("-- a faithful solve judged against the WRONG reference")
+        rc = exit_code_for(check(d, reference))
+        print(f"   exit status {rc}, expected 3  -> {'OK' if rc == 3 else 'WRONG'}")
+        ok &= bool(rc == 3)
     print("\nself-test:", "PASSED" if ok else "FAILED")
     return 0 if ok else 1
 
