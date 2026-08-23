@@ -49,8 +49,8 @@ somebody spends that minute the honest answer is that this model's scale is unce
 about the per-cent level -- which on a 100 mm sherd is 1.4 mm.
 
 Usage:
-    python scripts/board_scale.py docs/reference/turntable-board-N01.json
-    python scripts/board_scale.py docs/reference/turntable-board-N01.json --pitch-nominal 40
+    python scripts/board_scale.py docs/reference/turntable-board-03072025-N01.json
+    python scripts/board_scale.py docs/reference/turntable-board-03072025-N01.json --pitch-nominal 40
     python scripts/board_scale.py ... --psx artifacts/markers/psx --write
 """
 import argparse

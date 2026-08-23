@@ -30,19 +30,25 @@ reconstruction was scored here, so nothing in this note says whether markers wou
 reconstruction better — only that the raw ingredient exists and is good enough to be worth
 the next step.
 
-**Sections 7 to 9 are what happened next.** Tier 1 (the board as an absolute rotation
+**Sections 7 to 10 are what happened next.** Tier 1 (the board as an absolute rotation
 reference) and Tier 3 (metric scale) are built and verified. Tier 2 (marker-guided matching)
 was measured and is **recommended against for this material** — it would take long-range
 matches away from the 47 photographs that cannot see the board.
 
 Two results from that work change what should be believed about this capture:
 
-> **The base plate is not a trustworthy scale reference.** Its four points are four mouse
-> clicks with no machine-detected projection, and its two edges disagree by 3.16 % in a way
-> no scale factor can fix. The marker board is a ruler about sixty times tighter, and with
-> the printed pitch measured (40 mm, ruler on the sheet, 2026-08-23) it says this model is
-> **1.2–1.4 % too large** — 1.2 to 1.4 mm on a 100 mm sherd. Corrected, the plate's long
-> edge agrees to 0.42 %, so the fault is one misplaced point, not the plate.
+> **The N01 Metashape model is 1.2–1.4 % too large**, and the reason is one misplaced click.
+> Metashape fitted its scale to two hand-clicked bars on the blue base plate; those bars
+> disagree with each other by 3.16 % in a way no scale factor can fix. The marker board is a
+> ruler about sixty times tighter, and with its printed pitch measured (40 mm, ruler on the
+> physical sheet, 2026-08-23) it puts the error at **1.2 to 1.4 mm on a 100 mm sherd**.
+>
+> **The blue plate itself is fine.** Section 10 settles this without circular reasoning: two
+> other trees measure the plate's shape by a route that never touches Metashape, and both
+> land where a 190 × 130 mm plate should. So the record is right, `scripts/measure_base.py`
+> is right, and **the finished A01–A04 meshes need no correction** — they were never scaled
+> through the broken reference. What they gain is a checked reference instead of an
+> unchecked one.
 
 ---
 
@@ -538,6 +544,12 @@ scale-free aspect-ratio idea. Under the board's ruler the 190 mm edge is right t
 only the 130 mm edge is wrong, so it is Metashape's clicked *point*, not the plate, that is
 misplaced. The 13×19 cm assumption stands.
 
+> **That last step was circular as first written and is now settled properly.** Saying "the
+> 190 mm edge is right and the 130 mm one is wrong" assumes the plate is 190×130, which is
+> the thing in question. **Section 10** decides it without that assumption, using the
+> scale-free aspect ratio measured on two other trees by a route that never touches
+> Metashape. The conclusion survives; the argument for it did not.
+
 **What the board can actually do.** The 16 targets sit on a printed square lattice, pitch
 **40.557 mm ± 0.015 (0.036%)**, residual 0.196 mm rms — roughly sixty times tighter than
 the base plate's own internal disagreement. It is a far better ruler.
@@ -726,6 +738,98 @@ comment was written from memory instead of measured, which is the part worth rem
 
 ---
 
+## 10. The blue base plate: which reading is right, and what it changes for A01–A04
+
+Section 8 found the plate's two declared edges disagreeing by 3.16 % and concluded that
+Metashape's clicked `point 4` is misplaced by about 4.5 mm. That conclusion was reached by
+*assuming* the plate really is 130 mm on the short edge, which is the thing in question.
+Stated honestly, section 8 left two readings open and picked one:
+
+| Reading | Then the plate is | And `measure_base.py` is |
+|---|---|---|
+| **A.** Point 4 was clicked 4.5 mm off the corner | 190 × 130 mm, as recorded | correct, unchanged |
+| **B.** Points 3, 4, 5 are on the corners and the record is wrong | 189.2 × **125.5** mm | wrong by **3.5 %** on every capture it has ever scaled |
+
+These lead to opposite actions, so it is worth settling rather than asserting. It settles
+without a ruler, because **the aspect ratio is scale-free and has already been measured
+twice, by a completely different route.**
+
+**The evidence.** `scripts/measure_base.py` isolates the plate with SAM 3 and fits a
+rectangle to its top face, in COLMAP reconstructions that never touch Metashape. Two trees
+from the 17 June 2025 batch:
+
+| | A02 | A03 (bent solve) | A03 (rebuilt correctly) |
+|---|---|---|---|
+| measured aspect | **1.4465** | 2.341 — refused | **1.4415** |
+| edges disagree by | 1.03 % | 46 % | 1.38 % |
+| points fitted | 683,581 | — | 666,682 |
+
+Reading A predicts **1.4615**. Reading B predicts **1.5077**. Both trees measure
+**1.44**, and — this is the part that decides it — they miss on the ***low*** side, while
+reading B is 3.2 % ***high***. The data does not merely fail to support B; it points the
+other way. Reading A stands: **the plate is 190 × 130 mm, Metashape's `point 4` is the
+thing that is wrong, and `scripts/measure_base.py` needs no change.**
+
+The residual 1.0–1.4 % is a known bias of the fit, not of the plate. `minAreaRect` is fitted
+to the outline of a semantic segment that has been grown slightly, which lengthens the short
+edge proportionally more than the long one — exactly the direction and roughly the size seen.
+Both trees show it, in the same direction, which is what a systematic bias looks like and
+what a wrong reference does not.
+
+### What this means for the finished A01–A04 meshes: nothing to apply
+
+The instruction was to make the correction apply to the already-finished meshes. It does
+not, and the reason is worth stating plainly rather than quietly skipping.
+
+**They were never scaled through the broken reference.** There are two independent scale
+routes in this workspace and they share no arithmetic:
+
+```
+N01 (2025-07-03)     board targets  ->  Metashape chunk scale, fitted to TWO clicked
+                                        base bars, one of which is 4.5 mm wrong
+                                        -> this is the thing that is 1.2-1.4 % too large
+
+A01-A04 (17 June)    blue plate  ->  measure_base.py measures the plate IN THAT
+                                     RECONSTRUCTION and multiplies by 190/130 mm
+                                     -> no Metashape, no clicked points, no chunk scale
+```
+
+`grep` confirms it: no script in the A01–A04 path reads a `.psx`, and
+`milo_mm.scale.json` records `"source": "blue base top face 190x130 mm"` for both trees.
+A02 was scaled at 377.529 mm per unit, A03 at 373.733. Applying −1.37 % to those would
+shrink two meshes that were never inflated.
+
+**There is also no way to measure the correction on them even if one were wanted.** A01–A04
+are from 17 June 2025. The marker board first appears in the N01 batch on 3 July. There is
+no board in those photographs to read, and the only reference the two batches share is the
+blue plate — which is the reference this whole section was called on to adjudicate.
+
+**What the board work does do for A01–A04 is remove a caveat, not change a number.**
+Every metric mesh carries this line in its `.scale.json`:
+
+> `"caveat": "precision ~1%; accuracy capped by the nominal 190x130 mm reference"`
+
+That caveat was honest: the 190 × 130 mm came from the conservator's record and nothing had
+ever checked it. It has now been checked, by a ruler built on 16 machine-detected targets
+that reaches the plate's long edge to within **0.42 %**. The ceiling on A01–A04's accuracy
+is therefore about half a per cent, not the unbounded "whatever the record says". On a
+100 mm sherd that is **0.4 mm**, and it is the first time that figure has had any evidence
+under it.
+
+To be exact about what is and is not established: the board confirms the **190 mm** edge to
+0.42 %. It cannot confirm the 130 mm edge, because that is the edge whose clicked endpoint
+is misplaced. `measure_base.py` uses both and takes the mean, so about half its reference is
+now independently checked and half is not.
+
+### Summary of the corrections, and where each one bites
+
+| Correction | Applies to | Size | Action taken |
+|---|---|---|---|
+| Board pitch → chunk scale | The **N01 Metashape chunk** only | −1.2 to −1.4 % | recorded in `docs/reference/turntable-board-03072025-N01.json`; apply if any N01 measurement is taken from Metashape |
+| Metashape `point 4` misplaced | The N01 `.psx`, in the conservator's hands | ~4.5 mm on one bar | **report to the conservator** — re-clicking that one point and refitting would remove the whole −1.37 % at source |
+| Blue plate = 190 × 130 mm | `measure_base.py`, A01–A04 | **none** — confirmed | caveat in `.scale.json` can be tightened from "capped by the record" to "long edge checked to 0.42 %" |
+
+
 ## Files
 
 | Path | What it is |
@@ -748,7 +852,7 @@ comment was written from memory instead of measured, which is the part worth rem
 | `scripts/board_frame.py` | Builds the board reference: targets, axis, passes, per-frame angles. |
 | `scripts/board_render.py` | Four panels at scales differing by 1000x, so each resolves its own claim. |
 | `scripts/board_scale.py` | Fits the printed lattice, tests it against the base plate, refuses to guess the pitch. |
-| `docs/reference/turntable-board-N01.json` | The reference itself: 16 targets, axis, 119 frame angles, scale block. **Committed**, unlike the rest of `artifacts/` — a gate whose ruler is not in the repository cannot be re-run by anyone else. |
+| `docs/reference/turntable-board-03072025-N01.json` | The reference itself: 16 targets, axis, 119 frame angles, scale block. **Committed**, unlike the rest of `artifacts/` — a gate whose ruler is not in the repository cannot be re-run by anyone else. |
 | `artifacts/markers/reference_N01.png` | The reference drawn: board, axis, five camera circles. |
 | `artifacts/markers/lattice_N01.png` | The printed grid with residuals at 40x. The picture that found the shear. |
 | `artifacts/markers/crop_A42_8355.png` | The board close up: a Print Markers page, cut to a disc, taped, wrinkled. |

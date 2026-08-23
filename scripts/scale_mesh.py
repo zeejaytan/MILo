@@ -133,7 +133,16 @@ def main():
     side.write_text(json.dumps(dict(
         units="millimetres", mm_per_unit=factor, source="blue base top face 190x130 mm",
         capture=args.capture, method=args.method, measured=m, scaled_at=stamp,
-        caveat="precision ~1%; accuracy capped by the nominal 190x130 mm reference"),
+        # The reference used to be unchecked -- 190x130 mm was the conservator's
+        # record and nothing had ever tested it. The turntable marker board now has:
+        # 16 machine-detected targets on a printed 40 mm lattice reach the plate's
+        # LONG edge to 0.42% (docs/notes/2026-08-22-turntable-markers.md, section 10).
+        # The short edge is still unchecked, because the Metashape point that would
+        # have checked it is the one found to be misplaced. This factor is the mean of
+        # both edges, so half its reference is now verified and half is not.
+        caveat="precision ~1%; long edge of the 190x130 mm reference verified to "
+               "0.42% against the turntable marker board, short edge unverified",
+        reference_check="turntable board, docs/reference/turntable-board-03072025-N01.json"),
         indent=2))
     print(f"  wrote {args.out.name} and {side.name}")
 

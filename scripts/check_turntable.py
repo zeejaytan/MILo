@@ -319,9 +319,25 @@ def check(model_dir, reference=None):
 
     # THIRD QUESTION, and the only one with an outside answer: does the solve agree with
     # the turntable itself? The two above can both pass on a solve that is wrong smoothly.
+    ref_bad = None
     if reference:
-        compare_to_reference(model_dir, reference)
-    return covered
+        ref_bad, _ = compare_to_reference(model_dir, reference)
+    return dict(covered=covered, collapsed=verdict != "OK", bent=bool(n_bad),
+                ref_bad=ref_bad)
+
+
+def exit_code_for(result):
+    """One check()'s result -> the status the job scheduler sees. See __main__ for the map.
+
+    A model with a reference is judged ONLY on the reference. The inferred checks are
+    noisier and the board outranks them; reporting them as failures beside a passing board
+    reading would train everyone to ignore the exit code.
+    """
+    if result is None:
+        return 3
+    if result["ref_bad"] is not None:
+        return 1 if result["ref_bad"] else 0
+    return 2 if (result["collapsed"] or result["bent"]) else 0
 
 
 def self_test(reference):
@@ -369,11 +385,23 @@ def self_test(reference):
         for (label, pts), want in zip(cases.items(), expect):
             d = Path(td) / label[:12].replace(" ", "_")
             d.mkdir()
-            _write_images_bin(d, names, 3.4 * (R @ pts.T).T + np.array([5.0, -2.0, 9.0]))
+            C = 3.4 * (R @ pts.T).T + np.array([5.0, -2.0, 9.0])
+            _write_images_bin(d, names, C)
+            _write_points_bin(d, C)
             print(f"\n-- {label}")
             got, scale = compare_to_reference(d, reference)
             good = (got == want) if isinstance(want, int) else (got > 20)
             print(f"   expected {want} bad frame(s), got {got}  -> {'OK' if good else 'WRONG'}")
+
+            # The EXIT STATUS, not just the frame count. This is what the Slurm script
+            # branches on, so it is what has to be proven -- the number above could be
+            # perfect while the status stayed 0 and the dense stage ran anyway. That is
+            # not hypothetical: it was true of this script until 2026-08-23.
+            want_rc = 0 if want == 0 else 1
+            rc = exit_code_for(check(d, reference))
+            print(f"   exit status {rc}, expected {want_rc}  "
+                  f"-> {'OK' if rc == want_rc else 'WRONG'}")
+            ok &= bool(rc == want_rc)
             # The metric scale is asserted, not just printed. The synthetic model is built
             # at 3.4x, so a correct recovery is exactly 1/3.4. The BENT case must recover it
             # too: the robust refit drops the six planted frames, so scale must survive
@@ -389,6 +417,28 @@ def self_test(reference):
             ok &= bool(good)
     print("\nself-test:", "PASSED" if ok else "FAILED")
     return 0 if ok else 1
+
+
+def _write_points_bin(d, C):
+    """A synthetic points3D.bin, so the self-test can run check() rather than only the
+    reference comparison underneath it.
+
+    check() infers the turntable axis from the point cloud, so the cloud has to be shaped
+    like the rig, or the inferred half would fail for reasons unrelated to what is being
+    tested. A tall thin column through the middle of the cameras is enough: its longest
+    axis is the trunk, which is the axis the turntable spins about.
+    """
+    ctr = C.mean(0)
+    up = np.linalg.svd(C - ctr, full_matrices=False)[2][2]      # the thin direction
+    rng = np.random.default_rng(0)
+    span = float(np.linalg.norm(C - ctr, axis=1).max())
+    pts = (ctr + np.outer(rng.uniform(-span, span, 600), up)
+           + rng.normal(0, 0.02 * span, (600, 3)))
+    with open(Path(d) / "points3D.bin", "wb") as fh:
+        fh.write(struct.pack("<Q", len(pts)))
+        for i, (x, y, z) in enumerate(pts):
+            fh.write(struct.pack("<QdddBBBd", i, x, y, z, 128, 128, 128, 0.5))
+            fh.write(struct.pack("<Q", 0))
 
 
 def _write_images_bin(d, names, C):
@@ -416,5 +466,23 @@ if __name__ == "__main__":
         sys.exit(self_test(a.reference))
     if not a.models:
         sys.exit(__doc__)
+
+    # EXIT STATUS, because this is called from slurm/reconstruct_group.slurm and a gate
+    # that cannot fail is not a gate. It was one for a while: the caller had `|| true` on
+    # it and this function returned nothing but coverage, so the strict form would have
+    # printed a page of disagreeing frames and let the dense stage run anyway.
+    #
+    #   0  every model checked agrees with what it was checked against
+    #   1  a model disagrees with the MARKER BOARD -- an outside measurement, not an
+    #      opinion about self-consistency. Stop and look.
+    #   2  no reference was given and the inferred check found a collapsed or bent solve.
+    #      Distinct from 1 because the evidence is weaker: it is the solve judging itself.
+    #   3  a model was too small to judge. Not a pass.
+    #
+    # A model with a reference is judged ONLY on the reference. The inferred checks are
+    # noisier and the board outranks them -- reporting them as failures beside a passing
+    # board reading would train everyone to ignore the exit code.
+    worst = 0
     for d in a.models:
-        check(d, a.reference)
+        worst = max(worst, exit_code_for(check(d, a.reference)))
+    sys.exit(worst)

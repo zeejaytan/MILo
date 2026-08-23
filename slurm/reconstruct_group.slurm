@@ -451,8 +451,43 @@ fi
 # wrong answer scored 0.54 px median and was reported as a success for most of a day.
 #
 # The camera arc does separate them, needs no ground truth, and costs a second.
+#
+# TWO STRENGTHS OF THIS GATE, and which one runs depends on the capture.
+#
+#   Without a marker reference it INFERS the rotation from where the cameras landed. That
+#   catches a collapse (A01, 66.6 deg of arc) but not a solve that is self-consistent and
+#   wrong: A03 registered every frame, scored a BETTER reprojection error than the correct
+#   tree, and built the blue base twice, 35 deg apart. So this form is advisory -- it
+#   reports and the job continues.
+#
+#   With one it MEASURES. From 2025-07-03 the conservator taped a Metashape coded-target
+#   board to the turntable, so the true angle of each photograph is known independently of
+#   any solve. docs/reference/turntable-board-<date>-<tree>.json carries it. When that file
+#   exists the check stops being advisory and STOPS THE JOB, because the alternative is
+#   spending the dense stage -- hours -- on a reconstruction already known to be wrong.
+#
+# The reference exists only for captures where the board is legible; the scanning record
+# field is markers_usable, and 03072025/M04 is flagged false because the board was placed
+# badly. No reference, no strict gate, and that is the honest behaviour rather than a
+# missing-file error.
 step "turntable check"
-"$MILO_PY" "$MILO_REPO/scripts/check_turntable.py" "$BEST" || true
+TURNTABLE_REFERENCE="${TURNTABLE_REFERENCE:-$MILO_REPO/docs/reference/turntable-board-${GROUP//\//-}.json}"
+if [[ -f "$TURNTABLE_REFERENCE" ]]; then
+    echo "  marker board reference: $TURNTABLE_REFERENCE"
+    echo "  this gate is STRICT -- the board says where every photograph was."
+    "$MILO_PY" "$MILO_REPO/scripts/check_turntable.py"         --reference "$TURNTABLE_REFERENCE" "$BEST" || {
+        echo >&2
+        echo "The solve disagrees with the marker board. Stopping before the dense stage." >&2
+        echo "This is not a self-consistency complaint -- the board was bolted to the" >&2
+        echo "turntable and photographed, and these frames are not where it says they" >&2
+        echo "were. Look at the frame list above and at $BEST before rerunning." >&2
+        exit 1; }
+else
+    echo "  no marker board reference for $GROUP (looked for $TURNTABLE_REFERENCE)"
+    echo "  falling back to the camera-arc check, which is ADVISORY: it catches a"
+    echo "  collapsed solve but not a bent one. Read its output."
+    "$MILO_PY" "$MILO_REPO/scripts/check_turntable.py" "$BEST" || true
+fi
 
 # Undistortion expects the chosen model; give it its own directory rather than renaming,
 # so which model was used stays visible afterwards.
