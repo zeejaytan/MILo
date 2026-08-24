@@ -906,6 +906,41 @@ On the cluster, against a real 162-image, 139,950-point COLMAP model: the wrong-
 prints *"reference names do not match this model (0 of 119 matched)"* and returns 3, and the
 advisory path reads 348.4° of turn and returns 0. Both without a traceback.
 
+### The first real solve: 03072025/N01, job 29527687
+
+Built 24 August 2026 on an A100, 119 photographs, `masks_object`, incremental mapper,
+`STAGE=colmap`. **119 of 119 registered, 88,107 sparse points, and the strict gate passed**
+— the first time the board has judged a COLMAP reconstruction rather than a synthetic one.
+
+| | |
+|---|---|
+| frames matched to the reference | 119 of 119 |
+| angle vs the board | median 0.003 deg, worst 0.016 |
+| position vs the board | median 0.30 mm, worst 0.85 mm |
+| the reference's own circle residual | 1.24 mm |
+| metric scale from the board | 1 model unit = 0.3938 m, from 119 cameras |
+
+**That agreement is too good to report unchecked**, and the workspace has been burned by a
+metric that never moved. Two things were done before believing it.
+
+*Is the needle stuck?* Three pairs of frames a third of a turn apart had their names swapped
+in a copy of the real model — the A03 failure exactly, every camera position untouched, six
+photographs simply claiming to be somewhere else. The gate named **all six and no others**,
+reported 135.9 deg and 2.9 m out, dropped them from the alignment (113 used), and exited 1.
+The scale it recovered moved by 5 parts in a million. The measurement has range on this data,
+not only on synthetic data.
+
+*Does the picture agree with the number?* `artifacts/markers/n01_solve_vs_board.png`, drawn at
+two scales because the overview panel would look identical for a solve 20 mm wrong. Down the
+axis: one clean circle of 119 cameras, evenly spaced, with a single compact object at the
+centre — not the two objects 35 deg apart that A03 built. The third panel is the residual
+itself, per photograph, unbinned: every frame under 0.9 mm, no structure, the whole
+distribution below the reference's own 1.24 mm noise floor.
+
+So the honest statement is not "the solve agrees with the board perfectly". It is **no
+disagreement is detectable above about a millimetre, which is the finest this reference can
+resolve.** For a rig 3.2 m across that is agreement to roughly 3 parts in 10,000.
+
 `build_scanning_record.py --check` was verified on the node with no `openpyxl` present:
 `03072025/N01` → 0 (marker OK), `03072025/M04` → 2 (marker unusable), `17062025/A02` → 2,
 `nope/X99` → 3.
