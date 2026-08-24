@@ -215,18 +215,25 @@ def training(
         )
         gt_image = viewpoint_cam.original_image.cuda()
 
-        # [SHERD FORK] Object masking for turntable captures.
-        # Upstream MILo loads a PNG alpha channel into `viewpoint_cam.gt_mask` but never
-        # uses it (the multiply in scene/cameras.py is commented out, and the loss below
-        # is computed on the raw image). On a turntable the backdrop is the one thing that
-        # does NOT move with the sherd, so without this the optimiser spends Gaussians
-        # modelling an inconsistent background and softens the sherd's silhouette.
-        # We composite the ground truth against the render background outside the mask,
-        # which actively tells the model "there is nothing here" and lets background
-        # Gaussians be pruned. Zeroing both images instead would leave them unpenalised.
-        if getattr(viewpoint_cam, "gt_mask", None) is not None:
-            mask = viewpoint_cam.gt_mask.cuda()
-            gt_image = gt_image * mask + background[:, None, None] * (1.0 - mask)
+        # [SHERD FORK] The object mask is deliberately NOT applied here. It used to be:
+        # this fork composited the background colour into the ground truth outside the
+        # mask, reasoning that a turntable backdrop does not move with the sherd and
+        # should not be modelled. That was wrong, in a way that cost a whole A03 run.
+        #
+        # It masked the ground truth but not the render, so the loss instructed the model
+        # to PAINT BACKGROUND over every pixel outside the outline -- including the 6 px
+        # the masks are eroded by, which on A03 is 0.6-0.9 mm of real sherd, and which is
+        # the fracture edge a reassembly matcher reads. The object-centric splatting
+        # literature is explicit that both the render and the input must be masked or the
+        # two losses fight (arXiv:2501.08174); masking one alone is the documented failure.
+        #
+        # Upstream's design already does what this patch was reaching for, and does it at
+        # the right stage: scene/cameras.py loads the alpha into `gt_mask` and leaves the
+        # photograph alone (the multiply is commented out on purpose), and the mask is
+        # consumed once, in regularization/sdf/integration.py, to cull the SDF field to
+        # the visual hull. The mask decides what is SOLID, not what the pixels should look
+        # like. Reach it with `--init integration` at extraction; see
+        # slurm/milo_extract_maskcull.slurm.
 
         # Rendering loss
         if args.decoupled_appearance:
