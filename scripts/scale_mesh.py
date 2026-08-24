@@ -43,21 +43,146 @@ def read_header(path):
         return raw, f.tell()
 
 
+def plate_provenance(m, factor):
+    """Header lines and sidecar fields for a scale taken from the blue base plate."""
+    note = [
+        "comment scale_source: top face of the blue metal base, 190 x 130 mm",
+        f"comment scale_long_edge: {m['mm_per_unit_long']:.4f} mm/unit",
+        f"comment scale_short_edge: {m['mm_per_unit_short']:.4f} mm/unit",
+        f"comment scale_edge_disagreement: {100*m['disagreement']:.2f} percent",
+        f"comment scale_aspect_measured: {m['aspect']:.4f} (true 1.4615)",
+        "comment scale_caveat: this is PRECISION not ACCURACY -- every check derives from",
+        "comment scale_caveat: the top face really being 190 x 130 mm, which is a nominal",
+        "comment scale_caveat: figure until the physical plate is measured with calipers",
+    ]
+    side = dict(
+        source="blue base top face 190x130 mm", measured=m,
+        # The reference used to be unchecked -- 190x130 mm was the conservator's
+        # record and nothing had ever tested it. The turntable marker board now has:
+        # 16 machine-detected targets on a printed 40 mm lattice reach the plate's
+        # LONG edge to 0.42% (docs/notes/2026-08-22-turntable-markers.md, section 10).
+        # The short edge is still unchecked, because the Metashape point that would
+        # have checked it is the one found to be misplaced. This factor is the mean of
+        # both edges, so half its reference is now verified and half is not.
+        caveat="precision ~1%; long edge of the 190x130 mm reference verified to "
+               "0.42% against the turntable marker board, short edge unverified",
+        reference_check="turntable board, docs/reference/turntable-board-03072025-N01.json")
+    return note, side
+
+
+def board_factor(ref_path, model_dir):
+    """Scale from the turntable marker board, for captures that have one (N01 onwards).
+
+    This is the better of the two rulers and is worth preferring where it exists. The blue
+    plate is four clicked corners, one of which is known to be ~4.5 mm out of place; the
+    board is 16 machine-detected coded targets on a printed lattice, and the model-to-board
+    fit that produces the factor runs over every registered camera -- 119 of them on N01,
+    spread over 350 degrees and half a metre of height.
+
+    TWO CORRECTIONS, and the factor is useless without both:
+
+      1. model -> the reference's own units. This is the similarity scale that
+         `check_turntable.py --reference` already has to solve for in order to compare the
+         two rigs at all. It is not computed again here: same code, same answer, and a
+         second implementation would only be a second thing to keep right.
+
+      2. the reference's units -> real millimetres. The board coordinates come from a
+         Metashape chunk whose scale was fitted to two clicked bars on the base plate, and
+         one of those clicks is the misplaced one. The printed lattice says by how much:
+         its measured pitch over-reads the 40.0 mm the conservator's ruler found on the
+         physical sheet, so `correction_factor` in the reference shrinks it back.
+         Skipping this step leaves every length 1.2-1.4% too large.
+
+    A model that DISAGREES with its own board is refused. A solve that put frames in the
+    wrong place has no trustworthy scale left, and writing millimetres onto it would put a
+    number the mesh cannot support into a file that outlives the conversation.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from check_turntable import compare_to_reference
+
+    ref = json.loads(ref_path.read_text())
+    if model_dir is None:
+        sys.exit("--board-reference needs --model: the factor is measured by fitting this "
+                 "model's cameras onto the board, so the model has to be named.")
+    bad, s = compare_to_reference(model_dir, ref_path)
+    if bad is None:
+        sys.exit(f"{ref_path.name} could not be applied to {model_dir} -- the frame names "
+                 "do not match. That is the wrong reference for this capture; refusing to "
+                 "scale by a ruler that was never read.")
+    if bad:
+        sys.exit("This model DISAGREES with its marker board. Its geometry is wrong, so "
+                 "its scale is wrong too, and a millimetre figure written onto it would "
+                 "outlive this warning. Refusing.")
+
+    sc = ref.get("scale") or {}
+    corr = sc.get("correction_factor")
+    if corr is None:
+        sys.exit(f"{ref_path.name} has no scale.correction_factor. The board's own units "
+                 "are then unverified and any millimetre figure from it would be a guess; "
+                 "see board_scale.py, which will not invent the printed sheet's pitch.")
+    raw_mm = s * 1000.0
+    factor = raw_mm * corr
+
+    # The two routes to the printed pitch measure different quantities -- a lattice fitted
+    # over all 16 targets at once, and one dot to the dot beside it -- so they are quoted
+    # as a range rather than averaged into a single four-figure number that would imply a
+    # precision neither has. 0.16% apart, which is the size of the shear in the board plane.
+    step = (sc.get("neighbour_step") or {}).get("mean_mm")
+    alt = f"{raw_mm * sc['pitch_nominal_mm'] / step:.4f}" if step else "n/a"
+    note = [
+        "comment scale_source: turntable marker board, 16 coded targets on a printed lattice",
+        f"comment scale_reference: {ref_path.name}",
+        f"comment scale_model_to_board: {raw_mm:.4f} mm/unit from {ref['coverage']['n_frames']} cameras",
+        f"comment scale_board_correction: x{corr:.6f} (measured pitch "
+        f"{sc['pitch_measured_mm']:.4f} mm vs printed {sc['pitch_nominal_mm']} mm)",
+        f"comment scale_alternative: {alt} mm/unit if the dot-to-dot pitch is used instead",
+        "comment scale_caveat: the printed 40.0 mm pitch is a DESIGNED value confirmed by a",
+        "comment scale_caveat: ruler reading +/-1.25% on one 40 mm step. It fixes which round",
+        "comment scale_caveat: number the pitch is, not the pitch itself. Measuring the longest",
+        "comment scale_caveat: straight run of dots would pin it about ten times harder.",
+    ]
+    side = dict(
+        source="turntable marker board, printed lattice at 40.0 mm",
+        reference=str(ref_path), model=str(model_dir),
+        mm_per_unit_uncorrected=raw_mm, board_correction_factor=corr,
+        mm_per_unit_alternative_dot_to_dot=None if not step else raw_mm * sc["pitch_nominal_mm"] / step,
+        board_quality=ref.get("quality"), n_frames=ref["coverage"]["n_frames"],
+        caveat="the board's lattice is the ruler; its printed 40.0 mm pitch is a designed "
+               "value identified by a ruler reading +/-1.25% on a single step, so accuracy "
+               "is capped there and not by the fit, which is far tighter",
+        reference_check="blue base plate in this same mesh, long-minus-short edge "
+                        "(rim-independent): see docs/notes/2026-08-22-turntable-markers.md")
+    return factor, note, side
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mesh", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--measurement", required=True, type=Path,
+    ap.add_argument("--measurement", type=Path,
                     help="base_measurement.json from measure_base.py")
+    ap.add_argument("--board-reference", type=Path,
+                    help="docs/reference/turntable-board-<date>-<tree>.json; scales from "
+                         "the marker board instead of the blue plate")
+    ap.add_argument("--model", type=Path,
+                    help="COLMAP sparse model this mesh was built from (with --board-reference)")
     ap.add_argument("--capture", default="")
     ap.add_argument("--method", default="")
     args = ap.parse_args()
 
-    m = json.loads(args.measurement.read_text())
-    if not m.get("accepted"):
-        sys.exit("That measurement was REJECTED. Refusing to scale by a factor its own "
-                 "checks did not accept.")
-    factor = 0.5 * (m["mm_per_unit_long"] + m["mm_per_unit_short"])
+    if bool(args.measurement) == bool(args.board_reference):
+        sys.exit("Give exactly one of --measurement (blue plate) or --board-reference "
+                 "(turntable marker board).")
+
+    if args.measurement:
+        m = json.loads(args.measurement.read_text())
+        if not m.get("accepted"):
+            sys.exit("That measurement was REJECTED. Refusing to scale by a factor its "
+                     "own checks did not accept.")
+        factor = 0.5 * (m["mm_per_unit_long"] + m["mm_per_unit_short"])
+        note, side_extra = plate_provenance(m, factor)
+    else:
+        factor, note, side_extra = board_factor(args.board_reference, args.model)
 
     raw, offset = read_header(args.mesh)
     header = raw.decode("ascii", errors="replace")
@@ -90,19 +215,9 @@ def main():
     stride = sum(size.get(t, 4) for t, _ in props)
 
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    note = [
-        f"{MARKER} millimetres",
-        f"comment scale_applied: {factor:.6f} mm per reconstruction unit",
-        "comment scale_source: top face of the blue metal base, 190 x 130 mm",
-        f"comment scale_long_edge: {m['mm_per_unit_long']:.4f} mm/unit",
-        f"comment scale_short_edge: {m['mm_per_unit_short']:.4f} mm/unit",
-        f"comment scale_edge_disagreement: {100*m['disagreement']:.2f} percent",
-        f"comment scale_aspect_measured: {m['aspect']:.4f} (true 1.4615)",
-        "comment scale_caveat: this is PRECISION not ACCURACY -- every check derives from",
-        "comment scale_caveat: the top face really being 190 x 130 mm, which is a nominal",
-        "comment scale_caveat: figure until the physical plate is measured with calipers",
-        f"comment scaled_at: {stamp}",
-    ]
+    note = [f"{MARKER} millimetres",
+            f"comment scale_applied: {factor:.6f} mm per reconstruction unit"] + note
+    note.append(f"comment scaled_at: {stamp}")
     if args.capture:
         note.append(f"comment capture: {args.capture}")
     if args.method:
@@ -131,18 +246,8 @@ def main():
 
     side = args.out.with_suffix(".scale.json")
     side.write_text(json.dumps(dict(
-        units="millimetres", mm_per_unit=factor, source="blue base top face 190x130 mm",
-        capture=args.capture, method=args.method, measured=m, scaled_at=stamp,
-        # The reference used to be unchecked -- 190x130 mm was the conservator's
-        # record and nothing had ever tested it. The turntable marker board now has:
-        # 16 machine-detected targets on a printed 40 mm lattice reach the plate's
-        # LONG edge to 0.42% (docs/notes/2026-08-22-turntable-markers.md, section 10).
-        # The short edge is still unchecked, because the Metashape point that would
-        # have checked it is the one found to be misplaced. This factor is the mean of
-        # both edges, so half its reference is now verified and half is not.
-        caveat="precision ~1%; long edge of the 190x130 mm reference verified to "
-               "0.42% against the turntable marker board, short edge unverified",
-        reference_check="turntable board, docs/reference/turntable-board-03072025-N01.json"),
+        units="millimetres", mm_per_unit=factor,
+        capture=args.capture, method=args.method, scaled_at=stamp, **side_extra),
         indent=2))
     print(f"  wrote {args.out.name} and {side.name}")
 
