@@ -88,7 +88,11 @@ conda activate "$ENV_PREFIX"
 # original run would overwrite the 111 MB unmasked mesh we want to compare against.
 mkdir -p "$OUT_DIR"
 for f in point_cloud cameras.json input.ply; do
-    [[ -e "$SRC_DIR/$f" ]] && ln -sfn "$SRC_DIR/$f" "$OUT_DIR/$f"
+    # `[[ test ]] && cmd` as a whole statement returns 1 when the test fails, and under
+    # `set -e` that ends the job. Use a real `if` -- input.ply is genuinely optional.
+    if [[ -e "$SRC_DIR/$f" ]]; then
+        ln -sfn "$SRC_DIR/$f" "$OUT_DIR/$f"
+    fi
 done
 # cfg_args is read from the model directory and merged with the command line, command line
 # winning. Copy it so this directory stands on its own, then let -i and -m override.

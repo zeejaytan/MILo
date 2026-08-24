@@ -80,7 +80,15 @@ cd "$REPO_DIR"
 # COLMAP's undistorted 3200 px views. Re-segmenting the undistorted set would give a
 # slightly different boundary and no two stages would then share a definition of "sherd".
 NIMG=$(find "$DENSE/images" -maxdepth 1 -type f | wc -l)
-NUND=$(find "$UND_ROOT/colmap" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l)
+# Ask whether the directory exists BEFORE counting in it. `find` on a missing path exits 1,
+# and under `set -euo pipefail` that kills the job -- silently, because the 2>/dev/null
+# that hides find's complaint hides the only clue. Job 29543316 died here in four seconds
+# with an empty log.
+if [[ -d "$UND_ROOT/colmap" ]]; then
+    NUND=$(find "$UND_ROOT/colmap" -maxdepth 1 -name '*.png' | wc -l)
+else
+    NUND=0
+fi
 if [[ "$NUND" -eq "$NIMG" ]]; then
     echo "  undistorted sherd masks already present ($NUND) -- reusing $UND_ROOT/colmap"
 else
