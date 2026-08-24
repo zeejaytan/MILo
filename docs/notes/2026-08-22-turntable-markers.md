@@ -948,6 +948,15 @@ resolve.** For a rig 3.2 m across that is agreement to roughly 3 parts in 10,000
 
 ### The rest of the pipeline: dense cloud, mesh, and millimetres
 
+**Scope of this section: one surface method of the four.** A02, A03 and A04 were each built
+with *four independent* surface reconstructions from the same solve — OpenMVS
+(`scene_refined_mesh.ply`), COLMAP Delaunay, COLMAP Poisson, and MILo's learnable SDF. What
+is described below is the OpenMVS one only. The other three were submitted afterwards
+(jobs **29543378** `colmap_mesh.slurm`, **29543431** `milo_prepare.slurm`) and are reported
+in the section that follows. Until all four exist, N01 is not comparable to A02–A04 and no
+statement here should be read as a property of *the N01 reconstruction* — only of the
+OpenMVS surface.
+
 The gate was the point of this work, but a gate is only worth having if the thing it guards
 runs. It does. `slurm/dense_from_model.slurm 03072025/N01 sparse/0`, job **29542525**,
 **11 min 41 s**:

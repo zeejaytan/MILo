@@ -104,12 +104,40 @@ python train.py \
 
 echo
 echo "=== extracting mesh $(date) ==="
+# --init integration IS WHAT MAKES THE MASK DO ANYTHING.
+#
+# Follow the mask through this pipeline and it goes: colmap_to_milo.py writes RGBA views
+# with the sherd mask in the alpha channel -> camera_utils.py splits alpha off into
+# `gt_alpha_mask` and leaves the three colour channels UNTOUCHED -> cameras.py stores it
+# as `view.gt_mask` with the `original_image *= mask` line commented out on purpose. So
+# TRAINING ALREADY RUNS ON THE UNMASKED PHOTOGRAPH, which is the intended design: render
+# and ground truth see the same pixels, and neither loss is told to paint background over
+# the 6 px the masks are eroded by. On A03 that erosion is 0.6-0.9 mm of real sherd, and
+# it is the fracture edge a reassembly matcher reads.
+#
+# `view.gt_mask` then has exactly ONE consumer in the whole repo:
+# regularization/sdf/integration.py, where it culls the SDF field to the visual hull --
+# the mask deciding what is SOLID rather than what the pixels should look like. That file
+# is reached only from mesh_extract_sdf.py --init integration|depth_fusion.
+#
+# --init defaults to "learnable" (mesh_extract_sdf.py:568). WITHOUT THIS FLAG the mask is
+# loaded, carried through every training iteration, and then silently discarded. The
+# default is right for MILo's benchmark scenes, which have no masks to use; it is wrong
+# for a turntable capture, and it is why an unmasked A03 came out as an entire room.
+#
+# CAVEAT, and it is not small. The refinement that follows initialisation optimises
+# against depth and normal losses that are mask-blind, so it can REGROW what the cull
+# removed. --refine_iter is exposed for that reason; slurm/milo_extract_maskcull.slurm
+# re-extracts from already-trained Gaussians without retraining if it needs turning down.
+# Look at the mesh before trusting it either way.
 python mesh_extract_sdf.py \
     -s "$DATA_DIR" \
     -m "$OUT_DIR" \
     -i "$IMAGES_ARG" \
     -r 1 \
-    --rasterizer radegs
+    --rasterizer radegs \
+    --init "${INIT:-integration}" \
+    --refine_iter "${REFINE_ITER:-1000}"
 
 echo
 echo "=== meshes produced ==="
