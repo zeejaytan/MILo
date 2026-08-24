@@ -946,6 +946,113 @@ resolve.** For a rig 3.2 m across that is agreement to roughly 3 parts in 10,000
 `nope/X99` → 3.
 
 
+### The rest of the pipeline: dense cloud, mesh, and millimetres
+
+The gate was the point of this work, but a gate is only worth having if the thing it guards
+runs. It does. `slurm/dense_from_model.slurm 03072025/N01 sparse/0`, job **29542525**,
+**11 min 41 s**:
+
+| | |
+|---|---|
+| dense cloud | 1,812,107 points from 88,107 sparse |
+| mesh | 445,861 vertices / 891,658 faces |
+| refined (decimation off) | 446,778 / 893,379 |
+| surface masks | 119 of 119, `masks_measure` — sherds and base only, no clamps, rod or dial |
+
+**Ten sherds and one base plate, each appearing exactly once.** That is the check that
+matters and it is a picture, not a number: `artifacts/markers/n01_refined_render.png`. The
+A03 failure looks like a base plate built twice 35° apart, and this base plate is a single
+sharp-cornered rectangle. Fourteen connected components: the plate, ten sherds, and three
+specks of 7–23 vertices.
+
+#### extract_sherds.py kept the base plate and threw away ten sherds
+
+Run on this mesh it accepted **2 of 14** components — one of which is the base plate — and
+rejected every other real sherd as *too blocky*. Its own docstring predicted this: thinness
+is a bounding-box ratio, so **a curved piece of pot wall fills a chunky box** while a flat
+tray scores like a perfect sherd. The contact sheet
+(`artifacts/markers/n01_contact_sheet.png`) shows it plainly — one green tile is a thin white
+sliver, which is the plate seen edge-on.
+
+Naming which of the three this is: **the measurement is wrong, not the method and not the
+reference.** The mesh is right; the selector is fitted to nothing. Its thresholds were
+deliberately never tuned, because the only mesh available to tune them on was already known
+to be faulty. There are now two good meshes to tune them on. Until that is done, the
+component list from `render_mesh.py` is the honest inventory and the verdict from
+`extract_sherds.py` is not.
+
+#### The plate is a tray with a rim, which resolves a 5 % scale disagreement
+
+Scaling N01 raised a real disagreement that had to be settled before any millimetre figure
+was written down. Two rulers:
+
+| Ruler | mm per model unit |
+|---|---|
+| Marker board, 119 cameras, pitch-corrected | **388.40** |
+| Plate long edge ÷ 190 mm | 370.3 |
+| Plate short edge ÷ 130 mm | 361.7 |
+
+Nearly 5 % apart — and the plate's two edges disagree with **each other** by 2.4 %, which is
+the tell. A ruler that cannot agree with itself is not measuring what it is assumed to be
+measuring.
+
+Rendering the plate on its own answered it in seconds (`artifacts/markers/n01_plate.png`):
+it is **a shallow tray with a raised rim**, not a flat plate. The face view shows a bright
+band of points all the way round the perimeter and the edge-on view shows the lip turned up
+at both ends. So the reconstructed outer envelope is the **outside of the rim**, and the
+190 × 130 mm figures are not.
+
+A rim adds the same amount to both directions, so it cancels in the **difference** of the two
+edges, and 190 − 130 = 60 mm needs no assumption about how wide the rim is:
+
+```
+60 mm / (0.51313 - 0.35944 units) = 390.4 mm/unit      (391.8 by a second fit)
+```
+
+against the board's **388.40**. The two independent rulers agree to **0.5–0.9 %**. The
+implied rim is **≈5 mm per side**, and that same 5 mm reconciles the Metashape project too:
+the clicked bar 3→5 solves to 189.20 mm corrected, while the mesh's outer long edge is
+199.4 mm — 10.2 mm more, or 5.1 mm per side. The short edge needs 7 mm per side to close,
+and the 2 mm difference is the already-known ~4.5 mm misplacement of `point 4` pointing the
+same way. Three separate measurements, one explanation.
+
+Treat the board as the ruler and the plate as the check, not the other way round. The
+difference-of-edges trick amplifies noise about tenfold — 1 mm of error in the edge
+difference moves the scale 1.7 % — so its agreement is a genuine confirmation but a coarse
+one.
+
+#### The metric mesh
+
+`scripts/scale_mesh.py` now takes `--board-reference` and `--model` as an alternative to
+`--measurement`, applying both corrections that a board factor needs: the model-to-board
+similarity scale (reused from `check_turntable.py`, not reimplemented) and the reference's
+own `correction_factor`, without which every length is 1.2–1.4 % too large. **A model that
+disagrees with its board is refused rather than scaled** — a solve that put frames in the
+wrong place has no trustworthy scale either, and the millimetre figure would outlive the
+warning.
+
+```
+scene_refined_mesh_mm.ply    388.401 mm per model unit
+```
+
+Measured off it, and checked against a 100 mm bar drawn into the render
+(`artifacts/markers/n01_mm.png`):
+
+| | length | width | depth |
+|---|---|---|---|
+| blue base tray, rim to rim | 199.4 mm | 139.9 mm | 17.6 mm |
+| ten sherds | 42–94 mm (median 72) | 23–64 mm | 14–38 mm |
+
+The third column is the sherd's **curvature depth** — how far it bows out of flat — not its
+wall thickness. These meshes are hollow shells photographed from outside, so wall thickness
+is not measurable from them at all; that was established when it made a clamp bar read
+thinner than any sherd.
+
+**Weight this carries: one object, one capture, no repeat.** N01 is the first capture with a
+board on the turntable and the only one built through the gate so far. The gate working here
+does not establish that it works on captures with fewer readable targets, and the 0.5–0.9 %
+agreement between board and plate is one comparison on one plate.
+
 ## Files
 
 | Path | What it is |
@@ -963,6 +1070,11 @@ resolve.** For a rig 3.2 m across that is agreement to roughly 3 parts in 10,000
 | `artifacts/markers/psx_turn3_why.png` | Turn 2 vs turn 3 at native resolution - the disc collapses to a sliver. |
 | `artifacts/markers/psx_full_views.png` | The rig, one frame from each of four revolutions. |
 | `artifacts/markers/decode_native.png` | Six targets at native resolution, 8x nearest-neighbour: the arcs are countable. |
+| `artifacts/markers/n01_refined_render.png` | The N01 mesh, two views: ten sherds and one base plate, each once. |
+| `artifacts/markers/n01_contact_sheet.png` | Every component tiled. Shows `extract_sherds.py` keeping the plate and dropping the sherds. |
+| `artifacts/markers/n01_plate.png` | The base plate alone, face on and edge on. The picture that found the rim. |
+| `artifacts/markers/n01_mm.png` | The metric mesh with a 100 mm bar drawn in, so the scale is checkable by eye. |
+| `scripts/scale_mesh.py` | Now carries `--board-reference`, and refuses a model that disagrees with its board. |
 | `scripts/check_turntable.py` | Now carries `--reference` and `--self-test`, and reports metric scale. |
 | `scripts/psx_reader.py` | Reads a Metashape project without a licence. Holds the p1/p2 fix. |
 | `scripts/board_frame.py` | Builds the board reference: targets, axis, passes, per-frame angles. |
