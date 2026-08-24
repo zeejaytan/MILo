@@ -89,12 +89,25 @@ if [[ -d "$UND_ROOT/colmap" ]]; then
 else
     NUND=0
 fi
-if [[ "$NUND" -eq "$NIMG" ]]; then
-    echo "  undistorted sherd masks already present ($NUND) -- reusing $UND_ROOT/colmap"
+# Counting is not checking. The first attempt at this capture left 164 masks here that were
+# undistorted through the WRONG solve; a count-only test would have reused them happily on
+# the next run. Re-verify the cached set against the photographs before trusting it, and
+# rebuild it if it does not hold up.
+if [[ "$NUND" -eq "$NIMG" ]] && \
+   python scripts/check_masks.py --naming colmap \
+        --images "$DENSE/images" --masks "$UND_ROOT/colmap" >/dev/null 2>&1; then
+    echo "  undistorted sherd masks already present ($NUND) and still check out -- reusing"
 else
     echo "=== undistorting sherd masks $(date) ==="
+    # Ask the dense workspace which solve it came from. A03's work directory holds two --
+    # `sparse/0` (bent) and `sparse_nosherdrig/0` (corrected) -- and they disagree about
+    # the lens, SIMPLE_RADIAL k = -0.00811 against +0.01858. Naming `sparse/0` here sent
+    # the masks through the wrong warp; job 29543372 was caught by the resulting one-pixel
+    # height difference. Do not hard-code either name.
+    MODEL=$(./scripts/dense_input_model.sh "$DENSE" "$WORK") || exit 1
+    echo "  dense workspace $DENSE was undistorted from $MODEL"
     mkdir -p "$UND_ROOT"
-    ./scripts/undistort_masks.sh "$MASK_SRC" "$WORK/sparse/0" "$DENSE" "$UND_ROOT" 3200
+    ./scripts/undistort_masks.sh "$MASK_SRC" "$MODEL" "$DENSE" "$UND_ROOT" 3200
 fi
 
 echo

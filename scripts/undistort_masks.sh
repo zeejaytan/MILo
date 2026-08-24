@@ -109,12 +109,13 @@ if [[ "$NUND" -ne "$NIMG" ]]; then
 fi
 
 rm -rf "$OUT/colmap" "$OUT/openmvs"
-mkdir -p "$OUT/colmap" "$OUT/openmvs"
-for f in "$UND"/images/*; do
-    b=$(basename "$f")
-    cp "$f" "$OUT/colmap/$b.png"            # A21_0891.JPG  -> A21_0891.JPG.png
-    cp "$f" "$OUT/openmvs/${b%.*}.mask.png" # A21_0891.JPG  -> A21_0891.mask.png
-done
+# NOT a copy. image_undistorter names its output after the name in the model, which ends
+# .JPG here, so it writes JPEG -- and copying that to a .png filename produced masks that
+# were three-channel, lossy, and ringing along every edge while claiming to be PNG. The
+# threshold-and-rewrite step also reports how much of each frame the compression left
+# grey, which is the only honest measure of what was being tolerated.
+python "$REPO/scripts/binarize_masks.py" \
+    --src "$UND/images" --colmap "$OUT/colmap" --openmvs "$OUT/openmvs" || exit 1
 echo "  wrote $NUND masks to $OUT/colmap (COLMAP) and $OUT/openmvs (OpenMVS)"
 
 # Prove BOTH sets before anything spends hours on either. No database at this point, so
