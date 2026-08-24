@@ -123,6 +123,42 @@ else
 fi
 
 echo
+
+# The number measure_base.py prints is the plate's ABSOLUTE reading, which includes the
+# rim. The rim-independent comparison is a separate arithmetic step and it was previously
+# only described in a comment -- so the job advertised a check it did not perform. It does
+# now. 190 - 130 = 60 mm is the difference of the two nominal edges; a rim adds the same
+# amount to both, so it cancels in the difference and 60 mm needs no assumption about how
+# wide it is. Noise is amplified about tenfold by the subtraction, so agreement at the
+# percent level is a genuine confirmation but a coarse one. Reported, never applied.
+BM="$MILO/base/$CAPTURE/base_measurement.json"
+SJ=$(ls "$D"/*_mm.scale.json 2>/dev/null | head -1)
+if [[ -s "$BM" && -n "$SJ" ]]; then
+    python - "$BM" "$SJ" <<'PY'
+import json, sys
+bm, sj = (json.load(open(p)) for p in sys.argv[1:3])
+board = sj["mm_per_unit"]
+print()
+print(f"  board (applied)          {board:8.2f} mm/unit")
+for m in bm["measurements"]:
+    d = m["long_units"] - m["short_units"]
+    if d <= 0:
+        print(f"  {m['cloud']:<10} rim-independent   n/a (long <= short)"); continue
+    rim_free, absolute = 60.0 / d, m["mm_per_unit"]
+    print(f"  {m['cloud']:<10} absolute {absolute:8.2f}  ({100*(absolute/board-1):+5.1f}% vs board)")
+    print(f"  {m['cloud']:<10} rim-free {rim_free:8.2f}  ({100*(rim_free/board-1):+5.1f}% vs board)")
+print()
+print("  Reading it: if the plate is a tray, its ABSOLUTE reading sits BELOW the board")
+print("  (the reconstructed envelope is wider than the 190x130 face, so each unit buys")
+print("  fewer millimetres) and the RIM-FREE reading moves back UP towards it. Both")
+print("  pointing the same way is the confirmation. If the rim-free number moved AWAY")
+print("  from the board instead, the rim is not what the disagreement is, and neither")
+print("  reading should be trusted until someone looks at the plate render.")
+PY
+else
+    echo "  no plate measurement to compare against -- rim-independent check skipped."
+fi
+
 echo "=== finished $(date) ==="
 # A refusal is a valid result and the chain continues unscaled, exactly as measure_base
 # does. Exiting non-zero here would cancel downstream jobs over a ruler, not over geometry.
