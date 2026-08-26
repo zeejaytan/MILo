@@ -29,7 +29,13 @@ def load_camera(args):
 
 
 
-def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occupancy_shift"):
+def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occupancy_shift",
+                 voxel_size=0.002, block_count=50000):
+    # [SHERD FORK] voxel_size and block_count were hard-coded. DTU normalises every scan to
+    # a fixed size, so one voxel size fits the benchmark; our captures are in COLMAP units
+    # that differ per capture, and 0.002 units is 0.75 mm on A03 -- coarser than the 0.4-0.5
+    # mm the marching-tetrahedra mesh already samples at. The defaults below are the
+    # author's, unchanged, so a faithful run needs no flags.
     gaussians = GaussianModel(dataset.sh_degree)
     output_path = os.path.join(dataset.model_path,"point_cloud")
     iteration = 0
@@ -69,7 +75,10 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
         depth_list.append(depth[0].cpu().numpy())
 
     torch.cuda.empty_cache()
-    voxel_size = 0.002
+    n_masked = sum(1 for c in viewpoint_cam_list if c.gt_mask is not None)
+    print(f"[INFO] {n_masked} of {len(viewpoint_cam_list)} views carried a mask. "
+          f"Views without one contribute their whole depth map, background included.")
+    print(f"[INFO] TSDF voxel size {voxel_size} scene units, block_count {block_count}.")
     o3d_device = o3d.core.Device("CPU:0")
     vbg = o3d.t.geometry.VoxelBlockGrid(attr_names=('tsdf', 'weight', 'color'),
                                             attr_dtypes=(o3c.float32,
@@ -78,7 +87,7 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
                                             attr_channels=((1), (1), (3)),
                                             voxel_size=voxel_size,
                                             block_resolution=16,
-                                            block_count=50000,
+                                            block_count=block_count,
                                             device=o3d_device)
     for color, depth, viewpoint_cam in zip(color_list, depth_list, viewpoint_cam_list):
         depth = o3d.t.geometry.Image(depth)
@@ -118,6 +127,10 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=None)
     parser.add_argument("--rasterizer", default="radegs", type=str, choices=["radegs", "gof"])
     parser.add_argument("--occupancy_mode", type=str, default="occupancy_shift")
+    # [SHERD FORK] both default to the author's hard-coded values; passing neither
+    # reproduces upstream behaviour exactly.
+    parser.add_argument("--voxel_size", type=float, default=0.002)
+    parser.add_argument("--block_count", type=int, default=50000)
     args = parser.parse_args(sys.argv[1:])
     
     print(f"[INFO] Using {args.rasterizer} as rasterizer.")
@@ -130,7 +143,8 @@ if __name__ == "__main__":
     
     
     with torch.no_grad():
-        extract_mesh(lp.extract(args), pp.extract(args), args.checkpoint_iterations, args.occupancy_mode)
+        extract_mesh(lp.extract(args), pp.extract(args), args.checkpoint_iterations, args.occupancy_mode,
+                     voxel_size=args.voxel_size, block_count=args.block_count)
         
         
     
