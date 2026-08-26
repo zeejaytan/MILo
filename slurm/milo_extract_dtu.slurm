@@ -147,15 +147,26 @@ need = $base * (0.002/$v)**2 * ($m/8.0) * 1.6
 print(int(min(max(need, 50000), 1_500_000)))"
 }
 
+# The installed Open3D wheel ships a CUDA build and picks it up automatically on a GPU
+# node, and fusion is far faster there. The limit is memory: block_count reserves 80 KiB
+# per block on whichever device. Anything under 30 GiB goes to the A100; the fine rungs
+# reserve more than a GPU has and fall back to host RAM.
+device_for() {
+    python3 -c "
+gib = $1 * 80/1024/1024
+print('CUDA:0' if gib < 30 else 'CPU:0')"
+}
+
 for RUNG in $RUNGS; do
     V=$(voxel_for "$RUNG"); M=$(mult_for "$RUNG"); B=$(blocks_for "$RUNG")
+    DEV=$(device_for "$B")
     TAG="v${V}"
     RAW="$OUT_DIR/recon_tsdf_${TAG}.ply"
     CULLED="$OUT_DIR/recon_tsdf_${TAG}_culled.ply"
 
     echo
     echo "=================================================================="
-    echo "=== rung $RUNG: voxel $V units, multiplier $M, blocks $B  $(date)"
+    echo "=== rung $RUNG: voxel $V units, multiplier $M, blocks $B, fusing on $DEV  $(date)"
     python3 -c "print(f'  voxel {$V * $MM_PER_UNIT:.3f} mm, band +/-{$V * $M * $MM_PER_UNIT:.2f} mm, {$B * 80/1024/1024:.1f} GiB reserved')"
     echo "=================================================================="
 
@@ -170,6 +181,7 @@ for RUNG in $RUNGS; do
             --block_count "$B" \
             --trunc_voxel_multiplier "$M" \
             --mm_per_unit "$MM_PER_UNIT" \
+            --o3d_device "$DEV" \
             --ply_name "$(basename "$RAW")" 2>&1 | tee "$OUT_DIR/log_fuse_${TAG}.txt"
     fi
     [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh" >&2; exit 1; }

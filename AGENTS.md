@@ -142,11 +142,18 @@ Ask before submitting any job, per the workspace rules.
   only: a finer grid resolves whatever the rendered depth maps contain, which at a quarter
   of a millimetre may be fracture relief or may be Gaussian depth noise. Renders decide
   that, never the vertex count.
-- **Open3D in `envs/milo` is a CPU-only build** (0.19.0, `open3d.cpu.pybind`,
-  `o3d.core.cuda.is_available()` is `False`). TSDF fusion therefore does not use the GPU
-  no matter what device string is passed, and its cost grows as 1/voxel². Refinement is
-  paid for in wall-clock on CPU cores, so give these jobs `--cpus-per-task` and time.
-  Block capacity is a RAM reservation: 80 KiB per block (4096 voxels × 20 bytes).
+- **Open3D's CPU/CUDA choice is made at import, on whatever node you are sitting on — do
+  not diagnose it from the login node.** `envs/milo` has open3d **0.19.0 with the CUDA
+  build present** (`open3d/cuda/pybind*.so`, 802 MB, alongside the 225 MB CPU one).
+  `open3d/__init__.py` calls `open3d_core_cuda_device_count()` and only imports the CUDA
+  module if that is `> 0`; on the login node it is 0, so `o3d.core.cuda.is_available()`
+  reports `False` there and looks exactly like a CPU-only wheel. It is not. No rebuild is
+  needed — run it on a GPU node.
+  What still forces CPU is MILo's own hard-coded `o3d.core.Device("CPU:0")`, now
+  overridable with `--o3d_device` (see fork change 4). Fusion cost grows as 1/voxel², so
+  GPU is worth a lot; the ceiling is that `block_count` reserves **80 KiB per block**
+  (4096 voxels × 20 bytes) on whichever device — 1.5 M blocks is 114 GiB and will not fit
+  an A100. Coarse voxels on the GPU, fine voxels in host RAM.
 - **MILo has two different mask-culls and they do opposite things on a turntable.**
   `--init integration` (`regularization/sdf/integration.py`) keeps anything that falls
   inside a mask in **at least one** view, and — the line that actually bites, `:94` —

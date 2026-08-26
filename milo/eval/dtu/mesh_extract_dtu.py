@@ -31,7 +31,7 @@ def load_camera(args):
 
 def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occupancy_shift",
                  voxel_size=0.002, block_count=50000, trunc_voxel_multiplier=8.0,
-                 ply_name="recon_tsdf.ply", mm_per_unit=None):
+                 ply_name="recon_tsdf.ply", mm_per_unit=None, o3d_device_str="CPU:0"):
     # [SHERD FORK] voxel_size, block_count and trunc_voxel_multiplier were hard-coded or
     # left at Open3D's default. DTU normalises every scan to a fixed size, so one voxel
     # size fits the benchmark; our captures are in COLMAP units that differ per capture,
@@ -103,7 +103,22 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     if abs(trunc_voxel_multiplier * 16.0 / 8.0 - 16.0) > 1e-9:
         print(f"[INFO] the band is {2 * trunc_voxel_multiplier / 16.0:.2f} blocks thick, "
               f"so expect roughly that multiple of the blocks a multiplier of 8 would need.")
-    o3d_device = o3d.core.Device("CPU:0")
+    # [SHERD FORK] upstream hard-codes CPU:0. The installed wheel DOES ship a CUDA build
+    # (open3d/cuda/pybind*.so, 800 MB), and open3d/__init__.py picks it automatically when
+    # it sees a GPU -- so on a compute node this can run on CUDA:0 and is far faster, since
+    # fusion cost grows as 1/voxel^2. The catch is that block_count is a reservation of
+    # whichever device's memory: 80 KiB per block, so 1.5M blocks is 114 GiB and will not
+    # fit an A100. Coarse rungs on GPU, fine rungs on CPU. Default stays the author's.
+    if o3d_device_str.upper().startswith("CUDA") and not o3d.core.cuda.is_available():
+        print(f"[WARNING] {o3d_device_str} asked for but Open3D sees no CUDA device "
+              f"(__DEVICE_API__={getattr(o3d, '__DEVICE_API__', '?')}). Falling back to "
+              f"CPU:0. On a login node this is expected; in a job it is not.",
+              file=sys.stderr)
+        o3d_device_str = "CPU:0"
+    print(f"[INFO] Open3D {o3d.__version__} fusing on {o3d_device_str} "
+          f"(device API: {getattr(o3d, '__DEVICE_API__', '?')}); "
+          f"{block_count * 80 / 1024 / 1024:.1f} GiB reserved there.")
+    o3d_device = o3d.core.Device(o3d_device_str)
     vbg = o3d.t.geometry.VoxelBlockGrid(attr_names=('tsdf', 'weight', 'color'),
                                             attr_dtypes=(o3c.float32,
                                                          o3c.float32,
@@ -194,6 +209,10 @@ if __name__ == "__main__":
     parser.add_argument("--ply_name", type=str, default="recon_tsdf.ply",
                         help="output filename inside the model directory, so a sweep of "
                              "voxel sizes does not overwrite itself.")
+    parser.add_argument("--o3d_device", type=str, default="CPU:0",
+                        help="Open3D device for the TSDF fusion, e.g. CUDA:0. The wheel "
+                             "ships a CUDA build; the limit is that block_count reserves "
+                             "80 KiB per block on that device's memory.")
     parser.add_argument("--mm_per_unit", type=float, default=None,
                         help="reporting only: prints voxel size and truncation band in "
                              "millimetres so a wrong scale is obvious in the log.")
@@ -212,7 +231,8 @@ if __name__ == "__main__":
         extract_mesh(lp.extract(args), pp.extract(args), args.checkpoint_iterations, args.occupancy_mode,
                      voxel_size=args.voxel_size, block_count=args.block_count,
                      trunc_voxel_multiplier=args.trunc_voxel_multiplier,
-                     ply_name=args.ply_name, mm_per_unit=args.mm_per_unit)
+                     ply_name=args.ply_name, mm_per_unit=args.mm_per_unit,
+                     o3d_device_str=args.o3d_device)
         
         
     
