@@ -30,12 +30,24 @@ def load_camera(args):
 
 
 def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occupancy_shift",
-                 voxel_size=0.002, block_count=50000):
-    # [SHERD FORK] voxel_size and block_count were hard-coded. DTU normalises every scan to
-    # a fixed size, so one voxel size fits the benchmark; our captures are in COLMAP units
-    # that differ per capture, and 0.002 units is 0.75 mm on A03 -- coarser than the 0.4-0.5
-    # mm the marching-tetrahedra mesh already samples at. The defaults below are the
-    # author's, unchanged, so a faithful run needs no flags.
+                 voxel_size=0.002, block_count=50000, trunc_voxel_multiplier=8.0,
+                 ply_name="recon_tsdf.ply", mm_per_unit=None):
+    # [SHERD FORK] voxel_size, block_count and trunc_voxel_multiplier were hard-coded or
+    # left at Open3D's default. DTU normalises every scan to a fixed size, so one voxel
+    # size fits the benchmark; our captures are in COLMAP units that differ per capture,
+    # and 0.002 units is 0.75 mm on A03 -- 3.6x coarser than the 0.21 mm/px the depth maps
+    # are actually rendered at. The defaults below are the author's effective values, so a
+    # faithful run still needs no flags.
+    #
+    # THE TRAP, if you refine voxel_size: Open3D's truncation band is
+    # trunc_voxel_multiplier * voxel_size, and upstream passes neither argument, so it sits
+    # at 8 -- one block wide, which is why 8 pairs with block_resolution 16. Shrink the
+    # voxel 4x and the band shrinks 4x too, from ~6 mm to ~1.5 mm on A03. Gaussian-rendered
+    # depth disagrees between views by more than that in places, and when it does the
+    # surfaces stop reinforcing and the mesh fragments into holes. Raise the multiplier in
+    # step with the refinement to hold the band at a fixed PHYSICAL width, and the two
+    # questions -- how finely am I sampling, how much depth noise am I tolerating -- stay
+    # separate instead of being silently welded together.
     gaussians = GaussianModel(dataset.sh_degree)
     output_path = os.path.join(dataset.model_path,"point_cloud")
     iteration = 0
@@ -78,7 +90,19 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     n_masked = sum(1 for c in viewpoint_cam_list if c.gt_mask is not None)
     print(f"[INFO] {n_masked} of {len(viewpoint_cam_list)} views carried a mask. "
           f"Views without one contribute their whole depth map, background included.")
-    print(f"[INFO] TSDF voxel size {voxel_size} scene units, block_count {block_count}.")
+    band = trunc_voxel_multiplier * voxel_size
+    if mm_per_unit:
+        print(f"[INFO] TSDF voxel {voxel_size} units = {voxel_size * mm_per_unit:.3f} mm; "
+              f"truncation band +/-{band * mm_per_unit:.2f} mm "
+              f"(multiplier {trunc_voxel_multiplier}); block_count {block_count} "
+              f"= {block_count * 80 / 1024 / 1024:.1f} GiB reserved.")
+    else:
+        print(f"[INFO] TSDF voxel size {voxel_size} scene units, truncation band "
+              f"+/-{band} units (multiplier {trunc_voxel_multiplier}), "
+              f"block_count {block_count}.")
+    if abs(trunc_voxel_multiplier * 16.0 / 8.0 - 16.0) > 1e-9:
+        print(f"[INFO] the band is {2 * trunc_voxel_multiplier / 16.0:.2f} blocks thick, "
+              f"so expect roughly that multiple of the blocks a multiplier of 8 would need.")
     o3d_device = o3d.core.Device("CPU:0")
     vbg = o3d.t.geometry.VoxelBlockGrid(attr_names=('tsdf', 'weight', 'color'),
                                             attr_dtypes=(o3c.float32,
@@ -100,24 +124,56 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
         intrinsic = np.array([[fx,0,float(W)/2],[0,fy,float(H)/2],[0,0,1]],dtype=np.float64)
         intrinsic = o3d.core.Tensor(intrinsic)
         extrinsic = o3d.core.Tensor((viewpoint_cam.world_view_transform.T).cpu().numpy().astype(np.float64))
+        # [SHERD FORK] the trailing 1.0, 8.0 are depth_scale and depth_max, NOT truncation.
+        # trunc_voxel_multiplier is the next positional argument in both calls and upstream
+        # never passes it; it must be given to BOTH or the block allocation will not cover
+        # the band the integration then tries to write into.
         frustum_block_coords = vbg.compute_unique_block_coordinates(
-                                                                        depth, 
+                                                                        depth,
                                                                         intrinsic,
-                                                                        extrinsic, 
-                                                                        1.0, 8.0
+                                                                        extrinsic,
+                                                                        1.0, 8.0,
+                                                                        trunc_voxel_multiplier
                                                                     )
         vbg.integrate(
-                        frustum_block_coords, 
-                        depth, 
+                        frustum_block_coords,
+                        depth,
                         color,
                         intrinsic,
-                        extrinsic,  
-                        1.0, 8.0
+                        extrinsic,
+                        1.0, 8.0,
+                        trunc_voxel_multiplier
                     )
+
+    # [SHERD FORK] block_count is a capacity, allocated up front, and a grid that fills up
+    # drops the overflow instead of complaining. Without this the failure looks like a
+    # slightly incomplete mesh, which is exactly the kind of quiet wrong answer that gets
+    # believed. It also gives the next rung of a voxel-size ladder a measured number to
+    # scale from rather than a guess: blocks needed grow as (old_voxel / new_voxel)^2,
+    # times any increase in band thickness (2 * multiplier / 16 blocks).
+    try:
+        used = vbg.hashmap().size()
+        print(f"[INFO] blocks used: {used:,} of {block_count:,} reserved "
+              f"({100.0 * used / max(block_count, 1):.1f}%).")
+        if used > 0.95 * block_count:
+            print(f"[WARNING] the voxel grid is essentially full. Geometry past the "
+                  f"capacity is silently dropped -- treat this mesh as incomplete and "
+                  f"rerun with a larger --block_count.", file=sys.stderr)
+    except Exception:
+        print("[INFO] could not read block usage from the grid.")
 
     mesh = vbg.extract_triangle_mesh()
     mesh.compute_vertex_normals()
-    o3d.io.write_triangle_mesh(os.path.join(dataset.model_path,"recon_tsdf.ply"),mesh.to_legacy())
+    out_ply = os.path.join(dataset.model_path, ply_name)
+    o3d.io.write_triangle_mesh(out_ply, mesh.to_legacy())
+    n_v = len(mesh.vertex["positions"])
+    print(f"[INFO] wrote {out_ply}: {n_v:,} vertices.")
+    if n_v == 0:
+        # A fine voxel with the default multiplier is the way this happens: the band gets
+        # narrower than the disagreement between views and nothing ever reinforces.
+        print("[ERROR] the fusion produced an empty mesh. Raise --trunc_voxel_multiplier "
+              "or coarsen --voxel_size.", file=sys.stderr)
+        sys.exit(1)
     print("done!")
 
 if __name__ == "__main__":
@@ -127,10 +183,20 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=None)
     parser.add_argument("--rasterizer", default="radegs", type=str, choices=["radegs", "gof"])
     parser.add_argument("--occupancy_mode", type=str, default="occupancy_shift")
-    # [SHERD FORK] both default to the author's hard-coded values; passing neither
+    # [SHERD FORK] all default to the author's effective values; passing none of them
     # reproduces upstream behaviour exactly.
     parser.add_argument("--voxel_size", type=float, default=0.002)
     parser.add_argument("--block_count", type=int, default=50000)
+    parser.add_argument("--trunc_voxel_multiplier", type=float, default=8.0,
+                        help="TSDF truncation band, in voxels. Raise it in step with any "
+                             "refinement of --voxel_size to hold the band at a fixed "
+                             "physical width.")
+    parser.add_argument("--ply_name", type=str, default="recon_tsdf.ply",
+                        help="output filename inside the model directory, so a sweep of "
+                             "voxel sizes does not overwrite itself.")
+    parser.add_argument("--mm_per_unit", type=float, default=None,
+                        help="reporting only: prints voxel size and truncation band in "
+                             "millimetres so a wrong scale is obvious in the log.")
     args = parser.parse_args(sys.argv[1:])
     
     print(f"[INFO] Using {args.rasterizer} as rasterizer.")
@@ -144,7 +210,9 @@ if __name__ == "__main__":
     
     with torch.no_grad():
         extract_mesh(lp.extract(args), pp.extract(args), args.checkpoint_iterations, args.occupancy_mode,
-                     voxel_size=args.voxel_size, block_count=args.block_count)
+                     voxel_size=args.voxel_size, block_count=args.block_count,
+                     trunc_voxel_multiplier=args.trunc_voxel_multiplier,
+                     ply_name=args.ply_name, mm_per_unit=args.mm_per_unit)
         
         
     

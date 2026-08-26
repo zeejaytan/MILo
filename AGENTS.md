@@ -54,14 +54,31 @@ Keep this list current; it is what a rebase onto upstream has to survive.
 3. **`.gitignore`** — upstream ignores `*.sh`, `*.slurm`, `*.ply` and `*.png` outright,
    which would silently swallow this fork's own tooling. Re-included by name at the end
    of the file.
-4. **`milo/eval/dtu/mesh_extract_dtu.py` — `--voxel_size` / `--block_count`.** Both were
-   hard-coded (`0.002`, `50000`). DTU normalises every scan to a fixed size, so one voxel
-   size fits that benchmark; our captures are in COLMAP units that differ per capture, and
-   0.002 units is **0.75 mm on A03** — coarser than the 0.41–0.51 mm the marching-tetrahedra
-   mesh already samples at. The new flags default to the author's values, so passing
-   neither reproduces upstream exactly. Two `print`s were added reporting how many views
-   carried a mask and what voxel size is in use, because a run with zero masks would
-   otherwise fuse the whole room and report success. Search `[SHERD FORK]`.
+4. **`milo/eval/dtu/mesh_extract_dtu.py` — TSDF resolution made adjustable and legible.**
+   New flags `--voxel_size`, `--block_count`, `--trunc_voxel_multiplier`, `--ply_name`,
+   `--mm_per_unit`; all default to the author's effective values, so passing none of them
+   reproduces upstream exactly. Why each exists:
+   - `--voxel_size` was hard-coded at `0.002`. DTU normalises every scan to a fixed size,
+     so one voxel size fits that benchmark; our captures are in COLMAP units that differ
+     per capture. 0.002 units is **0.75 mm on A03**, and the depth maps it fuses are
+     rendered at 0.21 mm/px — so the author's setting discards a factor of 3.6 that the
+     photographs actually carry. See the resolution note under *Domain notes* below.
+   - `--trunc_voxel_multiplier` is the one that matters if you touch the voxel size.
+     Open3D's truncation band is `trunc_voxel_multiplier * voxel_size`, upstream passes it
+     to **neither** `compute_unique_block_coordinates` nor `integrate`, so it sits at 8 —
+     one block wide, which is why 8 pairs with `block_resolution=16`. Refining the voxel
+     alone shrinks the band with it (≈6 mm → ≈1.5 mm at 4×), and where Gaussian-rendered
+     depth disagrees between views by more than the band, surfaces stop reinforcing and
+     the mesh fragments. Raise it in step with any refinement. It must be passed to both
+     calls or block allocation will not cover the band integration writes into.
+   - `--ply_name` so a ladder of voxel sizes does not overwrite `recon_tsdf.ply`.
+   - `--mm_per_unit` is reporting-only: the log then states voxel size and band in
+     millimetres, which makes a wrong scale obvious instead of plausible.
+   Three checks were added on the same principle: how many views carried a mask (zero
+   would fuse the whole room and still exit 0), how many blocks the grid actually used
+   (Open3D **silently drops** geometry past `block_count`, which looks like a slightly
+   incomplete mesh rather than an error), and a hard failure on an empty output mesh.
+   Search `[SHERD FORK]`.
 
 Everything else this fork adds lives in `scripts/` and `slurm/` and touches no upstream file.
 
@@ -110,6 +127,26 @@ Ask before submitting any job, per the workspace rules.
   `scripts/build_scanning_record.py`. In 2026 tree IDs restart per day, so key a capture
   by `capture_id` (`<date>/<set>`) — `2026-06-15/A01` and `2026-06-16/A01` are different
   trees with **swapped** bags. See `docs/reference/capture-layout.md`.
+- **What actually limits TSDF resolution here — measured on A03, not assumed.** Three
+  separate ceilings, and only the first is a setting:
+  1. *Voxel size*, the author's `0.002` units × 373.7 mm/unit = **0.75 mm**. Adjustable.
+  2. *Depth-map sampling*, the real floor: images are 3200 × 2133, `fx` 6829.8 px, camera
+     ring 3.77 units ≈ **1.41 m** from the turntable centre, giving 1408/6830 = **0.21 mm
+     per pixel** at the object. (Cross-check: 3200 px × 0.21 = 660 mm field of view against
+     a ~500 mm tray — consistent.) Refining below ~0.2 mm samples nothing new.
+  3. *Truncation band*, `trunc_voxel_multiplier × voxel_size` = **±6.0 mm** at the
+     defaults. This is what fails first when you refine, and it is separately controllable
+     — see fork change 4.
+  So the author's voxel is **3.6× coarser than the photographs support**, and refining it
+  to ~0.0006 units (0.22 mm) is justified by the data. That is a claim about *sampling*
+  only: a finer grid resolves whatever the rendered depth maps contain, which at a quarter
+  of a millimetre may be fracture relief or may be Gaussian depth noise. Renders decide
+  that, never the vertex count.
+- **Open3D in `envs/milo` is a CPU-only build** (0.19.0, `open3d.cpu.pybind`,
+  `o3d.core.cuda.is_available()` is `False`). TSDF fusion therefore does not use the GPU
+  no matter what device string is passed, and its cost grows as 1/voxel². Refinement is
+  paid for in wall-clock on CPU cores, so give these jobs `--cpus-per-task` and time.
+  Block capacity is a RAM reservation: 80 KiB per block (4096 voxels × 20 bytes).
 - **MILo has two different mask-culls and they do opposite things on a turntable.**
   `--init integration` (`regularization/sdf/integration.py`) keeps anything that falls
   inside a mask in **at least one** view, and — the line that actually bites, `:94` —
