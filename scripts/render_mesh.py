@@ -80,12 +80,23 @@ def render(path, out_dir, label=None, components=True):
     lo, hi = V.min(0), V.max(0)
     ext = hi - lo
 
+    # Component sizes are in FACES, and are counted by labelling the face-adjacency graph
+    # rather than by trimesh's split(). Same definition of a component -- split() walks the
+    # same graph -- but split() then materialises a full Trimesh object per component, and
+    # that cost is what matters here: these meshes are mostly speckle. The MILo surface for
+    # 03072025/N01 has 8,860 components, so split() built 8,860 meshes and had not finished
+    # after thirty minutes (job 29619651, TIMEOUT). Labelling the same graph takes 21 s.
+    #
+    # A mesh too broken to count is exactly the mesh worth looking at, so a failure here
+    # must not stop the picture being drawn.
     ncomp, sizes = None, []
     if components:
         try:
-            comps = m.split(only_watertight=False)
-            ncomp = len(comps)
-            sizes = sorted((len(c.vertices) for c in comps), reverse=True)[:6]
+            lab = trimesh.graph.connected_component_labels(
+                m.face_adjacency, node_count=len(m.faces))
+            counts = np.bincount(lab)
+            ncomp = len(counts)
+            sizes = sorted(counts.tolist(), reverse=True)[:6]
         except Exception:
             ncomp = None
 
@@ -101,7 +112,7 @@ def render(path, out_dir, label=None, components=True):
                      f"extent {ext[0]:.1f} x {ext[1]:.1f} x {ext[2]:.1f} {units}",
            fill=(205, 205, 205))
     if ncomp is not None:
-        d.text((14, 48), f"{ncomp} separate pieces (largest: {sizes})", fill=(205, 205, 205))
+        d.text((14, 48), f"{ncomp:,} separate pieces; largest, in faces: {sizes}", fill=(205, 205, 205))
     d.text((14, 66), "left: front        right: turned 90 degrees", fill=(145, 145, 145))
 
     out = Path(out_dir) / (Path(path).stem + "_render.png")

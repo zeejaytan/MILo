@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=0:30:00
+#SBATCH --time=1:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/render_meshes_%j.log
 
 set -uo pipefail
@@ -20,8 +20,9 @@ set -uo pipefail
 # THE ENVIRONMENT IS THE POINT OF THIS FILE. render_mesh.py needs trimesh; of the three
 # environments on this project only MILo/envs/milo has it (4.6.8). Checked, not assumed.
 #
-# No GPU. render_mesh.py is a z-buffered splat of the vertices -- a few seconds per mesh
-# even at 2.8M vertices, which is why this asks for half an hour and not two.
+# No GPU. Seconds per mesh for the splat itself; the component count is the slow part and
+# runs about 20 s on a 5.6M-face surface. An hour is generous on purpose -- the first run
+# of this job died at the 30-minute limit on a mesh with 8,860 components.
 #
 # Usage:
 #   sbatch slurm/render_meshes.slurm 03072025/N01 [dense-subdir]
