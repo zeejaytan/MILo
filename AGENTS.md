@@ -149,6 +149,16 @@ Ask before submitting any job, per the workspace rules.
   module if that is `> 0`; on the login node it is 0, so `o3d.core.cuda.is_available()`
   reports `False` there and looks exactly like a CPU-only wheel. It is not. No rebuild is
   needed — run it on a GPU node.
+  **An Open3D CUDA OOM is not a recoverable exception**: it raises, then aborts the
+  process while unwinding (`Block of ... should have been recorded`) and takes the job
+  with it — job 29626640 died that way in 1:45. Never catch it; pre-flight the free VRAM
+  and downgrade to host RAM instead, and retry in a *fresh process* if it still happens.
+  The cause there was upstream's bare `torch.cuda.empty_cache()`, which frees PyTorch's
+  cache but not its live tensors — and `cameraList_from_camInfos` keeps **every training
+  image and its alpha on the GPU** (143 × 3200 × 2133 × 4 ch × 4 B ≈ **15.6 GiB**), with
+  the Gaussians on top. Open3D allocates outside PyTorch's pool, so it got nothing.
+  Release the camera pixels before fusing; the fusion needs only intrinsics, extrinsics
+  and image size.
   What still forces CPU is MILo's own hard-coded `o3d.core.Device("CPU:0")`, now
   overridable with `--o3d_device` (see fork change 4). Fusion cost grows as 1/voxel², so
   GPU is worth a lot; the ceiling is that `block_count` reserves **80 KiB per block**

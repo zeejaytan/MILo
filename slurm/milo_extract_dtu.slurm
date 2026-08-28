@@ -170,10 +170,8 @@ for RUNG in $RUNGS; do
     python3 -c "print(f'  voxel {$V * $MM_PER_UNIT:.3f} mm, band +/-{$V * $M * $MM_PER_UNIT:.2f} mm, {$B * 80/1024/1024:.1f} GiB reserved')"
     echo "=================================================================="
 
-    if [[ -f "$RAW" ]]; then
-        echo "  $RAW exists already -- skipping the fusion for this rung."
-    else
-        cd "$REPO_DIR/milo"
+    FUSELOG="$OUT_DIR/log_fuse_${TAG}.txt"
+    run_fuse() {  # $1 = Open3D device, $2 = log file
         python -u eval/dtu/mesh_extract_dtu.py \
             -s "$DATA_DIR" -m "$OUT_DIR" -i images_masked -r 1 --eval \
             --rasterizer radegs \
@@ -181,14 +179,35 @@ for RUNG in $RUNGS; do
             --block_count "$B" \
             --trunc_voxel_multiplier "$M" \
             --mm_per_unit "$MM_PER_UNIT" \
-            --o3d_device "$DEV" \
-            --ply_name "$(basename "$RAW")" 2>&1 | tee "$OUT_DIR/log_fuse_${TAG}.txt"
+            --o3d_device "$1" \
+            --ply_name "$(basename "$RAW")" 2>&1 | tee "$2"
+    }
+
+    if [[ -f "$RAW" ]]; then
+        echo "  $RAW exists already -- skipping the fusion for this rung."
+    else
+        cd "$REPO_DIR/milo"
+        if ! run_fuse "$DEV" "$FUSELOG"; then
+            # An Open3D CUDA OOM raises and then ABORTS the process while unwinding, so
+            # there is no recovering in-process -- a fresh process on the host is the only
+            # clean state left. mesh_extract_dtu.py pre-flights the free VRAM to avoid ever
+            # getting here, so this firing means that estimate was wrong.
+            if [[ "$DEV" != "CPU:0" ]]; then
+                echo "  rung $RUNG failed on $DEV. Retrying on CPU:0 in a fresh process."
+                rm -f "$RAW"
+                FUSELOG="$OUT_DIR/log_fuse_${TAG}_cpu.txt"
+                run_fuse "CPU:0" "$FUSELOG"
+            else
+                echo "rung $RUNG failed on CPU as well -- see $FUSELOG" >&2
+                exit 1
+            fi
+        fi
     fi
     [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh" >&2; exit 1; }
 
     # Feed the measured block usage forward to the finer rungs.
-    if [[ "$RUNG" == "1" && -f "$OUT_DIR/log_fuse_${TAG}.txt" ]]; then
-        BLOCKS_USED_1=$(grep -oP 'blocks used: \K[\d,]+' "$OUT_DIR/log_fuse_${TAG}.txt" \
+    if [[ "$RUNG" == "1" && -f "$FUSELOG" ]]; then
+        BLOCKS_USED_1=$(grep -oP 'blocks used: \K[\d,]+' "$FUSELOG" \
                         | tr -d ',' | head -1 || true)
         echo "  measured block usage at the author's setting: ${BLOCKS_USED_1:-unknown}"
     fi

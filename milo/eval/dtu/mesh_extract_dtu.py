@@ -6,6 +6,7 @@ BASE_DIR = os.path.dirname(  # milo/
     )
 )
 sys.path.append(BASE_DIR)
+import gc
 import torch
 from scene import GaussianModel
 from argparse import ArgumentParser
@@ -86,10 +87,34 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
         depth[render_pkg["mask"]<alpha_thres] = 0
         depth_list.append(depth[0].cpu().numpy())
 
-    torch.cuda.empty_cache()
     n_masked = sum(1 for c in viewpoint_cam_list if c.gt_mask is not None)
     print(f"[INFO] {n_masked} of {len(viewpoint_cam_list)} views carried a mask. "
           f"Views without one contribute their whole depth map, background included.")
+
+    # [SHERD FORK] Upstream's bare empty_cache() here frees only PyTorch's *cache*, not its
+    # live tensors -- and the live tensors are the problem. cameraList_from_camInfos puts
+    # every training image AND its alpha on the GPU: 143 views x 3200x2133 x (3+1) channels
+    # x 4 bytes is about 15.6 GiB, and the Gaussians sit alongside it. Open3D's CUDA
+    # allocator then asks the driver for its own memory and gets nothing, which is how this
+    # OOM'd on an 80 GB A100 while reserving 3.8 GiB for the voxel grid (job 29626640).
+    # The depth and colour maps are already numpy on the host by this point, and the fusion
+    # below needs only intrinsics, extrinsics and image size from each camera, so the
+    # pixels can go. Counting the masks first, above, is what makes that safe.
+    if torch.cuda.is_available():
+        reserved_before = torch.cuda.memory_reserved() / 1024 ** 3
+    del gaussians
+    for cam in viewpoint_cam_list:
+        for attr in ("original_image", "gt_mask", "gt_alpha_mask", "depth_image", "mask"):
+            if torch.is_tensor(getattr(cam, attr, None)):
+                setattr(cam, attr, None)
+    gc.collect()
+    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        free_b, total_b = torch.cuda.mem_get_info()
+        print(f"[INFO] GPU after releasing the render state: torch reserved "
+              f"{reserved_before:.1f} -> {torch.cuda.memory_reserved() / 1024 ** 3:.1f} GiB; "
+              f"{free_b / 1024 ** 3:.1f} of {total_b / 1024 ** 3:.1f} GiB free on the card. "
+              f"Open3D allocates outside this and needs room here, not in torch's cache.")
     band = trunc_voxel_multiplier * voxel_size
     if mm_per_unit:
         print(f"[INFO] TSDF voxel {voxel_size} units = {voxel_size * mm_per_unit:.3f} mm; "
@@ -115,6 +140,20 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
               f"CPU:0. On a login node this is expected; in a job it is not.",
               file=sys.stderr)
         o3d_device_str = "CPU:0"
+    # [SHERD FORK] check the card has room BEFORE asking, because an Open3D CUDA OOM is not
+    # a recoverable exception here: it raises, then aborts the process while unwinding
+    # ("Block of ... should have been recorded") and takes the job with it. A pre-flight
+    # test costs nothing and downgrades to host RAM instead of dying. The margin is loose
+    # on purpose -- integration allocates per-view scratch on top of the grid.
+    if o3d_device_str.upper().startswith("CUDA") and torch.cuda.is_available():
+        need_gib = block_count * 81920 / 1024 ** 3
+        free_gib = torch.cuda.mem_get_info()[0] / 1024 ** 3
+        if free_gib < need_gib * 1.5 + 4.0:
+            print(f"[WARNING] the voxel grid wants {need_gib:.1f} GiB and only "
+                  f"{free_gib:.1f} GiB is free on the card. Fusing on CPU:0 instead: "
+                  f"slower, but a CUDA OOM here aborts rather than raises.",
+                  file=sys.stderr)
+            o3d_device_str = "CPU:0"
     print(f"[INFO] Open3D {o3d.__version__} fusing on {o3d_device_str} "
           f"(device API: {getattr(o3d, '__DEVICE_API__', '?')}); "
           f"{block_count * 80 / 1024 / 1024:.1f} GiB reserved there.")
