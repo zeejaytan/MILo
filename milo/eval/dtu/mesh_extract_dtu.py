@@ -199,24 +199,47 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
                         trunc_voxel_multiplier
                     )
 
-    # [SHERD FORK] block_count is a capacity, allocated up front, and a grid that fills up
-    # drops the overflow instead of complaining. Without this the failure looks like a
-    # slightly incomplete mesh, which is exactly the kind of quiet wrong answer that gets
-    # believed. It also gives the next rung of a voxel-size ladder a measured number to
-    # scale from rather than a guess: blocks needed grow as (old_voxel / new_voxel)^2,
-    # times any increase in band thickness (2 * multiplier / 16 blocks).
+    # [SHERD FORK] block_count is a capacity allocated up front, and the two devices behave
+    # DIFFERENTLY when it is exceeded, which is worth knowing before reading a mesh:
+    #   CUDA:0  rehashes and grows. Job 29694649 reserved 50,000 and ended on 290,640
+    #           (581%) with no complaint -- so nothing was dropped, but the reservation
+    #           stopped meaning anything and the memory estimate for the run was 6x low.
+    #   CPU:0   does not survive it. The same overflow segfaulted the retry (exit 139).
+    # Either way the number is the measurement the next rung of a voxel ladder is sized
+    # from: blocks grow as (old_voxel / new_voxel)^2, times the increase in band thickness
+    # (2 * multiplier / 16 blocks).
+    used = 0
     try:
         used = vbg.hashmap().size()
         print(f"[INFO] blocks used: {used:,} of {block_count:,} reserved "
-              f"({100.0 * used / max(block_count, 1):.1f}%).")
-        if used > 0.95 * block_count:
-            print(f"[WARNING] the voxel grid is essentially full. Geometry past the "
-                  f"capacity is silently dropped -- treat this mesh as incomplete and "
-                  f"rerun with a larger --block_count.", file=sys.stderr)
+              f"({100.0 * used / max(block_count, 1):.1f}%); "
+              f"{used * 80 / 1024 / 1024:.1f} GiB of grid.")
+        if used > block_count:
+            print(f"[WARNING] the reservation was exceeded ({used:,} > {block_count:,}). "
+                  f"CUDA grew to fit; CPU:0 would have segfaulted. Rerun with "
+                  f"--block_count {int(used * 1.4)} or more.", file=sys.stderr)
     except Exception:
         print("[INFO] could not read block usage from the grid.")
 
-    mesh = vbg.extract_triangle_mesh()
+    # [SHERD FORK] Marching cubes on CUDA allocates a scratch structure sized by the active
+    # block count, and above roughly 3e5 blocks it cannot: "Unable to allocate assistance
+    # mesh structure for Marching Cubes with 290640 active voxel blocks" (job 29694649,
+    # on an A100 with 78 GiB free -- it is a structural limit, not a shortage). Open3D's
+    # own advice is to extract on the host. Integration is where the speed matters and it
+    # stays on the GPU; extraction moves. The copy costs the grid's size in host RAM.
+    if o3d_device_str.upper().startswith("CUDA") and used > 200_000:
+        print(f"[INFO] moving the grid to the host for mesh extraction: {used:,} blocks is "
+              f"past what CUDA marching cubes can allocate scratch for.")
+        vbg = vbg.cpu()
+    try:
+        mesh = vbg.extract_triangle_mesh()
+    except RuntimeError as exc:
+        if "CPU" in str(o3d_device_str).upper():
+            raise
+        print(f"[WARNING] mesh extraction failed on {o3d_device_str} ({exc}). "
+              f"Retrying on the host.", file=sys.stderr)
+        vbg = vbg.cpu()
+        mesh = vbg.extract_triangle_mesh()
     mesh.compute_vertex_normals()
     out_ply = os.path.join(dataset.model_path, ply_name)
     o3d.io.write_triangle_mesh(out_ply, mesh.to_legacy())

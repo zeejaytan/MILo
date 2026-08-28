@@ -43,6 +43,19 @@ set -euo pipefail
 # Each rung writes its own mesh before the next begins, so a wall-clock timeout on the
 # fine end still leaves the coarse results usable.
 #
+# THE LADDER DEFAULTS TO RUNG 1 ONLY, and this is a measurement, not caution. Job 29694649
+# fused rung 1 and used 290,640 voxel blocks. Rung 2 would need about 2.3 million (178 GiB)
+# and rung 3 about 9 million (700 GiB) -- neither fits this job, or any job. The reason is
+# not the sherds. The masks in images_masked keep 24% of every frame, and by the redness
+# test that separates fired clay from steel, only 8.7% of that is sherd: 61 cm^2 of sherd
+# against 644 cm^2 of the clamp rig, per view. The rig is dozens of thin chromed rods and
+# clamps -- enormous surface area for its volume, and specular, so the depth the Gaussians
+# render for it moves with the viewpoint and the 143 per-view shells never coincide. The
+# grid is therefore mostly spent storing 143 disagreeing copies of a laboratory stand.
+# Mask the rig out and rung 2 costs roughly 200,000 blocks (15 GiB) instead of 2.3 million.
+# Pass "1 2" or "1 2 3" explicitly if you want to try anyway; blocks_for() will refuse
+# rather than silently under-reserve, because under-reserving segfaults on CPU.
+#
 # WHY THE MULTIPLIER MOVES WITH THE VOXEL. Open3D's TSDF truncation band is
 # trunc_voxel_multiplier * voxel_size and upstream passes neither argument, leaving it at 8
 # -- one block wide, which is why 8 pairs with block_resolution 16. Refine the voxel alone
@@ -62,13 +75,13 @@ set -euo pipefail
 # Usage:
 #   ./scripts/remote/pull_and_sbatch.sh slurm/milo_extract_dtu.slurm \
 #        17062025/A03 17062025/A03_nomask 17062025/A03_dtu
-#   ...optional 4th argument picks the rungs, default "1 2 3":
+#   ...optional 4th argument picks the rungs, default "1" (see THE LADDER above):
 #        17062025/A03 17062025/A03_nomask 17062025/A03_dtu "1 2"
 
 CAPTURE="${1:?usage: sbatch milo_extract_dtu.slurm <capture> <trained_run> <out_name> [rungs]}"
 TRAINED="${2:?second argument is the finished run to read Gaussians from}"
 OUT_NAME="${3:?third argument is where to write the meshes}"
-RUNGS="${4:-1 2 3}"
+RUNGS="${4:-1}"
 
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
 REPO_DIR=$MILO_ROOT/repo
@@ -131,30 +144,48 @@ mult_for()   { case "$1" in 1) echo 8;;      2) echo 16;;     3) echo 27;;     e
 # Rung 1 runs at the author's 50000 and REPORTS how many it actually used; the finer rungs
 # are then sized from that measurement rather than from a guess. Blocks scale as the square
 # of the refinement, times the increase in band thickness.
+#
+# MEASURED, job 29694649: rung 1 used 290,640 blocks, not the author's 50,000. That is a
+# 6x miss, and it is not a quirk of the voxel size -- 91% of what the mask keeps is the
+# steel clamp rig (see the mask note at the top of this file), which is a forest of thin
+# specular rods whose rendered depth differs from view to view, so the per-view shells
+# never coincide and the block count is roughly 143 non-overlapping shells. The reserve
+# below is that measurement plus 40%.
 BLOCKS_USED_1=""
 blocks_for() {
     local rung="$1" v m
     v=$(voxel_for "$rung"); m=$(mult_for "$rung")
-    if [[ "$rung" == "1" ]]; then echo 50000; return; fi
+    if [[ "$rung" == "1" ]]; then echo 400000; return; fi
     # If rung 1 was skipped there is no measurement to scale from. 20000 is a deliberately
     # middling stand-in; the grid-full warning in mesh_extract_dtu.py is what catches it
     # being wrong, rather than a quietly incomplete mesh.
-    local base="${BLOCKS_USED_1:-20000}"
+    local base="${BLOCKS_USED_1:-290640}"
     # 1,500,000 blocks is 114 GiB reserved, which is the most that leaves room for the mesh
-    # extraction inside this job's 300G.
+    # extraction inside this job's 300G. This USED to clamp to that ceiling and carry on.
+    # It now refuses, because the failure mode of an under-reserve is a segfault on CPU
+    # (job 29694649, exit 139), not a slightly small mesh -- and clamping would hide the
+    # actual message, which is that the rig has to come out of the mask before a finer
+    # voxel is affordable at all.
     python3 -c "
-need = $base * (0.002/$v)**2 * ($m/8.0) * 1.6
-print(int(min(max(need, 50000), 1_500_000)))"
+need = int($base * (0.002/$v)**2 * ($m/8.0) * 1.6)
+if need > 1_500_000:
+    raise SystemExit(
+        f'rung $rung needs about {need:,} blocks = {need*80/1024/1024:.0f} GiB, past what '
+        f'this job can reserve. Mask the clamp rig out first: it is 91% of the kept pixels '
+        f'and the great majority of these blocks.')
+print(max(need, 50000))"
 }
 
 # The installed Open3D wheel ships a CUDA build and picks it up automatically on a GPU
 # node, and fusion is far faster there. The limit is memory: block_count reserves 80 KiB
-# per block on whichever device. Anything under 30 GiB goes to the A100; the fine rungs
-# reserve more than a GPU has and fall back to host RAM.
+# per block on whichever device. The A100 showed 78 GiB free once the camera pixels were
+# released, so 45 GiB of grid still leaves room for the per-view scratch; past that, fuse
+# on host RAM. Mesh EXTRACTION moves to the host on its own inside mesh_extract_dtu.py --
+# CUDA marching cubes cannot allocate scratch above ~3e5 blocks whatever the free memory.
 device_for() {
     python3 -c "
 gib = $1 * 80/1024/1024
-print('CUDA:0' if gib < 30 else 'CPU:0')"
+print('CUDA:0' if gib < 45 else 'CPU:0')"
 }
 
 for RUNG in $RUNGS; do
