@@ -79,7 +79,8 @@ def load_camera(args):
 
 def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occupancy_shift",
                  voxel_size=0.002, block_count=50000, trunc_voxel_multiplier=8.0,
-                 ply_name="recon_tsdf.ply", mm_per_unit=None, o3d_device_str="CPU:0"):
+                 ply_name="recon_tsdf.ply", mm_per_unit=None, o3d_device_str="CPU:0",
+                 allow_mc_overflow=False):
     # [SHERD FORK] voxel_size, block_count and trunc_voxel_multiplier were hard-coded or
     # left at Open3D's default. DTU normalises every scan to a fixed size, so one voxel
     # size fits the benchmark; our captures are in COLMAP units that differ per capture,
@@ -380,6 +381,41 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     except Exception as e:
         print(f"[INFO] could not inspect the grid contents ({e}); continuing.")
 
+    # [SHERD FORK] THE HARD LIMIT, measured: extract_triangle_mesh() allocates one scratch
+    # tensor of 64 KiB per ACTIVE block ({n,16,16,16,4} int32). At 32,768 blocks that is
+    # exactly 2^31 bytes, and Open3D 0.19.0 sizes the allocation with a signed 32-bit
+    # integer, so at or above that count it wraps negative and the process dies -- a
+    # segfault on CPU, an "illegal memory access" on CUDA, with no message either way.
+    #
+    # Demonstrated on a synthetic sphere in this install, nothing to do with sherds:
+    #     9,672 blocks (0.59 GiB) -> 1,747,748 vertices, fine
+    #    28,176 blocks (1.72 GiB) -> 5,086,918 vertices, fine
+    #    34,184 blocks (2.09 GiB) -> core dumped
+    #    38,464 blocks (2.35 GiB) -> core dumped
+    # A03 sits at 34,129 -- 4% past the cliff -- which is why every extraction had failed
+    # while free memory was abundant. Four jobs read this as a memory problem. It never was.
+    # isl-org/Open3D#4824 is the same crash, also reported near this size, unfixed since 2022.
+    #
+    # Refuse rather than crash. A checked limit that names the number is worth more than a
+    # core dump, and the caller can act on it: blocks fall as the SQUARE of the voxel size,
+    # so a 5% coarser voxel buys 10% fewer blocks.
+    MC_BLOCK_LIMIT = 32768
+    if used >= MC_BLOCK_LIMIT and not allow_mc_overflow:
+        safe_voxel = voxel_size * math.sqrt(used / (MC_BLOCK_LIMIT * 0.95))
+        print(f"[ERROR] {used:,} active blocks is at or past Open3D's marching-cubes limit "
+              f"of {MC_BLOCK_LIMIT:,} ({used * 64 / 1024 / 1024:.2f} GiB of scratch, and the "
+              f"allocation size is a signed 32-bit integer that wraps at 2.00 GiB). Calling "
+              f"extract_triangle_mesh() now would segfault with no message, on either "
+              f"device, however much memory is free.\n"
+              f"        Fixes, in order of honesty: --voxel_size {safe_voxel:.5f} or coarser "
+              f"(blocks fall as its square"
+              + (f"; that is {safe_voxel * mm_per_unit:.3f} mm against the current "
+                 f"{voxel_size * mm_per_unit:.3f} mm" if mm_per_unit else "")
+              + f"); tighten the masks so less is fused; or extract in spatial chunks, each "
+              f"under the limit. --allow_mc_overflow forces the call if you want the crash.",
+              file=sys.stderr)
+        sys.exit(2)
+
     sys.stdout.flush()
     sys.stderr.flush()
     mesh = vbg.extract_triangle_mesh()
@@ -418,6 +454,11 @@ if __name__ == "__main__":
                         help="Open3D device for the TSDF fusion, e.g. CUDA:0. The wheel "
                              "ships a CUDA build; the limit is that block_count reserves "
                              "80 KiB per block on that device's memory.")
+    parser.add_argument("--allow_mc_overflow", action="store_true",
+                        help="call extract_triangle_mesh() even at 32,768+ active blocks, "
+                             "where Open3D 0.19.0's scratch allocation overflows a signed "
+                             "32-bit byte count and the process dies without a message. "
+                             "Only useful for reproducing that crash.")
     parser.add_argument("--mm_per_unit", type=float, default=None,
                         help="reporting only: prints voxel size and truncation band in "
                              "millimetres so a wrong scale is obvious in the log.")
@@ -437,7 +478,8 @@ if __name__ == "__main__":
                      voxel_size=args.voxel_size, block_count=args.block_count,
                      trunc_voxel_multiplier=args.trunc_voxel_multiplier,
                      ply_name=args.ply_name, mm_per_unit=args.mm_per_unit,
-                     o3d_device_str=args.o3d_device)
+                     o3d_device_str=args.o3d_device,
+                     allow_mc_overflow=args.allow_mc_overflow)
         
         
     

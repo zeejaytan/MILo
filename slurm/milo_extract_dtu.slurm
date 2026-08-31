@@ -152,8 +152,16 @@ MM_PER_UNIT=$(python3 -c "print(f'{$FACTOR * 1000.0:.4f}')")
 echo "  scale          : $MM_PER_UNIT mm per scene unit"
 
 # rung -> voxel size, truncation multiplier. The multiplier holds the band near 6 mm.
-voxel_for()  { case "$1" in 1) echo 0.002;;  2) echo 0.001;;  3) echo 0.0006;; esac; }
-mult_for()   { case "$1" in 1) echo 8;;      2) echo 16;;     3) echo 27;;     esac; }
+# Rung 0 exists because of a hard limit in Open3D, not because of anything about sherds.
+# extract_triangle_mesh() allocates 64 KiB of scratch per ACTIVE block and sizes that
+# allocation with a SIGNED 32-bit byte count, so it wraps at 32,768 blocks (2^31 bytes) and
+# the process dies with no message -- a segfault on CPU, an illegal memory access on CUDA.
+# Measured on a synthetic sphere in this install: 28,176 blocks extracts 5.1M vertices,
+# 34,184 dumps core. A03 at the author's 0.002 needs 34,129, which is 4% into the cliff.
+# 0.0022 puts it near 28,200. The cost is a voxel 10% coarser than the paper's -- 0.822 mm
+# against 0.747 -- which is a real loss of detail and is stated rather than hidden.
+voxel_for()  { case "$1" in 0) echo 0.0022;; 1) echo 0.002;;  2) echo 0.001;;  3) echo 0.0006;; esac; }
+mult_for()   { case "$1" in 0) echo 8;;      1) echo 8;;      2) echo 16;;     3) echo 27;;     esac; }
 
 # Block capacity is allocated up front, so it is a RAM reservation: 80 KiB per block.
 # Rung 1 runs at the author's 50000 and REPORTS how many it actually used; the finer rungs
@@ -182,6 +190,7 @@ blocks_for() {
     # 64 KiB per ACTIVE block that marching cubes needs on top. If this is short, CUDA
     # grows the hashmap (measured, job 29694649: ran to 581% with nothing dropped) and
     # mesh_extract_dtu.py prints what it actually used.
+    if [[ "$rung" == "0" ]]; then echo 40000; return; fi
     if [[ "$rung" == "1" ]]; then echo 50000; return; fi
     # If rung 1 was skipped there is no measurement to scale from. 20000 is a deliberately
     # middling stand-in; the grid-full warning in mesh_extract_dtu.py is what catches it
