@@ -203,15 +203,23 @@ if need > 1_500_000:
 print(max(need, 50000))"
 }
 
-# Always CUDA:0. The installed Open3D wheel ships a CUDA build and picks it up on a GPU
-# node, and fusion is far faster there -- but the reason this is not a choice is that CPU:0
-# has segfaulted on every attempt (jobs 29694649 and 29695830), as has vbg.cpu(). Host RAM
-# is not a fallback in Open3D 0.19.0 at this grid size, so pretending it is only costs a
-# core dump. The budget on the card, against 78 GiB free after the camera pixels go:
-#   grid     80 KiB x block_count, reserved up front
-#   scratch  64 KiB x ACTIVE blocks, allocated by marching cubes on top
-# mesh_extract_dtu.py checks that sum before extracting and exits with an explanation.
-device_for() { echo "CUDA:0"; }
+# CPU:0 FIRST, and this reverses what this file said one job ago. The claim there -- "host
+# RAM is not a fallback" -- was drawn from jobs 29694649 and 29695830, both of which had
+# 290,640 blocks (22 GiB of grid) because the clamp rig was in the mask. It was never tested
+# at a sane grid size, and stating it as a property of Open3D rather than of that grid was
+# wrong.
+#
+# What forces the change is job 29771412. With the rig masked out the grid is 34,129 blocks,
+# marching cubes wanted a 2.1 GiB scratch tensor, 73.9 GiB were free on the card, and CUDA
+# extraction still died -- "illegal memory access" inside Open3D's own MemoryManagerCUDA.
+# That is not exhaustion, it is a bug: isl-org/Open3D#4824 reports the identical crash in
+# extract_triangle_mesh(), also at block_count 50000, unfixed and undiagnosed since 2022.
+# No amount of memory arithmetic gets past a bad kernel.
+#
+# So try the host path, which at 2.6 GiB of grid is now a completely different proposition
+# from 22 GiB, and keep CUDA as the retry rather than the rule. Slower, and worth it.
+device_for() { echo "CPU:0"; }
+retry_device_for() { echo "CUDA:0"; }
 
 for RUNG in $RUNGS; do
     V=$(voxel_for "$RUNG"); M=$(mult_for "$RUNG"); B=$(blocks_for "$RUNG")
@@ -243,16 +251,19 @@ for RUNG in $RUNGS; do
         echo "  $RAW exists already -- skipping the fusion for this rung."
     else
         cd "$REPO_DIR/milo"
-        # THERE IS NO CPU RETRY, and that is a finding rather than an omission. This job
-        # used to fall back to CPU:0 in a fresh process on any failure. Open3D 0.19.0 here
-        # segfaults on CPU integration at this grid size (job 29694649 while over its
-        # reservation, job 29695830 at 72.7% OF it), and on vbg.cpu() as well. The retry
-        # only ever bought a second core dump and three more minutes. mesh_extract_dtu.py
-        # now checks the marching-cubes allocation against free VRAM before attempting it
-        # and exits with an explanation instead.
+        # The retry runs in a FRESH PROCESS on purpose. An illegal memory access poisons the
+        # CUDA context for the rest of the process, so anything attempted after one in the
+        # same interpreter fails for a reason that has nothing to do with itself.
         run_fuse "$DEV" "$FUSELOG"
+        if [[ ! -f "$RAW" ]]; then
+            RDEV=$(retry_device_for)
+            echo
+            echo "--- $DEV did not produce a mesh; retrying on $RDEV $(date) ---"
+            echo "    Both devices have now failed at this grid size if this one does too."
+            run_fuse "$RDEV" "${FUSELOG%.txt}_retry.txt"
+        fi
     fi
-    [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh" >&2; exit 1; }
+    [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh on either device" >&2; exit 1; }
 
     # Feed the measured block usage forward to the finer rungs.
     if [[ "$RUNG" == "1" && -f "$FUSELOG" ]]; then

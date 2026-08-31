@@ -236,21 +236,29 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     # holding far more than the grid's nominal size. Reserve the blocks up front and the
     # same extraction fits: 290,640 blocks is 19.1 GiB of scratch on top of the grid.
     #
-    # vbg.cpu() is Open3D's own suggested escape and it does NOT work here -- it segfaulted
-    # on a healthy 72.7%-full grid (job 29695830, exit 139), as did CPU integration. So
-    # there is no host fallback: size the reservation, check the arithmetic, and if it does
-    # not fit say so plainly rather than dying three minutes later.
+    # vbg.cpu() is Open3D's own suggested escape and it segfaulted on a 72.7%-full grid
+    # (job 29695830, exit 139), as did CPU integration (job 29694649). BOTH of those were
+    # 290,640-block grids -- 22 GiB -- because the clamp rig was still in the mask. This
+    # file used to conclude from them that "there is no host fallback". That generalised a
+    # 22 GiB result into a property of Open3D, and it was wrong: the host path had simply
+    # never been tried at a sane size.
+    #
+    # And fitting on the card is NOT sufficient either. Job 29771412 had a 34,129-block
+    # grid, wanted 2.1 GiB of scratch with 73.9 GiB free, and CUDA extraction still died
+    # with an illegal memory access inside Open3D's MemoryManagerCUDA -- the same crash as
+    # isl-org/Open3D#4824, unfixed since 2022. So the arithmetic below is a necessary
+    # condition, not a sufficient one, and the caller should be prepared to try CPU:0.
     if o3d_device_str.upper().startswith("CUDA") and torch.cuda.is_available():
         scratch_gib = used * 65536 / 1024 ** 3
         free_gib = torch.cuda.mem_get_info()[0] / 1024 ** 3
         print(f"[INFO] marching cubes needs a {scratch_gib:.1f} GiB scratch tensor for "
               f"{used:,} active blocks; {free_gib:.1f} GiB free on the card.")
         if scratch_gib + 3.0 > free_gib:
-            print(f"[ERROR] that does not fit. There is no host fallback -- Open3D 0.19.0 "
-                  f"segfaults on both vbg.cpu() and CPU integration at this size. Either "
-                  f"coarsen --voxel_size (blocks fall as its square) or, far better, cut "
-                  f"what the masks keep: on A03 91% of the masked area is the clamp rig, "
-                  f"and the rig is most of these {used:,} blocks.", file=sys.stderr)
+            print(f"[ERROR] that does not fit on the card. Try --o3d_device CPU:0, which "
+                  f"needs {used * 80 / 1024 / 1024:.1f} GiB of host RAM for the grid; "
+                  f"coarsen --voxel_size (blocks fall as its square); or cut what the masks "
+                  f"keep -- on A03 with the clamp rig in, 91% of the masked area was rig.",
+                  file=sys.stderr)
             sys.exit(1)
     mesh = vbg.extract_triangle_mesh()
     mesh.compute_vertex_normals()

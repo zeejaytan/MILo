@@ -167,11 +167,25 @@ Ask before submitting any job, per the workspace rules.
   overridable with `--o3d_device` (see fork change 4). Fusion cost grows as 1/voxel², so
   GPU is worth a lot; the ceiling is that `block_count` reserves **80 KiB per block**
   (4096 voxels × 20 bytes) on whichever device.
-  **CPU:0 is not a fallback at sherd-capture grid sizes.** It segfaulted in job 29694649
-  (while over its reservation) *and* in job 29695830 (at 72.7% **of** it), so overflow was
-  never the cause; `vbg.cpu()` — Open3D's own documented escape from the next problem —
-  segfaults on a healthy grid too. Any "retry on the host" logic here buys a second core
-  dump. Budget on the card instead, and the budget has **two** terms, which is the trap:
+  ~~**CPU:0 is not a fallback at sherd-capture grid sizes.**~~ **Withdrawn — this was an
+  over-generalisation and it is worth keeping visible.** CPU:0 segfaulted in job 29694649
+  (while over its reservation) *and* in job 29695830 (at 72.7% **of** it), and `vbg.cpu()`
+  segfaulted on a healthy grid too — but **every one of those grids was 290,640 blocks
+  (22 GiB), because the clamp rig was still in the mask.** "It failed at 22 GiB" was
+  written up as "Open3D has no host path", which is a claim about the library drawn from a
+  measurement about our masks. With the rig removed the grid is 34,129 blocks / 2.6 GiB and
+  the host path has simply never been tried. `slurm/milo_extract_dtu.slurm` now tries
+  **CPU:0 first and CUDA:0 as the retry**, in a fresh process each time — an illegal memory
+  access poisons the CUDA context, so anything attempted after one in the same interpreter
+  fails for an unrelated reason.
+  **Fitting on the card is necessary but NOT sufficient.** Job 29771412: 34,129 blocks,
+  2.1 GiB of scratch wanted, **73.9 GiB free**, and CUDA `extract_triangle_mesh()` still
+  died with *"illegal memory access"* inside Open3D's own `MemoryManagerCUDA`. That is
+  [isl-org/Open3D#4824](https://github.com/isl-org/Open3D/issues/4824) — the identical
+  crash, also at `block_count=50000`, reported in 2022 and neither diagnosed nor fixed. Do
+  not read a CUDA extraction failure as a memory problem without checking the free figure
+  the script prints.
+  Budget on the card anyway, and the budget has **two** terms, which is the trap:
   the grid is 80 KiB × `block_count` reserved up front, and `extract_triangle_mesh()` then
   allocates a scratch tensor of **64 KiB × *active* blocks** on top of it
   (`{n_blocks,16,16,16,4}` int32, `VoxelBlockGridImpl.h`). Its failure reads *"Unable to
