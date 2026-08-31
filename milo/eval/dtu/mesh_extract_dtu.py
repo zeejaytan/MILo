@@ -199,15 +199,18 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
                         trunc_voxel_multiplier
                     )
 
-    # [SHERD FORK] block_count is a capacity allocated up front, and the two devices behave
-    # DIFFERENTLY when it is exceeded, which is worth knowing before reading a mesh:
-    #   CUDA:0  rehashes and grows. Job 29694649 reserved 50,000 and ended on 290,640
-    #           (581%) with no complaint -- so nothing was dropped, but the reservation
-    #           stopped meaning anything and the memory estimate for the run was 6x low.
-    #   CPU:0   does not survive it. The same overflow segfaulted the retry (exit 139).
-    # Either way the number is the measurement the next rung of a voxel ladder is sized
-    # from: blocks grow as (old_voxel / new_voxel)^2, times the increase in band thickness
-    # (2 * multiplier / 16 blocks).
+    # [SHERD FORK] block_count is a capacity allocated up front. On CUDA:0 the hashmap
+    # rehashes and GROWS past it -- job 29694649 reserved 50,000 and ended on 290,640
+    # (581%) without complaint, so nothing was dropped, but the reservation stopped
+    # meaning anything and the run's memory estimate was 6x low.
+    #
+    # Do NOT read a claim about CPU:0 into that. Job 29694649's CPU retry segfaulted while
+    # over capacity and job 29695830's segfaulted at 72.7% OF capacity, so overflow was
+    # never the cause: Open3D 0.19.0 CPU integration simply does not survive a grid this
+    # size here. CPU is not a fallback at this scale, whatever the reservation.
+    #
+    # The number is still the measurement a finer rung is sized from: blocks grow as
+    # (old_voxel / new_voxel)^2, times the band thickness increase (2 * multiplier / 16).
     used = 0
     try:
         used = vbg.hashmap().size()
@@ -216,30 +219,40 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
               f"{used * 80 / 1024 / 1024:.1f} GiB of grid.")
         if used > block_count:
             print(f"[WARNING] the reservation was exceeded ({used:,} > {block_count:,}). "
-                  f"CUDA grew to fit; CPU:0 would have segfaulted. Rerun with "
-                  f"--block_count {int(used * 1.4)} or more.", file=sys.stderr)
+                  f"CUDA grew to fit. Rerun with --block_count {int(used * 1.4)} or more "
+                  f"so the memory figures in this log mean something.", file=sys.stderr)
     except Exception:
         print("[INFO] could not read block usage from the grid.")
 
-    # [SHERD FORK] Marching cubes on CUDA allocates a scratch structure sized by the active
-    # block count, and above roughly 3e5 blocks it cannot: "Unable to allocate assistance
-    # mesh structure for Marching Cubes with 290640 active voxel blocks" (job 29694649,
-    # on an A100 with 78 GiB free -- it is a structural limit, not a shortage). Open3D's
-    # own advice is to extract on the host. Integration is where the speed matters and it
-    # stays on the GPU; extraction moves. The copy costs the grid's size in host RAM.
-    if o3d_device_str.upper().startswith("CUDA") and used > 200_000:
-        print(f"[INFO] moving the grid to the host for mesh extraction: {used:,} blocks is "
-              f"past what CUDA marching cubes can allocate scratch for.")
-        vbg = vbg.cpu()
-    try:
-        mesh = vbg.extract_triangle_mesh()
-    except RuntimeError as exc:
-        if "CPU" in str(o3d_device_str).upper():
-            raise
-        print(f"[WARNING] mesh extraction failed on {o3d_device_str} ({exc}). "
-              f"Retrying on the host.", file=sys.stderr)
-        vbg = vbg.cpu()
-        mesh = vbg.extract_triangle_mesh()
+    # [SHERD FORK] Marching cubes allocates ONE scratch tensor sized by the active block
+    # count -- {n_blocks, 16, 16, 16, 4} int32 in VoxelBlockGridImpl.h, i.e. exactly 64 KiB
+    # per block -- and reports its failure as "Unable to allocate assistance mesh structure
+    # for Marching Cubes with N active voxel blocks". That message names the voxel size and
+    # sounds like a hard ceiling on N. It is not: it is an ordinary allocation failure, and
+    # the arithmetic below is what decides.
+    #
+    # Job 29694649 hit it with 290,640 blocks because block_count was 50,000 and the
+    # hashmap had grown to fit -- reallocation leaves the old buffer alive, so the card was
+    # holding far more than the grid's nominal size. Reserve the blocks up front and the
+    # same extraction fits: 290,640 blocks is 19.1 GiB of scratch on top of the grid.
+    #
+    # vbg.cpu() is Open3D's own suggested escape and it does NOT work here -- it segfaulted
+    # on a healthy 72.7%-full grid (job 29695830, exit 139), as did CPU integration. So
+    # there is no host fallback: size the reservation, check the arithmetic, and if it does
+    # not fit say so plainly rather than dying three minutes later.
+    if o3d_device_str.upper().startswith("CUDA") and torch.cuda.is_available():
+        scratch_gib = used * 65536 / 1024 ** 3
+        free_gib = torch.cuda.mem_get_info()[0] / 1024 ** 3
+        print(f"[INFO] marching cubes needs a {scratch_gib:.1f} GiB scratch tensor for "
+              f"{used:,} active blocks; {free_gib:.1f} GiB free on the card.")
+        if scratch_gib + 3.0 > free_gib:
+            print(f"[ERROR] that does not fit. There is no host fallback -- Open3D 0.19.0 "
+                  f"segfaults on both vbg.cpu() and CPU integration at this size. Either "
+                  f"coarsen --voxel_size (blocks fall as its square) or, far better, cut "
+                  f"what the masks keep: on A03 91% of the masked area is the clamp rig, "
+                  f"and the rig is most of these {used:,} blocks.", file=sys.stderr)
+            sys.exit(1)
+    mesh = vbg.extract_triangle_mesh()
     mesh.compute_vertex_normals()
     out_ply = os.path.join(dataset.model_path, ply_name)
     o3d.io.write_triangle_mesh(out_ply, mesh.to_legacy())

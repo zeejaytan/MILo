@@ -155,7 +155,11 @@ BLOCKS_USED_1=""
 blocks_for() {
     local rung="$1" v m
     v=$(voxel_for "$rung"); m=$(mult_for "$rung")
-    if [[ "$rung" == "1" ]]; then echo 400000; return; fi
+    # 320,000 is the measured 290,640 plus 10%. Bigger is NOT safer here: the reservation
+    # is allocated on the card up front, and marching cubes then needs another 64 KiB per
+    # ACTIVE block on top of it (19.1 GiB at this usage). 320,000 leaves 25.0 + 19.1 =
+    # 44.1 GiB against the 78 GiB free after the camera pixels are released.
+    if [[ "$rung" == "1" ]]; then echo 320000; return; fi
     # If rung 1 was skipped there is no measurement to scale from. 20000 is a deliberately
     # middling stand-in; the grid-full warning in mesh_extract_dtu.py is what catches it
     # being wrong, rather than a quietly incomplete mesh.
@@ -176,17 +180,15 @@ if need > 1_500_000:
 print(max(need, 50000))"
 }
 
-# The installed Open3D wheel ships a CUDA build and picks it up automatically on a GPU
-# node, and fusion is far faster there. The limit is memory: block_count reserves 80 KiB
-# per block on whichever device. The A100 showed 78 GiB free once the camera pixels were
-# released, so 45 GiB of grid still leaves room for the per-view scratch; past that, fuse
-# on host RAM. Mesh EXTRACTION moves to the host on its own inside mesh_extract_dtu.py --
-# CUDA marching cubes cannot allocate scratch above ~3e5 blocks whatever the free memory.
-device_for() {
-    python3 -c "
-gib = $1 * 80/1024/1024
-print('CUDA:0' if gib < 45 else 'CPU:0')"
-}
+# Always CUDA:0. The installed Open3D wheel ships a CUDA build and picks it up on a GPU
+# node, and fusion is far faster there -- but the reason this is not a choice is that CPU:0
+# has segfaulted on every attempt (jobs 29694649 and 29695830), as has vbg.cpu(). Host RAM
+# is not a fallback in Open3D 0.19.0 at this grid size, so pretending it is only costs a
+# core dump. The budget on the card, against 78 GiB free after the camera pixels go:
+#   grid     80 KiB x block_count, reserved up front
+#   scratch  64 KiB x ACTIVE blocks, allocated by marching cubes on top
+# mesh_extract_dtu.py checks that sum before extracting and exits with an explanation.
+device_for() { echo "CUDA:0"; }
 
 for RUNG in $RUNGS; do
     V=$(voxel_for "$RUNG"); M=$(mult_for "$RUNG"); B=$(blocks_for "$RUNG")
@@ -218,21 +220,14 @@ for RUNG in $RUNGS; do
         echo "  $RAW exists already -- skipping the fusion for this rung."
     else
         cd "$REPO_DIR/milo"
-        if ! run_fuse "$DEV" "$FUSELOG"; then
-            # An Open3D CUDA OOM raises and then ABORTS the process while unwinding, so
-            # there is no recovering in-process -- a fresh process on the host is the only
-            # clean state left. mesh_extract_dtu.py pre-flights the free VRAM to avoid ever
-            # getting here, so this firing means that estimate was wrong.
-            if [[ "$DEV" != "CPU:0" ]]; then
-                echo "  rung $RUNG failed on $DEV. Retrying on CPU:0 in a fresh process."
-                rm -f "$RAW"
-                FUSELOG="$OUT_DIR/log_fuse_${TAG}_cpu.txt"
-                run_fuse "CPU:0" "$FUSELOG"
-            else
-                echo "rung $RUNG failed on CPU as well -- see $FUSELOG" >&2
-                exit 1
-            fi
-        fi
+        # THERE IS NO CPU RETRY, and that is a finding rather than an omission. This job
+        # used to fall back to CPU:0 in a fresh process on any failure. Open3D 0.19.0 here
+        # segfaults on CPU integration at this grid size (job 29694649 while over its
+        # reservation, job 29695830 at 72.7% OF it), and on vbg.cpu() as well. The retry
+        # only ever bought a second core dump and three more minutes. mesh_extract_dtu.py
+        # now checks the marching-cubes allocation against free VRAM before attempting it
+        # and exits with an explanation instead.
+        run_fuse "$DEV" "$FUSELOG"
     fi
     [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh" >&2; exit 1; }
 

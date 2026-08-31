@@ -74,11 +74,15 @@ Keep this list current; it is what a rebase onto upstream has to survive.
    - `--ply_name` so a ladder of voxel sizes does not overwrite `recon_tsdf.ply`.
    - `--mm_per_unit` is reporting-only: the log then states voxel size and band in
      millimetres, which makes a wrong scale obvious instead of plausible.
-   Three checks were added on the same principle: how many views carried a mask (zero
-   would fuse the whole room and still exit 0), how many blocks the grid actually used
-   (Open3D **silently drops** geometry past `block_count`, which looks like a slightly
-   incomplete mesh rather than an error), and a hard failure on an empty output mesh.
-   Search `[SHERD FORK]`.
+   Checks were added on the same principle: how many views carried a mask (zero would fuse
+   the whole room and still exit 0); how many blocks the grid actually used; whether the
+   marching-cubes scratch tensor will fit before it is attempted; and a hard failure on an
+   empty output mesh. Search `[SHERD FORK]`.
+   **Correction, measured:** an earlier version of this list said Open3D *silently drops*
+   geometry past `block_count`. It does not, on CUDA — the hashmap rehashes and grows, and
+   job 29694649 ran to 581% of its reservation with nothing lost. The real cost of
+   under-reserving is that the old buffers stay alive through the growth, so the card holds
+   far more than the grid's nominal size and the *extraction* then fails.
 
 Everything else this fork adds lives in `scripts/` and `slurm/` and touches no upstream file.
 
@@ -162,8 +166,19 @@ Ask before submitting any job, per the workspace rules.
   What still forces CPU is MILo's own hard-coded `o3d.core.Device("CPU:0")`, now
   overridable with `--o3d_device` (see fork change 4). Fusion cost grows as 1/voxel², so
   GPU is worth a lot; the ceiling is that `block_count` reserves **80 KiB per block**
-  (4096 voxels × 20 bytes) on whichever device — 1.5 M blocks is 114 GiB and will not fit
-  an A100. Coarse voxels on the GPU, fine voxels in host RAM.
+  (4096 voxels × 20 bytes) on whichever device.
+  **CPU:0 is not a fallback at sherd-capture grid sizes.** It segfaulted in job 29694649
+  (while over its reservation) *and* in job 29695830 (at 72.7% **of** it), so overflow was
+  never the cause; `vbg.cpu()` — Open3D's own documented escape from the next problem —
+  segfaults on a healthy grid too. Any "retry on the host" logic here buys a second core
+  dump. Budget on the card instead, and the budget has **two** terms, which is the trap:
+  the grid is 80 KiB × `block_count` reserved up front, and `extract_triangle_mesh()` then
+  allocates a scratch tensor of **64 KiB × *active* blocks** on top of it
+  (`{n_blocks,16,16,16,4}` int32, `VoxelBlockGridImpl.h`). Its failure reads *"Unable to
+  allocate assistance mesh structure for Marching Cubes with N active voxel blocks…
+  consider using a larger voxel size"*, which sounds like a hard ceiling on N and is not —
+  it is an ordinary allocation failure. Reserve the blocks properly and 290,640 of them
+  extract fine in 19.1 GiB of scratch.
 - **MILo has two different mask-culls and they do opposite things on a turntable.**
   `--init integration` (`regularization/sdf/integration.py`) keeps anything that falls
   inside a mask in **at least one** view, and — the line that actually bites, `:94` —
@@ -175,6 +190,24 @@ Ask before submitting any job, per the workspace rules.
   where the vertex falls off-frame. `eval/dtu/mesh_extract_dtu.py:66-67` is a third thing
   again — it zeroes masked *depth pixels* before TSDF fusion, so background never enters
   the voxel grid at all. Any-view, all-views, never-fused: do not call these "the mask".
+- **The A03 masks keep the clamp rig, and that is what makes TSDF fusion unaffordable.**
+  `data/17062025/A03/images_masked` keeps **24.4% of every frame**; by the redness test
+  that separates fired clay from steel (`R − (G+B)/2`, sherds +7…+27, rig ≈ −5) only
+  **8.7% of that is sherd** — 61 cm² of clay against **644 cm² of mounting hardware** per
+  view. The masks are not broken at what they were built for: the backdrop is gone and the
+  outlines are tight. Nobody asked them to remove the stand holding the sherds up.
+  The cost is not cosmetic. Thin chromed rods carry enormous surface area for their volume
+  and are specular, so the depth the Gaussians render for them **moves with the
+  viewpoint** and the 143 per-view shells never reinforce each other. The A03 voxel grid
+  therefore used **290,640 blocks** — an implied ~41.6 m² of fused surface against ~0.1 m²
+  of actual sherd — and every extraction failure in jobs 29626640 / 29694649 / 29695830
+  traces back to it. It also kills the resolution ladder: rung 2 needs ~2.3 M blocks
+  (178 GiB) with the rig in, and ~200 k (15 GiB) with it out.
+  Run **`scripts/mask_content.py --images <dir> --out <dir>`** before spending a GPU. It
+  reports the split and writes *photo | kept by mask | reads as sherd* panels — look at
+  those, because the redness test misreads a warm-lit rig and a shadowed sherd.
+  The OpenMVS route's `masks_milo/` and `masks_user/` are built the same way and should be
+  assumed to share this until checked.
 - **There is no ground truth.** No correct mesh exists for a Rabati sherd. Nothing in
   `scripts/compare_meshes.py` scores against one, and no result from it should be phrased
   as if one existed.
