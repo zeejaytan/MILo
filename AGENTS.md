@@ -178,6 +178,27 @@ Ask before submitting any job, per the workspace rules.
   **CPU:0 first and CUDA:0 as the retry**, in a fresh process each time — an illegal memory
   access poisons the CUDA context, so anything attempted after one in the same interpreter
   fails for an unrelated reason.
+  **The CUDA *binary* is the bug, and `--o3d_device CPU:0` did not escape it.** Open3D
+  chooses its binary at **import**, from whether a GPU is visible — not from the device you
+  hand it. So on a compute node `CPU:0` was the CPU *device of the CUDA build*, and
+  `extract_triangle_mesh()` died there too: illegal memory access on CUDA:0 (job 29771412),
+  segfault on CPU:0 (job 29774524), both at 34,129 blocks / 2.6 GiB with 73.9 GiB free.
+  Two failures, one cause, and neither is memory.
+  **The cheap test that separated them, after four Slurm jobs could not:** 20 synthetic
+  views of a sphere, 256 blocks, run on the login node in seconds. The identical call
+  succeeds in the CPU binary. That is the whole diagnosis, and it cost nothing — the login
+  node had been quietly exercising the good binary all along, which is exactly why "do not
+  diagnose Open3D from the login node" (above) was true and also why the login node was
+  where the answer was.
+  `mesh_extract_dtu.py` now blanks `CUDA_VISIBLE_DEVICES` across the `import open3d` and
+  restores it immediately, so `CPU:0` means the CPU binary while PyTorch keeps the GPU
+  (importing torch does not create a context; torch's device view is pinned right after the
+  restore so the blanking cannot leak into rendering). **The log line to check is
+  `binary: cpu`.** `binary: cuda` means the extraction is going to fail.
+  **A fallback guarded by `set -e` is not a fallback.** The CUDA retry added to
+  `milo_extract_dtu.slurm` never fired in job 29774524: `set -euo pipefail` turned the
+  segfaulting pipeline into a fatal error and killed the script before the "did it produce a
+  mesh" test could run. `run_fuse ... || true`.
   **Fitting on the card is necessary but NOT sufficient.** Job 29771412: 34,129 blocks,
   2.1 GiB of scratch wanted, **73.9 GiB free**, and CUDA `extract_triangle_mesh()` still
   died with *"illegal memory access"* inside Open3D's own `MemoryManagerCUDA`. That is
