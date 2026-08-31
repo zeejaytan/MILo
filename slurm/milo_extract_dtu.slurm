@@ -43,18 +43,28 @@ set -euo pipefail
 # Each rung writes its own mesh before the next begins, so a wall-clock timeout on the
 # fine end still leaves the coarse results usable.
 #
-# THE LADDER DEFAULTS TO RUNG 1 ONLY, and this is a measurement, not caution. Job 29694649
-# fused rung 1 and used 290,640 voxel blocks. Rung 2 would need about 2.3 million (178 GiB)
-# and rung 3 about 9 million (700 GiB) -- neither fits this job, or any job. The reason is
-# not the sherds. The masks in images_masked keep 24% of every frame, and by the redness
-# test that separates fired clay from steel, only 8.7% of that is sherd: 61 cm^2 of sherd
-# against 644 cm^2 of the clamp rig, per view. The rig is dozens of thin chromed rods and
-# clamps -- enormous surface area for its volume, and specular, so the depth the Gaussians
-# render for it moves with the viewpoint and the 143 per-view shells never coincide. The
-# grid is therefore mostly spent storing 143 disagreeing copies of a laboratory stand.
-# Mask the rig out and rung 2 costs roughly 200,000 blocks (15 GiB) instead of 2.3 million.
-# Pass "1 2" or "1 2 3" explicitly if you want to try anyway; blocks_for() will refuse
-# rather than silently under-reserve, because under-reserving segfaults on CPU.
+# THE LADDER DEFAULTS TO RUNG 1 ONLY, which is what the two-mesh comparison needs. The
+# ceiling that used to make the finer rungs impossible has been removed, and it is worth
+# recording why, because it was never about voxel size.
+#
+# Job 29694649 fused rung 1 and used 290,640 blocks -- implying about 41.6 m^2 of fused
+# surface against roughly 0.03 m^2 of actual sherd. A number three orders of magnitude off
+# its physical expectation is a statement about the measurement, so the masks were rendered
+# and looked at. They keep 24% of every frame, and by the redness test that separates fired
+# clay from steel only 8.7% of that is sherd: 61 cm^2 of sherd against 644 cm^2 of clamp
+# rig, per view. The rig is dozens of thin chromed rods and clamps -- enormous surface area
+# for its volume, and specular, so the depth the Gaussians render for it moves with the
+# viewpoint and the 143 per-view shells never coincide. The grid was mostly storing 143
+# disagreeing copies of a laboratory stand.
+#
+# FIXED, and not by tuning: SAM 3 sherd-only masks already existed for this capture at
+# MILo/masks/17062025/A03_erode0/masks_sherds. They were rejected only because they are
+# drawn on the original 5568x3712 photographs while MILo trains on COLMAP's undistorted
+# 3200x2133 views; colmap_to_milo.py --masks now resizes them after checking against the
+# solved camera that undistortion moves a corner pixel just 1.23 px. The resulting dataset,
+# data/17062025/A03_sherds, keeps 2.28% of the frame instead of 23.93%, with 69-84% of that
+# reading as fired clay and 8-10 separate sherds per view. Use that dataset, not A03. All
+# three rungs should now fit; the finer ones size themselves from rung 1's measured usage.
 #
 # WHY THE MULTIPLIER MOVES WITH THE VOXEL. Open3D's TSDF truncation band is
 # trunc_voxel_multiplier * voxel_size and upstream passes neither argument, leaving it at 8
@@ -74,9 +84,14 @@ set -euo pipefail
 #
 # Usage:
 #   ./scripts/remote/pull_and_sbatch.sh slurm/milo_extract_dtu.slurm \
-#        17062025/A03 17062025/A03_nomask 17062025/A03_dtu
+#        17062025/A03_sherds 17062025/A03_nomask 17062025/A03_dtusherds
 #   ...optional 4th argument picks the rungs, default "1" (see THE LADDER above):
-#        17062025/A03 17062025/A03_nomask 17062025/A03_dtu "1 2"
+#        17062025/A03_sherds 17062025/A03_nomask 17062025/A03_dtusherds "1 2 3"
+#
+# The trained run stays 17062025/A03_nomask on purpose. It is the same Gaussians the
+# earlier rig-masked attempt used, so the only thing that changes between the two is the
+# mask -- which is the point. Masking happens at fusion time here, not at training time,
+# so no retrain is needed.
 
 CAPTURE="${1:?usage: sbatch milo_extract_dtu.slurm <capture> <trained_run> <out_name> [rungs]}"
 TRAINED="${2:?second argument is the finished run to read Gaussians from}"
@@ -159,7 +174,15 @@ blocks_for() {
     # is allocated on the card up front, and marching cubes then needs another 64 KiB per
     # ACTIVE block on top of it (19.1 GiB at this usage). 320,000 leaves 25.0 + 19.1 =
     # 44.1 GiB against the 78 GiB free after the camera pixels are released.
-    if [[ "$rung" == "1" ]]; then echo 320000; return; fi
+    # Back to the author's 50,000, and that is now the RIGHT number rather than a hopeful
+    # one. 320,000 was the rig measurement plus 10%; with the clamp rig out of the mask
+    # the fused surface is ten sherds, about 350 cm^2 of it, and a block face covers
+    # 1.43 cm^2 -- a few thousand blocks even allowing for depth disagreement between
+    # views. Over-reserving is not free: it is held on the card up front, against the
+    # 64 KiB per ACTIVE block that marching cubes needs on top. If this is short, CUDA
+    # grows the hashmap (measured, job 29694649: ran to 581% with nothing dropped) and
+    # mesh_extract_dtu.py prints what it actually used.
+    if [[ "$rung" == "1" ]]; then echo 50000; return; fi
     # If rung 1 was skipped there is no measurement to scale from. 20000 is a deliberately
     # middling stand-in; the grid-full warning in mesh_extract_dtu.py is what catches it
     # being wrong, rather than a quietly incomplete mesh.

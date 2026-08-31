@@ -208,6 +208,26 @@ Ask before submitting any job, per the workspace rules.
   those, because the redness test misreads a warm-lit rig and a shadowed sherd.
   The OpenMVS route's `masks_milo/` and `masks_user/` are built the same way and should be
   assumed to share this until checked.
+- **Fixed, and the fix was already on disk — look before building.** SAM 3 sherd-only masks
+  existed for A03 the whole time at `masks/17062025/A03_erode0/masks_sherds`, written by
+  `scripts/sam3_masks.py` (job 29448323). They had simply never been wired in, because they
+  are drawn on the **original 5568×3712 photographs** while MILo trains on COLMAP's
+  **undistorted 3200×2133** views, and `build_masked_images` refused the size mismatch — a
+  correct refusal, since resampling a mask that is misaligned only hides the misalignment.
+  What resolves it is measuring rather than asserting: A03's camera is `SIMPLE_RADIAL`
+  k1 = −0.0081, so undistortion moves a **corner** pixel 1.23 px and a pixel where the
+  sherds actually sit **0.2 px**, in the undistorted frame. A NEAREST resize is therefore
+  honest here. `colmap_to_milo.py --masks <dir>` now does exactly that, gated on the solved
+  camera: a *cropping* undistorter (aspect ratio changed), an unreadable camera, or a shift
+  past `--max-mask-shift-px` (default 2) is still refused outright.
+  Three SAM 3 variants exist; **`A03_erode0` is the one to use.** Rendered at full
+  resolution over the photograph, the default (eroded) outline sits visibly *inside* the
+  clay and drops 7.1 cm² of it, `dilated` climbs onto the black clamp jaw, and `erode0`
+  sits on the edge. Measured per view, kept area: 23.84% → **2.28%**; non-sherd area
+  **627 cm² → 16 cm²**; 8–10 separate sherds resolved per view against the 10 that exist.
+  Dataset: **`data/17062025/A03_sherds`** — use it in place of `data/17062025/A03`.
+  Masking here is a **fusion-time** operation, so this needs no retrain: the same
+  `A03_nomask` Gaussians are reused and the mask is the only thing that changes.
 - **There is no ground truth.** No correct mesh exists for a Rabati sherd. Nothing in
   `scripts/compare_meshes.py` scores against one, and no result from it should be phrased
   as if one existed.
