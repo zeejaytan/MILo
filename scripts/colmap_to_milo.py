@@ -89,6 +89,15 @@ def read_colmap_model(sparse_dir: Path):
     raise AdapterError(f"No COLMAP model (images.bin/.txt) in {sparse_dir}")
 
 
+def read_colmap_cameras_only(sparse_dir: Path):
+    """Cameras alone, from the DISTORTED model, which has no images.bin next to it."""
+    if (sparse_dir / "cameras.bin").exists():
+        return read_intrinsics_binary(str(sparse_dir / "cameras.bin"))
+    if (sparse_dir / "cameras.txt").exists():
+        return read_intrinsics_text(str(sparse_dir / "cameras.txt"))
+    return None
+
+
 def link_or_copy(src: Path, dst: Path, copy: bool = False) -> str:
     """Symlink src -> dst, falling back to a copy where symlinks are unavailable."""
     if dst.exists() or dst.is_symlink():
@@ -135,6 +144,51 @@ def read_scale_factor(work: Path) -> dict:
     return out
 
 
+def max_undistort_shift_px(work: Path, out_width: int) -> float | None:
+    """
+    How far does undistortion move the worst pixel, in the undistorted image's own pixels?
+
+    This is the number that decides whether a mask drawn on the ORIGINAL photographs may
+    simply be resized into the undistorted frame, or whether it has to be re-projected.
+    Reading it off the camera COLMAP already solved beats asserting either answer.
+
+    Returns None if the distorted model cannot be read, which the caller must treat as
+    "unknown", not as "fine".
+    """
+    for cand in (work / "sparse" / "0", work / "sparse"):
+        try:
+            cams = read_colmap_cameras_only(cand)
+        except Exception:
+            continue
+        if not cams:
+            continue
+        c = list(cams.values())[0]
+        p = list(c.params)
+        if c.model == "SIMPLE_RADIAL":
+            fx = fy = p[0]; cx, cy, k1, k2 = p[1], p[2], p[3], 0.0
+        elif c.model == "RADIAL":
+            fx = fy = p[0]; cx, cy, k1, k2 = p[1], p[2], p[3], p[4]
+        elif c.model in ("OPENCV", "FULL_OPENCV", "SIMPLE_PINHOLE", "PINHOLE"):
+            if c.model == "SIMPLE_PINHOLE":
+                fx = fy = p[0]; cx, cy = p[1], p[2]; k1 = k2 = 0.0
+            else:
+                fx, fy, cx, cy = p[0], p[1], p[2], p[3]
+                k1 = p[4] if len(p) > 4 else 0.0
+                k2 = p[5] if len(p) > 5 else 0.0
+        else:
+            return None
+        worst = 0.0
+        for px, py in ((0.0, 0.0), (float(c.width), 0.0),
+                       (0.0, float(c.height)), (float(c.width), float(c.height))):
+            x, y = (px - cx) / fx, (py - cy) / fy
+            r2 = x * x + y * y
+            s = 1.0 + k1 * r2 + k2 * r2 * r2
+            d = (((x * s - x) * fx) ** 2 + ((y * s - y) * fy) ** 2) ** 0.5
+            worst = max(worst, d)
+        return worst * out_width / float(c.width)
+    return None
+
+
 def build_masked_images(
     work: Path,
     images_dir: Path,
@@ -142,6 +196,8 @@ def build_masked_images(
     image_names: list[str],
     overlay_dir: Path,
     n_overlays: int = 6,
+    masks_dir: Path | None = None,
+    max_mask_shift_px: float = 2.0,
 ) -> dict:
     """
     Write RGBA copies of the undistorted views with the sherd mask in the alpha channel.
@@ -154,7 +210,7 @@ def build_masked_images(
     .png would simply not be found. PIL identifies the format from the file's contents, so
     PNG bytes under a .JPG name load correctly.
     """
-    masks_dir = work / "masks_user"
+    masks_dir = Path(masks_dir) if masks_dir is not None else work / "masks_user"
     if not masks_dir.is_dir():
         raise AdapterError(
             f"No masks at {masks_dir}.\n"
@@ -172,6 +228,53 @@ def build_masked_images(
 
     missing, mismatched, coverage = [], [], []
     overlay_stride = max(1, len(image_names) // n_overlays)
+
+    # A mask set drawn on the ORIGINAL photographs is a different size from the undistorted
+    # views MILo trains on. Resizing it is only honest when undistortion barely moves a
+    # pixel; otherwise the mask slides off the sherd and nothing downstream would say so.
+    # So measure the camera instead of trusting a flag. Decided once, before the loop.
+    resize_to: tuple[int, int] | None = None
+    resize_note = None
+    probe = PILImage.open(images_dir / sorted(image_names)[0])
+    img_size = probe.size
+    first_mask = None
+    for cand in (masks_dir / (sorted(image_names)[0] + ".png"),
+                 masks_dir / (Path(sorted(image_names)[0]).stem + ".png")):
+        if cand.exists():
+            first_mask = PILImage.open(cand)
+            break
+    if first_mask is not None and first_mask.size != img_size:
+        ar_mask = first_mask.size[0] / first_mask.size[1]
+        ar_img = img_size[0] / img_size[1]
+        shift = max_undistort_shift_px(work, img_size[0])
+        if abs(ar_mask - ar_img) / ar_img > 0.005:
+            raise AdapterError(
+                f"The masks are {first_mask.size} and the undistorted views are {img_size}; "
+                f"their aspect ratios differ by "
+                f"{100*abs(ar_mask-ar_img)/ar_img:.1f}%. That is a crop, not a rescale, so "
+                "resizing would misalign every mask. Re-project the masks against the "
+                "undistorted model."
+            )
+        if shift is None:
+            raise AdapterError(
+                f"The masks are {first_mask.size} and the undistorted views are {img_size}. "
+                "Resizing might be fine, but the distorted camera model could not be read "
+                f"from {work}/sparse, so how far undistortion moves a pixel is unknown. "
+                "Refusing to guess."
+            )
+        if shift > max_mask_shift_px:
+            raise AdapterError(
+                f"The masks are {first_mask.size} and the undistorted views are {img_size}. "
+                f"Undistortion moves a corner pixel {shift:.1f} px in the undistorted frame, "
+                f"past the {max_mask_shift_px:.1f} px allowed, so a plain resize would put "
+                "the mask edge in the wrong place. Re-project the masks, or raise "
+                "--max-mask-shift-px if you have looked at an overlay and accept the error."
+            )
+        resize_to = img_size
+        resize_note = (f"resized from {first_mask.size} to {img_size}; undistortion moves "
+                       f"a corner pixel {shift:.2f} px, within the "
+                       f"{max_mask_shift_px:.1f} px allowed")
+        print(f"[info] masks {resize_note}")
 
     for idx, name in enumerate(sorted(image_names)):
         img_path = images_dir / name
@@ -202,8 +305,13 @@ def build_masked_images(
         # COLMAP's undistorter, and the two need not share a resolution or a distortion
         # model. Resampling would hide the misalignment rather than fix it.
         if mask.size != img.size:
-            mismatched.append((name, mask.size, img.size))
-            continue
+            if resize_to is not None and mask.size == first_mask.size:
+                # NEAREST, not bilinear: a mask is a decision per pixel, and interpolating
+                # it invents half-kept pixels along every sherd edge.
+                mask = mask.resize(resize_to, PILImage.NEAREST)
+            else:
+                mismatched.append((name, mask.size, img.size))
+                continue
 
         arr = np.asarray(mask)
         coverage.append(float((arr > 127).mean()))
@@ -233,6 +341,7 @@ def build_masked_images(
 
     return {
         "masks_dir": str(masks_dir),
+        "mask_resize": resize_note,
         "masked_images": len(image_names),
         "mask_coverage_mean": float(np.mean(coverage)) if coverage else None,
         "mask_coverage_min": float(np.min(coverage)) if coverage else None,
@@ -274,6 +383,16 @@ def main() -> int:
                          "every sherd, while scoring the BETTER reprojection error.")
     ap.add_argument("--no-masks", action="store_true",
                     help="skip masking; trains on the backdrop as well")
+    ap.add_argument("--masks", type=Path, default=None,
+                    help="directory of masks to use instead of <work>/masks_user. The "
+                         "default set on A03 keeps the whole steel clamp rig -- 24%% of "
+                         "every frame, of which only 9%% is fired clay -- which is what "
+                         "made TSDF fusion unaffordable. SAM 3 sherd-only sets live under "
+                         "MILo/masks/<date>/<tree>/masks_sherds and keep about 2%%.")
+    ap.add_argument("--max-mask-shift-px", type=float, default=2.0,
+                    help="masks drawn on the original photographs are resized into the "
+                         "undistorted frame only if undistortion moves a corner pixel less "
+                         "than this, measured from the camera COLMAP solved (default 2.0)")
     ap.add_argument("--copy", action="store_true",
                     help="copy the images too (only if the filesystem forbids symlinks)")
     ap.add_argument("--link-sparse", action="store_true",
@@ -342,6 +461,8 @@ def main() -> int:
             out_dir=out / "images_masked",
             image_names=image_names,
             overlay_dir=out / "mask_overlays",
+            masks_dir=args.masks,
+            max_mask_shift_px=args.max_mask_shift_px,
         )
         images_arg = "images_masked"
 
