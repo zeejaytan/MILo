@@ -138,6 +138,46 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     print(f"[INFO] {n_masked} of {len(viewpoint_cam_list)} views carried a mask. "
           f"Views without one contribute their whole depth map, background included.")
 
+    # [SHERD FORK] Look at the depth maps BEFORE they reach the voxel grid. Open3D does not
+    # check them, and one non-finite value is enough to poison the TSDF; marching cubes then
+    # indexes an array from that TSDF and walks off the end of it, which surfaces as a
+    # segfault at extraction -- a long way from the cause, and indistinguishable from a
+    # library bug. A synthetic sphere extracts fine at 9,672 blocks on this same install,
+    # so "too big" does not explain A03's 34,129, and this is the other candidate.
+    # Sanitise rather than abort: a NaN in one corner of one view should not cost the run,
+    # but it must be reported, because a large count is a statement about the RENDERER.
+    nonfinite = negative = clipped = 0
+    dmin, dmax = np.inf, -np.inf
+    for d in depth_list:
+        bad = ~np.isfinite(d)
+        nb = int(bad.sum())
+        if nb:
+            d[bad] = 0.0
+            nonfinite += nb
+        neg = d < 0
+        nn = int(neg.sum())
+        if nn:
+            d[neg] = 0.0
+            negative += nn
+        pos = d[d > 0]
+        if pos.size:
+            dmin = min(dmin, float(pos.min()))
+            dmax = max(dmax, float(pos.max()))
+            clipped += int((pos > 8.0).sum())
+    total_px = sum(d.size for d in depth_list)
+    print(f"[INFO] depth maps: {nonfinite:,} non-finite and {negative:,} negative pixels of "
+          f"{total_px:,} ({100.0 * (nonfinite + negative) / max(total_px, 1):.4f}%), "
+          f"all set to 0. Kept depths run {dmin:.3f} to {dmax:.3f} scene units"
+          + (f" = {dmin * mm_per_unit:.0f} to {dmax * mm_per_unit:.0f} mm." if mm_per_unit else "."))
+    if nonfinite or negative:
+        print(f"[WARNING] the Gaussian renderer produced {nonfinite + negative:,} unusable "
+              f"depth values. They are zeroed here, but a large fraction means the depth "
+              f"being fused is not trustworthy wherever it survived either.", file=sys.stderr)
+    if clipped:
+        print(f"[WARNING] {clipped:,} pixels are beyond the depth_max of 8.0 scene units "
+              f"and Open3D will ignore them. If that is a large number the scene is not "
+              f"where this code assumes it is.", file=sys.stderr)
+
     # [SHERD FORK] Upstream's bare empty_cache() here frees only PyTorch's *cache*, not its
     # live tensors -- and the live tensors are the problem. cameraList_from_camInfos puts
     # every training image AND its alpha on the GPU: 143 views x 3200x2133 x (3+1) channels
@@ -309,6 +349,39 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
                   f"keep -- on A03 with the clamp rig in, 91% of the masked area was rig.",
                   file=sys.stderr)
             sys.exit(1)
+
+    # [SHERD FORK] Last look before the call that keeps dying. extract_triangle_mesh()
+    # crashes without a message on either device here, so anything wrong with the grid has
+    # to be caught on this side of it -- afterwards there is only an exit code. A synthetic
+    # sphere extracts cleanly at 9,672 blocks in this same install, which rules out sheer
+    # size as the whole story and leaves the grid's CONTENTS as the thing to check.
+    try:
+        tsdf = vbg.attribute("tsdf").cpu().numpy()
+        wt = vbg.attribute("weight").cpu().numpy()
+        n_bad_t = int(np.count_nonzero(~np.isfinite(tsdf)))
+        n_bad_w = int(np.count_nonzero(~np.isfinite(wt)))
+        occupied = wt > 0
+        n_occ = int(occupied.sum())
+        print(f"[INFO] grid contents: {n_bad_t:,} non-finite TSDF and {n_bad_w:,} non-finite "
+              f"weight values; {n_occ:,} voxels carry any weight "
+              f"({100.0 * n_occ / max(tsdf.size, 1):.2f}% of the buffer).")
+        if n_occ:
+            t_occ = tsdf[occupied]
+            print(f"[INFO] TSDF over the {n_occ:,} written voxels: "
+                  f"{float(t_occ.min()):+.3f} to {float(t_occ.max()):+.3f} "
+                  f"(it is a signed distance in band units, so it should stay within +/-1).")
+        if n_bad_t or n_bad_w:
+            print(f"[ERROR] the fused grid contains non-finite values. Marching cubes builds "
+                  f"its vertex indices from these, so this is very likely the segfault: it "
+                  f"would crash at any block count, and the synthetic test never had one.",
+                  file=sys.stderr)
+        del tsdf, wt
+        gc.collect()
+    except Exception as e:
+        print(f"[INFO] could not inspect the grid contents ({e}); continuing.")
+
+    sys.stdout.flush()
+    sys.stderr.flush()
     mesh = vbg.extract_triangle_mesh()
     mesh.compute_vertex_normals()
     out_ply = os.path.join(dataset.model_path, ply_name)
