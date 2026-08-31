@@ -218,6 +218,15 @@ print(max(need, 50000))"
 #
 # So try the host path, which at 2.6 GiB of grid is now a completely different proposition
 # from 22 GiB, and keep CUDA as the retry rather than the rule. Slower, and worth it.
+#
+# Then job 29774524 segfaulted on CPU:0 as well -- after fusing cleanly, 34,129 blocks,
+# 2.6 GiB. That looked like the end of the road and was not: the CUDA-built Open3D was
+# still the module in memory, because open3d picks its binary at import from whether a GPU
+# is VISIBLE, not from the device argument. "CPU:0" was the CPU device of the broken CUDA
+# binary. A toy scene (20 views of a sphere) reproduces this exactly: the same call
+# succeeds in the CPU binary and is what the login node was quietly running all along.
+# mesh_extract_dtu.py now hides the GPU from open3d across its import when CPU:0 is asked
+# for, so CPU:0 means the CPU binary; the log line "binary: cpu" is the confirmation.
 device_for() { echo "CPU:0"; }
 retry_device_for() { echo "CUDA:0"; }
 
@@ -254,13 +263,19 @@ for RUNG in $RUNGS; do
         # The retry runs in a FRESH PROCESS on purpose. An illegal memory access poisons the
         # CUDA context for the rest of the process, so anything attempted after one in the
         # same interpreter fails for a reason that has nothing to do with itself.
-        run_fuse "$DEV" "$FUSELOG"
+        #
+        # `|| true` is load-bearing, and its absence cost job 29774524 its retry. `set -euo
+        # pipefail` at the top means a segfaulting python makes the pipeline return 139, and
+        # `set -e` then kills the script -- before the "did it produce a mesh" test below can
+        # run. The retry existed and never fired. A fallback guarded by `set -e` is not a
+        # fallback.
+        run_fuse "$DEV" "$FUSELOG" || true
         if [[ ! -f "$RAW" ]]; then
             RDEV=$(retry_device_for)
             echo
             echo "--- $DEV did not produce a mesh; retrying on $RDEV $(date) ---"
             echo "    Both devices have now failed at this grid size if this one does too."
-            run_fuse "$RDEV" "${FUSELOG%.txt}_retry.txt"
+            run_fuse "$RDEV" "${FUSELOG%.txt}_retry.txt" || true
         fi
     fi
     [[ -f "$RAW" ]] || { echo "rung $RUNG wrote no mesh on either device" >&2; exit 1; }

@@ -6,15 +6,62 @@ BASE_DIR = os.path.dirname(  # milo/
     )
 )
 sys.path.append(BASE_DIR)
+
+
+# [SHERD FORK] Which Open3D binary gets used is decided at IMPORT time, not at the call,
+# so it has to be settled here. open3d/__init__.py imports the CPU pybind and then
+# REPLACES it with the CUDA one if open3d_core_cuda_device_count() > 0 -- a count that
+# honours CUDA_VISIBLE_DEVICES. Blanking that variable across the import and restoring it
+# immediately therefore yields the CPU binary while leaving the GPU to PyTorch, which has
+# not created a context yet (importing torch does not initialise CUDA).
+#
+# This matters because the CUDA binary's marching cubes is broken on this installation.
+# Measured, not inferred: on a compute node extract_triangle_mesh() died on BOTH devices
+# of the CUDA build -- "illegal memory access" on CUDA:0 (job 29771412) and a segfault on
+# CPU:0 (job 29774524) -- with a 2.6 GiB grid and 73.9 GiB free. The same call on an
+# identical toy scene succeeds in the CPU build. isl-org/Open3D#4824 reports the CUDA
+# crash, unfixed since 2022. So "--o3d_device CPU:0" must mean the CPU *binary*; asking
+# for the CPU device of the CUDA binary is what the failing job actually got, and it is
+# not the same thing.
+def _wants_cuda_open3d(argv):
+    for i, a in enumerate(argv):
+        if a == "--o3d_device" and i + 1 < len(argv):
+            return argv[i + 1].upper().startswith("CUDA")
+        if a.startswith("--o3d_device="):
+            return a.split("=", 1)[1].upper().startswith("CUDA")
+    return False
+
+
+_O3D_CUDA = _wants_cuda_open3d(sys.argv)
+_SAVED_CVD = os.environ.get("CUDA_VISIBLE_DEVICES")
+if not _O3D_CUDA:
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+import open3d as o3d
+import open3d.core as o3c
+if not _O3D_CUDA:
+    if _SAVED_CVD is None:
+        os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+    else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = _SAVED_CVD
+
 import gc
 import torch
+
+# Pin PyTorch's view of the devices now, immediately after the variable is restored, so the
+# blanking above cannot leak into the rendering that follows. torch caches this on the first
+# call; making that call here rather than a thousand lines later removes the ordering
+# question entirely. If it is ever False on a GPU node, the import trick is the suspect.
+if not _O3D_CUDA and not torch.cuda.is_available():
+    print("[WARNING] hiding the GPU across the Open3D import also cost PyTorch its CUDA "
+          "device. Depth rendering will fall back to CPU and be unusably slow. Run with "
+          "--o3d_device CUDA:0 to skip the trick, and expect the extraction bug back.",
+          file=sys.stderr)
+
 from scene import GaussianModel
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams
 import math
 import numpy as np
-import open3d as o3d
-import open3d.core as o3c
 from scene.dataset_readers import sceneLoadTypeCallbacks
 from utils.camera_utils import cameraList_from_camInfos
 
@@ -154,8 +201,10 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
                   f"slower, but a CUDA OOM here aborts rather than raises.",
                   file=sys.stderr)
             o3d_device_str = "CPU:0"
+    # The build matters more than the device here: the CUDA build's marching cubes fails
+    # on this installation whichever device it is handed. "cpu" below is the good case.
     print(f"[INFO] Open3D {o3d.__version__} fusing on {o3d_device_str} "
-          f"(device API: {getattr(o3d, '__DEVICE_API__', '?')}); "
+          f"(binary: {getattr(o3d, '__DEVICE_API__', '?')}); "
           f"{block_count * 80 / 1024 / 1024:.1f} GiB reserved there.")
     o3d_device = o3d.core.Device(o3d_device_str)
     vbg = o3d.t.geometry.VoxelBlockGrid(attr_names=('tsdf', 'weight', 'color'),
