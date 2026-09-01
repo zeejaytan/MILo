@@ -13,6 +13,14 @@ Neither route is retired; the point is to find out which gives better break-surf
 The photographs and every reconstruction live **only on Spartan**. Nothing heavy is
 committed, and nothing heavy is copied to the laptop.
 
+> **Status, 2026-09-01 — the authors' DTU extraction route is closed.** The conservator
+> judged the mesh quality unacceptable for this material and stopped the work. Masked depth
+> fusion worked (ten sherds, correctly sized, rig gone); the silhouette cull that follows it
+> deleted every vertex, and the finest voxel reachable was 0.822 mm against the ~0.21 mm the
+> photographs support. Full record, including what the verdict does *not* cover:
+> **`docs/notes/A03_DTU_EXTRACTION_RESULT.md`**. Do not restart this route without reading
+> that note first.
+
 ## Paths
 
 | Role | Value |
@@ -178,23 +186,39 @@ Ask before submitting any job, per the workspace rules.
   **CPU:0 first and CUDA:0 as the retry**, in a fresh process each time — an illegal memory
   access poisons the CUDA context, so anything attempted after one in the same interpreter
   fails for an unrelated reason.
-  **The CUDA *binary* is the bug, and `--o3d_device CPU:0` did not escape it.** Open3D
-  chooses its binary at **import**, from whether a GPU is visible — not from the device you
-  hand it. So on a compute node `CPU:0` was the CPU *device of the CUDA build*, and
-  `extract_triangle_mesh()` died there too: illegal memory access on CUDA:0 (job 29771412),
-  segfault on CPU:0 (job 29774524), both at 34,129 blocks / 2.6 GiB with 73.9 GiB free.
-  Two failures, one cause, and neither is memory.
-  **The cheap test that separated them, after four Slurm jobs could not:** 20 synthetic
-  views of a sphere, 256 blocks, run on the login node in seconds. The identical call
-  succeeds in the CPU binary. That is the whole diagnosis, and it cost nothing — the login
-  node had been quietly exercising the good binary all along, which is exactly why "do not
-  diagnose Open3D from the login node" (above) was true and also why the login node was
-  where the answer was.
-  `mesh_extract_dtu.py` now blanks `CUDA_VISIBLE_DEVICES` across the `import open3d` and
+  ~~**The CUDA *binary* is the bug, and `--o3d_device CPU:0` did not escape it.**~~
+  **Withdrawn — disproven by job 29797557, which logged `binary: cpu` and segfaulted
+  anyway.** It is true and worth knowing that Open3D chooses its binary at **import**, from
+  whether a GPU is visible rather than from the device you hand it, so on a compute node
+  `CPU:0` had been the CPU *device of the CUDA build*. That was a real defect and it is
+  fixed. It was not the cause of the crash, and a toy scene that succeeded at 256 blocks
+  was never evidence about a grid 133× larger — I read it as one, and said so, before
+  closing the gap.
+  **The real cause: a signed 32-bit overflow at 32,768 active blocks.**
+  `extract_triangle_mesh()` allocates **64 KiB of scratch per ACTIVE block**
+  (`{n,16,16,16,4}` int32, `VoxelBlockGridImpl.h`) and sizes that allocation with a signed
+  32-bit byte count. 32,768 × 65,536 = exactly 2^31 bytes, so at or past 32,768 blocks the
+  size wraps negative and the process dies **with no message** — segfault on CPU, "illegal
+  memory access" on CUDA. Device-independent; free memory is irrelevant. Reproduced on a
+  synthetic sphere with nothing but the block count changing, and the boundary was computed
+  from the arithmetic *before* the runs that confirmed it: 28,176 blocks → 5,086,918
+  vertices; 34,184 blocks → core dumped. **A03 at the paper's 0.002 units needs 34,129
+  blocks, 4% past the cliff** — which is every failure in jobs 29771412 / 29774524 /
+  29797557 / 29798212, all of them misread as memory problems at the time.
+  `mesh_extract_dtu.py` now **refuses before the call** (`MC_BLOCK_LIMIT = 32768`,
+  overridable with `--allow_mc_overflow`) and prints the coarser voxel that would fit — a
+  gate, not a paragraph. The finest voxel that clears it on A03 is 0.0022 units (0.822 mm,
+  32,209 blocks); rungs at 0.37 mm and 0.22 mm need ~136k and ~1.3M blocks and are
+  unreachable without chunked extraction.
+  **Four Slurm jobs could not find this; a thirty-line synthetic reproducer on the login
+  node found it in minutes**, because it changed one variable at a time for free. Reach for
+  that before the fifth job.
+  `mesh_extract_dtu.py` also blanks `CUDA_VISIBLE_DEVICES` across the `import open3d` and
   restores it immediately, so `CPU:0` means the CPU binary while PyTorch keeps the GPU
   (importing torch does not create a context; torch's device view is pinned right after the
-  restore so the blanking cannot leak into rendering). **The log line to check is
-  `binary: cpu`.** `binary: cuda` means the extraction is going to fail.
+  restore so the blanking cannot leak into rendering). The log line that confirms it is
+  **`binary: cpu`**. That line is a check on the fix, not a predictor of success — job
+  29797557 printed it and still died, because the block count was the problem.
   **A fallback guarded by `set -e` is not a fallback.** The CUDA retry added to
   `milo_extract_dtu.slurm` never fired in job 29774524: `set -euo pipefail` turned the
   segfaulting pipeline into a fatal error and killed the script before the "did it produce a
@@ -209,11 +233,15 @@ Ask before submitting any job, per the workspace rules.
   Budget on the card anyway, and the budget has **two** terms, which is the trap:
   the grid is 80 KiB × `block_count` reserved up front, and `extract_triangle_mesh()` then
   allocates a scratch tensor of **64 KiB × *active* blocks** on top of it
-  (`{n_blocks,16,16,16,4}` int32, `VoxelBlockGridImpl.h`). Its failure reads *"Unable to
-  allocate assistance mesh structure for Marching Cubes with N active voxel blocks…
-  consider using a larger voxel size"*, which sounds like a hard ceiling on N and is not —
-  it is an ordinary allocation failure. Reserve the blocks properly and 290,640 of them
-  extract fine in 19.1 GiB of scratch.
+  (`{n_blocks,16,16,16,4}` int32, `VoxelBlockGridImpl.h`). Its *reported* failure reads
+  *"Unable to allocate assistance mesh structure for Marching Cubes with N active voxel
+  blocks… consider using a larger voxel size"*, which sounds like a hard ceiling on N and
+  is not — that message is an ordinary allocation failure.
+  ~~Reserve the blocks properly and 290,640 of them extract fine in 19.1 GiB of scratch.~~
+  **Withdrawn — never observed, and false.** No extraction at 290,640 blocks ever
+  succeeded here; every one of them crashed. There *is* a hard ceiling, it is 32,768 active
+  blocks, and past it you get no message at all rather than that one — see the overflow
+  paragraph above.
 - **MILo has two different mask-culls and they do opposite things on a turntable.**
   `--init integration` (`regularization/sdf/integration.py`) keeps anything that falls
   inside a mask in **at least one** view, and — the line that actually bites, `:94` —
@@ -222,7 +250,15 @@ Ask before submitting any job, per the workspace rules.
   this is why the A03 mask-cull run kept the whole rig fused into one 500 mm object.
   `eval/dtu/evaluate_dtu_mesh.py:cull_mesh` keeps a vertex only if it is inside a 6-px
   dilated outline in **every** view (`(sampled_masks > 0.).all(dim=-1)`), excusing views
-  where the vertex falls off-frame. `eval/dtu/mesh_extract_dtu.py:66-67` is a third thing
+  where the vertex falls off-frame. **Measured on A03: that all-views rule deletes the
+  entire mesh.** Each of the 143 views individually accepts 68–90% of the vertices (median
+  82%), but a different ~18% each time, and all 91,463 vertices are in frame in every view
+  so nothing is ever excused; the best vertex passes 139 of 143. The masks are fine (every
+  view keeps 1.5–3.1%, none empty) and the principal point is exactly centred, so neither
+  is the cause — it is the rule. Its *ranking* is good (the rejected vertices are the
+  streaks and spikes), so for this material replace it with a small-component filter, which
+  drops all 589 specks and keeps all ten sherds. Diagnose with `scripts/cull_diag.py`
+  (CPU, login node, ~2 min). Details: `docs/notes/A03_DTU_EXTRACTION_RESULT.md`. `eval/dtu/mesh_extract_dtu.py:66-67` is a third thing
   again — it zeroes masked *depth pixels* before TSDF fusion, so background never enters
   the voxel grid at all. Any-view, all-views, never-fused: do not call these "the mask".
 - **The A03 masks keep the clamp rig, and that is what makes TSDF fusion unaffordable.**
