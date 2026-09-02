@@ -20,6 +20,15 @@ committed, and nothing heavy is copied to the laptop.
 > photographs support. Full record, including what the verdict does *not* cover:
 > **`docs/notes/A03_DTU_EXTRACTION_RESULT.md`**. Do not restart this route without reading
 > that note first.
+>
+> **Addendum, 2026-09-02 — the 0.822 mm ceiling is liftable, but check two things first.**
+> The 32,768-block cliff is per *extraction call*, not per scene, and Open3D's public API
+> already supports tiling (`integrate()` takes an explicit block-coordinate list). Per-sherd
+> tiles are seam-free here because the sherds are physically separate, and reach ~0.45 mm;
+> `extract_point_cloud` has no comparable cliff at all (~524,288 blocks) but needs Poisson,
+> which invents surface across the mesh's 131 occlusion holes. Before writing any of it:
+> measure the cross-view depth disagreement in mm, and check what OpenMVS already achieves
+> on A03. Same note, section "Getting past the block cliff".
 
 ## Paths
 

@@ -318,13 +318,24 @@ def extract_mesh(dataset, pipe, checkpoint_iterations=None, occupancy_mode="occu
     # count -- {n_blocks, 16, 16, 16, 4} int32 in VoxelBlockGridImpl.h, i.e. exactly 64 KiB
     # per block -- and reports its failure as "Unable to allocate assistance mesh structure
     # for Marching Cubes with N active voxel blocks". That message names the voxel size and
-    # sounds like a hard ceiling on N. It is not: it is an ordinary allocation failure, and
-    # the arithmetic below is what decides.
+    # sounds like a hard ceiling on N. It IS a hard ceiling, though not for the reason the
+    # message suggests: the byte count is computed in a signed 32-bit int (using index_t =
+    # int), so 32,768 blocks x 65,536 bytes is exactly 2^31 and anything at or past it wraps
+    # negative and dies with no message, on either device, however much memory is free. That
+    # is MC_BLOCK_LIMIT below, and it is why the arithmetic here is necessary but not
+    # sufficient. Confirmed by reading v0.19.0's VoxelBlockGridImpl.h, and reproduced on a
+    # synthetic sphere: 28,176 blocks -> 5,086,918 vertices; 34,184 blocks -> core dumped.
     #
-    # Job 29694649 hit it with 290,640 blocks because block_count was 50,000 and the
-    # hashmap had grown to fit -- reallocation leaves the old buffer alive, so the card was
-    # holding far more than the grid's nominal size. Reserve the blocks up front and the
-    # same extraction fits: 290,640 blocks is 19.1 GiB of scratch on top of the grid.
+    # WITHDRAWN, and left visible on purpose: this comment used to say "reserve the blocks up
+    # front and 290,640 of them extract fine in 19.1 GiB of scratch". That was never observed
+    # and is false -- every extraction at that size crashed, which is exactly what the 32,768
+    # cliff predicts. Do not reinstate it.
+    #
+    # The cliff is per CALL, not per scene: n_blocks is the length of the block list handed
+    # to this one extraction. Splitting the grid into spatial tiles, each integrated with a
+    # filtered block-coordinate tensor, gets past it. See
+    # docs/notes/A03_DTU_EXTRACTION_RESULT.md -- "Getting past the block cliff" -- for what
+    # that costs and for extract_point_cloud, whose ceiling is 16x higher.
     #
     # vbg.cpu() is Open3D's own suggested escape and it segfaulted on a 72.7%-full grid
     # (job 29695830, exit 139), as did CPU integration (job 29694649). BOTH of those were
