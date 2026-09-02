@@ -271,6 +271,74 @@ this repeatedly: an OpenVDB backend with no size assumption, which adapted Open3
 marching cubes to the VDB structure. It is a sound library and the wrong amount of machinery
 for ten sherds on a table.
 
+### How each cheaper route removes the rig — checked, and one of them cannot
+
+The two routes above were offered as cheaper ways past the resolution ceiling. They are not
+equivalent on the question that actually matters here, which is whether the clamp rig comes
+out. Checked in the code rather than assumed.
+
+**`extract_point_cloud` + Poisson: rig removal is already solved and needs no new work.**
+The masking happens at `mesh_extract_dtu.py:133-135`, which zeroes masked depth *pixels*
+before `vbg.integrate()`. The choice between `extract_triangle_mesh()` and
+`extract_point_cloud()` is made afterwards, on a voxel grid the rig was never written into.
+Switching the final call changes one line and inherits the working rig removal untouched.
+
+What this route does add is two Poisson-specific risks, one measured and one not:
+
+*Bridging between sherds.* Screened Poisson fits a single implicit surface, so run on all ten
+sherds at once it will web them together. The fix is to cluster the points first and fit each
+sherd separately — and `extract_point_cloud` returns points with no connectivity, so
+`trimesh`'s connected components are unavailable and the clustering has to stand on distance
+alone. Tested on the existing fused points with connectivity deliberately discarded
+(single-linkage at radius eps, which is DBSCAN for a small `min_samples`):
+
+```
+ eps mm  clusters  >1000 pts  sherds recovered
+    1.5       137         10        10 of 10
+    2.0        85         10        10 of 10
+    3.0        50         10        10 of 10
+    5.0        30         10        10 of 10
+    8.0        18         10        10 of 10
+```
+
+Ten clusters above 1,000 points at every radius from 1.5 mm to 8 mm, with no sherd splitting
+and no two sherds merging anywhere in that range — the sherds are far enough apart on the
+tray that the threshold does not need tuning. Rendered one colour per cluster from above and
+from the side (`artifacts/A03_dtu/point_clusters.png`): each sherd is one flat colour and no
+colour spans two. This step is not a risk. (It is also the same small-component filter this
+note recommends in place of the silhouette cull, working on points instead of triangles.)
+
+*Inventing surface across the occlusion holes.* Not measured, and the real hazard. Poisson
+closes the 131 holes tabulated above by extrapolating sherd where nothing was photographed —
+the underside on the mount and the patches under the clamp jaws. For a conservation record
+that is worse than a hole, because it looks like evidence. Density trimming controls it and
+must be checked by eye at a scale that resolves the trim, not by counting vertices.
+
+**MILo's own SDF route: as shipped it has no working way to remove the rig.** This corrects
+what "the block cliff is not MILo's" implied above — that route escapes the cliff, but it
+does not inherit the masking that made the DTU route work. In the whole of
+`milo/regularization/sdf/`, `masks` is consumed in exactly one place:
+
+```
+integration.py:54-59      rendered_mask -> mask * view.gt_mask  /  mask * masks[cam_id]
+depth_fusion.py           masks is a parameter, threaded through, never read
+```
+
+`integration.py` is the `--init integration` path already measured to keep the entire clamp
+rig as one 500 mm object, because its rule is *inside a mask in at least one view* and
+`:94` labels never-seen points −100, deeply solid. `depth_fusion.py` accepts `masks`,
+documents it in three docstrings, and never uses it. And `mesh_extract_sdf.py` hard-codes
+`masks=None` at all four call sites (`:151`, `:166`, `:316`, `:525`), so the flag cannot be
+supplied from the command line either.
+
+Making this route work would mean porting the thing that already works — zero the rendered
+depth where `gt_mask < 0.5` before `tsdf_volume.integrate()`, the same three lines as
+`mesh_extract_dtu.py:133-135`. **Do not assume that is sufficient.** Masked-out points then
+become points no view observed, and `AdaptiveTSDF` starts them at `initial_sdf_value=-1.1`;
+whether marching tetrahedra then treats an unobserved point as empty or as solid is exactly
+the convention that made `--init integration` keep the rig. Check it on a rendered result
+before believing any block count or vertex count about it.
+
 ### Is a finer voxel worth it for *this* material?
 
 The gate is whether the depth feeding the grid is quieter than the voxel. If it is not, a

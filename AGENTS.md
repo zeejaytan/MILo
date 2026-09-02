@@ -29,6 +29,13 @@ committed, and nothing heavy is copied to the laptop.
 > which invents surface across the mesh's 131 occlusion holes. Before writing any of it:
 > measure the cross-view depth disagreement in mm, and check what OpenMVS already achieves
 > on A03. Same note, section "Getting past the block cliff".
+>
+> Both of those stay inside `mesh_extract_dtu.py`, so both inherit its working rig removal —
+> masked depth is zeroed before `vbg.integrate()`, upstream of either extraction call.
+> **MILo's own `mesh_extract_sdf.py` does not.** It escapes the cliff, but `masks` is a dead
+> parameter in `regularization/sdf/depth_fusion.py` and is hard-coded `None` at all four call
+> sites; its only live mask consumer is the `--init integration` path already measured to keep
+> the whole clamp rig. Treat "MILo's own route" as needing a mask patch, not as a free option.
 
 ## Paths
 
