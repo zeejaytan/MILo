@@ -318,3 +318,29 @@ Ask before submitting any job, per the workspace rules.
 - **There is no ground truth.** No correct mesh exists for a Rabati sherd. Nothing in
   `scripts/compare_meshes.py` scores against one, and no result from it should be phrased
   as if one existed.
+
+## Agent skills
+
+Configured here so this repo works when opened on its own, not only from the `C:\PR`
+umbrella. The full text of each convention lives at the workspace root; these are the
+parts an agent needs before it can act.
+
+- **Issue tracker — local markdown.** One feature per directory: the spec at
+  `.scratch/<feature>/spec.md`, tickets one per file at
+  `.scratch/<feature>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order.
+  Every ticket carries an **`Answers:`** line naming the question in `intent/` it exists
+  to settle -- `M1` for this project, `U6` for the workspace, or `none` for routine
+  work. Conventions and the ticket template: `../docs/agents/issue-tracker.md`.
+- **Triage labels.** `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
+  `wontfix`, recorded as a `Status:` line near the top of the ticket. Details:
+  `../docs/agents/triage-labels.md`.
+- **Domain docs — single-context.** This file is the domain reference for this project;
+  ADRs, if any, go under `docs/adr/`. Details: `../docs/agents/domain.md`.
+- **Intent.** [`intent/`](intent/) holds what we are trying to establish and what would
+  settle it -- prefix **`M`**, permanent, numbers never reused. `/to-intent` opens a
+  question or writes a finished ticket's result back into one. Check the loop is wired
+  with `python ../scripts/check_intent_links.py`.
+
+**Do not run `/setup-matt-pocock-skills` in this repo.** It would replace the above with
+its own defaults, and its ticket template has no `Answers:` line -- tickets would stop
+being connected to the question they exist to answer, silently.
