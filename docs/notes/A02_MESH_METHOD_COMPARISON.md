@@ -131,9 +131,40 @@ sharp folds that trace the break and nothing else.
 **But on SH5 the fracture edge is gone.** Its fold angles decay to nothing there:
 1,932 mm of gentle 15–30° curvature, 178 mm at 30–45°, 22 mm at 45–60°, and **8 mm above
 60°**. The open boundary is only 127 mm of a 431 mm perimeter, so the edge is present in
-the mesh and has simply been rounded over. Poisson resolved 1,298 mm at 60–90° on the same
-sherd. Per sherd, OpenMVS gives 196, 141, 167, 36, **10**, 162 and 95 mm of steep fold —
-the median of 141 mm looks perfectly healthy and hides the failure completely.
+the mesh and has simply been rounded over. Per sherd, OpenMVS gives 196, 141, 167, 36,
+**10**, 162 and 95 mm of steep fold — the median of 141 mm looks perfectly healthy and
+hides the failure completely.
+
+> **Correction, 2026-09-03.** This paragraph originally continued "Poisson resolved
+> 1,298 mm at 60–90° on the same sherd", and that comparison has been withdrawn. It was a
+> broken measurement, not a real difference between the methods. Total steep-fold length
+> does not distinguish *one continuous edge* from *scattered specks of the same total
+> length* — the identical error that let Delaunay's triangulation faceting score as
+> "26 perimeters' worth of sharp edges" earlier in this very note.
+>
+> Chaining the steep fold into connected runs on SH5, and drawing it per-vertex:
+>
+> | method | fold >60° | of that, in runs >10 mm | longest single run |
+> |---|---|---|---|
+> | OpenMVS refined | 10 mm | 0 mm (0%) | 2 mm |
+> | COLMAP Poisson | 1,777 mm | 108 mm (6%) | 17 mm |
+> | COLMAP Delaunay | 11,746 mm | 4,442 mm (38%) | 122 mm |
+>
+> SH5's perimeter is 431 mm. Poisson's longest unbroken run of steep fold is 17 mm — 4% of
+> the way round the sherd — and rendered it is a speckled fringe around the rim plus the
+> octree grid, not a crest along the break. **Poisson did not recover SH5's fracture edge.**
+> (Delaunay's 38% is its faceting reaching the coherence threshold, not detail either.)
+>
+> So the conclusion here narrows rather than reverses: OpenMVS's SH5 perimeter is smooth,
+> Poisson's is rough, and **no method in this comparison has SH5's fracture edge**. That
+> points at the photographs of SH5, not at OpenMVS's smoothing — confirmed by a 2×2 over
+> `ReconstructMesh --smooth` and `RefineMesh --regularity-weight` (job 29892523), which
+> raised steep fold 14× to a longest connected run of 8 mm and added only surface noise.
+> Method in `pottery-photogrammetry/scripts/experiments/measure_fold.py`.
+>
+> Caveat on the numbers above: the crop box from the original run was not retained, so this
+> re-measurement gives 10 mm rather than 8 mm for baseline SH5. Every method above is cropped
+> with the identical box, so the comparison between them is unaffected.
 
 ### The silhouette test cannot separate these methods
 
@@ -255,9 +286,11 @@ holds even though the absolute values are inflated.
 2. **Check break edges per sherd** before feeding OpenMVS meshes to GARF or TORA. SH5 shows
    the failure is real and invisible to averages.
 3. **Repeat on a second tree** before treating the ranking as general.
-4. **If fracture fidelity ever becomes the binding constraint**, OpenMVS's smoothing is the
-   thing to attack — it is the one place where the best method is losing exactly what the
-   reassembly needs.
+4. **If fracture fidelity ever becomes the binding constraint, re-photograph — do not
+   re-tune.** OpenMVS's smoothing was the obvious suspect and has been tested and cleared
+   (job 29892523, see the correction above): loosening both smoothing knobs adds noise, not
+   edges. No method here resolves SH5's break, which makes it a capture problem — closer
+   range, or raking light across the fracture face.
 
 ---
 
