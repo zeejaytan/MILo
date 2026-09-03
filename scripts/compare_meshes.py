@@ -23,12 +23,22 @@ number this script prints should be described as accuracy. What it can do honest
      once survived three rounds of numeric validation and was obvious within seconds of
      drawing the geometry. Renders are written whatever the numbers say.
 
+BEFORE ANY OF THAT, this script finds out what units each mesh is in, by reading the
+`<mesh>.scale.json` sidecar that `scale_mesh.py` writes beside a scaled mesh. If either
+mesh cannot say, or the two say different things, the comparison STOPS and prints no
+millimetre figure at all. Where only shape matters, `--shape-only` runs item 1 -- the one
+measure here that does not depend on units -- and suppresses items 2, 3 and the scale
+bar. It has to be asked for by name, so a shape answer cannot be mistaken for a metric
+one. `--self-test` proves the refusal can actually fire.
+
 Usage:
     python scripts/compare_meshes.py \\
         --capture  /data/.../MILo/data/16062025/capture.json \\
         --milo     /data/.../MILo/output/16062025/mesh_mm.ply \\
         --openmvs  /data/.../Rabati2025/16062025/work_colmap_openmvs/scene_dense_mesh_refine.ply \\
         --out      /data/.../MILo/output/16062025/compare
+
+    python scripts/compare_meshes.py --self-test     # no data needed; proves the gate
 """
 
 from __future__ import annotations
@@ -68,6 +78,160 @@ read_intrinsics_text = _colmap.read_intrinsics_text
 # badly that the most likely explanation is a broken camera convention in this script,
 # not two independently bad reconstructions.
 SUSPECT_IOU = 0.5
+
+# --------------------------------------------------------------------------------------
+# Scale provenance: what units is this mesh in, and what said so
+# --------------------------------------------------------------------------------------
+
+# A mesh file carries no units. The millimetres come from something physical in the
+# scene -- the turntable marker board, or the blue base plate -- and scale_mesh.py
+# records which, in a <mesh>.scale.json sidecar written beside the scaled mesh. Without
+# reading it, a distance "in mesh units" gets printed as millimetres and nothing here can
+# notice. That was true of this script until 2026-09-03: its --mm-per-unit flag reached
+# only the render's scale bar, and frac_within_0.5mm was computed against a raw 0.5.
+
+SIDECAR_SUFFIX = ".scale.json"
+
+# Unit names a sidecar may declare, and what one mesh unit is worth in millimetres.
+# Anything not on this list is refused rather than guessed at.
+MM_PER_UNIT_BY_NAME = {
+    "millimetres": 1.0, "millimeters": 1.0, "mm": 1.0,
+    "centimetres": 10.0, "centimeters": 10.0, "cm": 10.0,
+    "metres": 1000.0, "meters": 1000.0, "m": 1000.0,
+}
+
+# Exit statuses. 1 stays with the failures this script already had (no masks; two meshes
+# whose sizes disagree). These two are about the scale record itself.
+RC_OK = 0
+RC_NO_SCALE = 2        # a mesh cannot say what units it is in
+RC_SCALE_CONFLICT = 3  # the two meshes say different things
+
+
+def sidecar_path(mesh_path: Path) -> Path:
+    """<mesh>.ply -> <mesh>.scale.json, the name scale_mesh.py writes."""
+    return Path(mesh_path).with_suffix(SIDECAR_SUFFIX)
+
+
+def read_scale(mesh_path: Path):
+    """The scale sidecar beside a mesh, or None if there is not one we can read."""
+    p = sidecar_path(mesh_path)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def internal_disagreements(sidecar: dict) -> list:
+    """What the scale measurement recorded about disagreeing with itself.
+
+    A02/A03 were scaled off a 190 x 130 mm plate measured on two edges and on two point
+    clouds. Those figures live in the sidecar and have never been printed anywhere: a
+    5.4 % gap between the sparse and dense clouds was reachable only by opening the JSON.
+    """
+    out = []
+    m = sidecar.get("measured") or {}
+    d = m.get("disagreement")
+    if isinstance(d, (int, float)):
+        out.append("the two reference edges disagree by %.1f%%" % (d * 100))
+    x = m.get("cross_cloud_disagreement")
+    if isinstance(x, (int, float)):
+        out.append("the sparse and dense clouds disagree by %.1f%%" % (x * 100))
+    for sub in m.get("measurements") or []:
+        if sub.get("accepted") is False:
+            out.append("the %s cloud's measurement was rejected"
+                       % (sub.get("cloud") or "unnamed"))
+    return out
+
+
+def scale_decision(paths: dict, shape_only: bool = False) -> dict:
+    """Can this comparison honestly report millimetres, and on whose authority.
+
+    `paths` maps a tag ("milo", "openmvs") to a mesh path. Nothing is loaded and nothing
+    is written; this only reads the sidecars, so it can run before the capture, the
+    COLMAP model or the CUDA renderer exist. That is deliberate -- the refusal must not
+    depend on a GPU being present.
+    """
+    sidecars, units, reasons = {}, {}, []
+    for tag, path in paths.items():
+        sc = read_scale(Path(path))
+        sidecars[tag] = sc
+        if sc is None:
+            reasons.append(
+                "%s: no scale sidecar beside %s. Nothing records what units it is in, or "
+                "what physical object supplied them." % (tag, Path(path).name))
+            continue
+        name = str(sc.get("units", "")).strip().lower()
+        if name not in MM_PER_UNIT_BY_NAME:
+            reasons.append(
+                "%s: its sidecar declares units %r, which is not a unit this script will "
+                "guess at." % (tag, sc.get("units")))
+            continue
+        units[tag] = name
+
+    scale_code = RC_OK
+    if len(units) < len(paths):
+        scale_code = RC_NO_SCALE
+    elif len(set(units.values())) > 1:
+        scale_code = RC_SCALE_CONFLICT
+        reasons.append(
+            "the two meshes do not agree on units -- " +
+            ", ".join("%s says %s" % (t, u) for t, u in sorted(units.items())) +
+            ". They come from the same camera solve, so one of them was never scaled.")
+
+    scale_ok = scale_code == RC_OK
+    return {
+        "scale_ok": scale_ok,
+        "scale_code": scale_code,
+        "shape_only": bool(shape_only),
+        # Metric means: millimetres may be printed. Asking for --shape-only suppresses
+        # them even when the sidecars would have allowed them.
+        "metric": scale_ok and not shape_only,
+        "reasons": reasons,
+        "sidecars": sidecars,
+        "mm_per_unit": {t: MM_PER_UNIT_BY_NAME[u] for t, u in units.items()} if scale_ok else {},
+    }
+
+
+def exit_code_for_scale(decision: dict) -> int:
+    """The status the caller branches on.
+
+    Separate from the printing on purpose. check_turntable.py printed a perfectly correct
+    page of disagreeing frames while returning 0, so the gate was dead and the pipeline
+    ran on regardless. The status is the thing that has to be proven, so it is the thing
+    the self-test asserts.
+    """
+    if decision["scale_ok"] or decision["shape_only"]:
+        return RC_OK
+    return decision["scale_code"]
+
+
+def provenance_lines(decision: dict) -> list:
+    """Where each mesh's millimetres came from, printed above the results, not beneath."""
+    lines = ["Scale provenance"]
+    for tag, sc in sorted(decision["sidecars"].items()):
+        if sc is None:
+            lines.append("  %-9s no sidecar -- units unknown" % tag)
+            continue
+        lines.append("  %-9s %s, from %s" % (tag, sc.get("units"),
+                                             sc.get("source") or "an unrecorded source"))
+        lines.append("  %-9s capture %s, %s, scaled %s"
+                     % ("", sc.get("capture") or "?", sc.get("method") or "?",
+                        sc.get("scaled_at") or "?"))
+        if sc.get("caveat"):
+            lines.append("  %-9s stated precision: %s" % ("", sc["caveat"]))
+        checks = internal_disagreements(sc)
+        if checks:
+            lines.append("  %-9s the scale measurement's own checks:" % "")
+            for d in checks:
+                lines.append("  %-9s   - %s" % ("", d))
+    if decision["shape_only"]:
+        lines.append("  --shape-only: outline agreement only. No distance, thickness or "
+                     "size figure is reported below,")
+        lines.append("  because none of them would be in millimetres.")
+    return lines
+
 
 
 # --------------------------------------------------------------------------------------
@@ -224,15 +388,23 @@ def _save_silhouette_overlay(pred, gt, path: Path):
     PILImage.fromarray(img).save(path)
 
 
-def surface_disagreement(a: trimesh.Trimesh, b: trimesh.Trimesh, n_samples=200_000):
-    """Symmetric point-to-surface distance between the two meshes, in mesh units."""
+def surface_disagreement(a: trimesh.Trimesh, b: trimesh.Trimesh, mm_per_unit: float,
+                         n_samples=200_000):
+    """Symmetric point-to-surface distance between the two meshes, in MILLIMETRES.
+
+    `mm_per_unit` comes from the meshes' own scale sidecars, and the conversion happens
+    here, before the 0.5 mm and 1 mm fractions below are computed. Until 2026-09-03 those
+    two fractions were computed against a raw 0.5 and 1.0 in whatever units the mesh
+    happened to be in: a mesh in metres reported "99.9 % of the surface within 0.5 mm"
+    when the real figure was in metres and meant nothing at all.
+    """
     from scipy.spatial import cKDTree
 
     pa = a.sample(n_samples)
     pb = b.sample(n_samples)
     d_ab = cKDTree(pb).query(pa)[0]
     d_ba = cKDTree(pa).query(pb)[0]
-    d = np.concatenate([d_ab, d_ba])
+    d = np.concatenate([d_ab, d_ba]) * float(mm_per_unit)
     return {
         "median": float(np.median(d)),
         "p90": float(np.percentile(d, 90)),
@@ -243,9 +415,10 @@ def surface_disagreement(a: trimesh.Trimesh, b: trimesh.Trimesh, n_samples=200_0
     }
 
 
-def wall_thickness(mesh: trimesh.Trimesh, n_samples=20_000, seed=0):
+def wall_thickness(mesh: trimesh.Trimesh, mm_per_unit: float, n_samples=20_000, seed=0):
     """
-    Distance from a point on the surface to the opposite face, along the inward normal.
+    Distance from a point on the surface to the opposite face, along the inward normal,
+    in millimetres -- a conservator can check this one against the sherd with callipers.
 
     Sampled rather than exhaustive: a refined OpenMVS mesh has ~1M vertices and this is a
     distribution, not a per-vertex map. Rays that exit without hitting anything are
@@ -265,7 +438,7 @@ def wall_thickness(mesh: trimesh.Trimesh, n_samples=20_000, seed=0):
     locations, index_ray = hits[0], hits[1]
     if len(index_ray) == 0:
         return None
-    d = np.linalg.norm(locations - origins[index_ray], axis=1)
+    d = np.linalg.norm(locations - origins[index_ray], axis=1) * float(mm_per_unit)
     return {
         "n_rays_hit": int(len(d)),
         "n_rays_cast": int(len(origins)),
@@ -275,7 +448,7 @@ def wall_thickness(mesh: trimesh.Trimesh, n_samples=20_000, seed=0):
     }
 
 
-def raking_render(renderer, mesh, model, view_name, out_path: Path, mm_per_unit=1.0):
+def raking_render(renderer, mesh, model, view_name, out_path: Path, mm_per_unit=None):
     """
     Shade the mesh with a grazing light, the way raking light reveals a worn surface.
 
@@ -308,7 +481,8 @@ def raking_render(renderer, mesh, model, view_name, out_path: Path, mm_per_unit=
     img[mask] = (0.08 + 0.92 * shade[mask])[:, None]
     img = (img * 255).astype(np.uint8)
 
-    _draw_scale_bar(img, fx, view, mesh, mm_per_unit)
+    if mm_per_unit is not None:
+        _draw_scale_bar(img, fx, view, mesh, mm_per_unit)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     PILImage.fromarray(img).save(out_path)
 
@@ -339,14 +513,145 @@ def load_mesh(path: Path) -> trimesh.Trimesh:
     return m
 
 
-def describe(mesh: trimesh.Trimesh) -> dict:
-    return {
+def describe(mesh: trimesh.Trimesh, mm_per_unit=None) -> dict:
+    """`mm_per_unit=None` means the units are unknown, so the extents are not called mm."""
+    d = {
         "vertices": int(len(mesh.vertices)),
         "faces": int(len(mesh.faces)),
         "watertight": bool(mesh.is_watertight),
         "components": int(len(mesh.split(only_watertight=False))),
-        "extents_mm": [round(float(x), 2) for x in mesh.extents],
     }
+    if mm_per_unit is None:
+        d["extents_units"] = [round(float(x), 6) for x in mesh.extents]
+    else:
+        d["extents_mm"] = [round(float(x) * mm_per_unit, 2) for x in mesh.extents]
+    return d
+
+
+# --------------------------------------------------------------------------------------
+# Proving the gate can refuse
+# --------------------------------------------------------------------------------------
+
+def _fixture(dirpath: Path, tag: str, radius: float, sidecar=None) -> Path:
+    """A small sphere written as a mesh, with the sidecar it is meant to have (or none)."""
+    path = dirpath / (tag + ".ply")
+    trimesh.creation.icosphere(subdivisions=4, radius=radius).export(path)
+    if sidecar is not None:
+        sidecar_path(path).write_text(json.dumps(sidecar, indent=2))
+    return path
+
+
+def _mm_sidecar(**extra) -> dict:
+    d = {"units": "millimetres", "mm_per_unit": 373.73, "capture": "17062025/A03",
+         "method": "self-test fixture", "source": "blue base top face 190x130 mm",
+         "scaled_at": "2026-09-03T00:00Z", "caveat": "precision ~1%"}
+    d.update(extra)
+    return d
+
+
+def self_test() -> int:
+    """Prove the scale gate can refuse as well as pass, and that the millimetre
+    thresholds are actually in millimetres.
+
+    A gate that has only ever been seen to pass is indistinguishable from a gate that
+    always passes. check_turntable.py in this repo printed a perfectly correct page of
+    disagreeing frames while returning 0, so the dense stage ran anyway; the fix was to
+    assert the exit STATUS, which is what the caller branches on. Same reasoning here.
+
+    Runs on a laptop: nothing below needs the capture, the COLMAP model or CUDA, because
+    the scale gate is decided before any of those are touched.
+    """
+    import re
+    import tempfile
+
+    state = {"ok": True}
+
+    def case(got, want):
+        good = got == want
+        state["ok"] &= good
+        print(f"   exit status {got}, expected {want}  -> {'OK' if good else 'WRONG'}")
+
+    def check(condition, detail):
+        state["ok"] &= bool(condition)
+        print(f"   {detail}  -> {'OK' if condition else 'WRONG'}")
+
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+
+        print("\n-- both meshes declare millimetres and agree")
+        a = _fixture(d, "milo_ok", 50.0, _mm_sidecar())
+        b = _fixture(d, "mvs_ok", 50.8, _mm_sidecar(method="self-test fixture B"))
+        dec = scale_decision({"milo": a, "openmvs": b})
+        case(exit_code_for_scale(dec), RC_OK)
+        check(dec["metric"] and dec["mm_per_unit"]["milo"] == 1.0,
+              "millimetres may be printed, 1 unit = 1 mm")
+        check("blue base top face" in "\n".join(provenance_lines(dec)),
+              "the scale source is printed with the results")
+
+        print("\n-- one mesh has no sidecar at all")
+        c = _fixture(d, "mvs_bare", 50.8, None)
+        dec = scale_decision({"milo": a, "openmvs": c})
+        case(exit_code_for_scale(dec), RC_NO_SCALE)
+        check(not dec["metric"], "no millimetre figure may be printed")
+
+        print("\n-- the two sidecars disagree on units")
+        e = _fixture(d, "mvs_metres", 0.0508, _mm_sidecar(units="metres"))
+        dec = scale_decision({"milo": a, "openmvs": e})
+        case(exit_code_for_scale(dec), RC_SCALE_CONFLICT)
+
+        print("\n-- a sidecar declaring units nobody here recognises")
+        f = _fixture(d, "mvs_cubits", 50.8, _mm_sidecar(units="cubits"))
+        dec = scale_decision({"milo": a, "openmvs": f})
+        case(exit_code_for_scale(dec), RC_NO_SCALE)
+
+        print("\n-- no sidecars anywhere, but --shape-only was asked for")
+        g = _fixture(d, "milo_bare", 50.0, None)
+        dec = scale_decision({"milo": g, "openmvs": c}, shape_only=True)
+        case(exit_code_for_scale(dec), RC_OK)
+        check(not dec["metric"], "millimetres stay suppressed")
+        check(re.search(r"\d\s*mm", "\n".join(provenance_lines(dec))) is None,
+              "no millimetre figure appears in the read-out")
+
+        print("\n-- a sidecar whose own measurement disagreed with itself")
+        noisy = _mm_sidecar(measured={
+            "cross_cloud_disagreement": 0.0537, "disagreement": 0.0138, "chosen": "dense",
+            "accepted": True,
+            "measurements": [{"cloud": "dense", "accepted": True},
+                             {"cloud": "sparse", "accepted": False}]})
+        h = _fixture(d, "mvs_noisy", 50.8, noisy)
+        dec = scale_decision({"milo": a, "openmvs": h})
+        case(exit_code_for_scale(dec), RC_OK)
+        text = "\n".join(provenance_lines(dec))
+        check("5.4%" in text and "sparse cloud's measurement was rejected" in text,
+              "the 5.4% cross-cloud gap and the rejected cloud are printed, not buried")
+
+        # ---- the defect that started this ------------------------------------------
+        # Two spheres 0.8 mm apart, expressed in millimetres and again in metres. The
+        # same pair must give the same answer, and did not: the 0.5 mm and 1 mm
+        # fractions were computed against a raw 0.5 and 1.0 in whatever the mesh units
+        # happened to be.
+        print("\n-- the millimetre thresholds are in millimetres")
+        a_mm = trimesh.creation.icosphere(subdivisions=4, radius=50.0)
+        b_mm = trimesh.creation.icosphere(subdivisions=4, radius=50.8)
+        a_m = trimesh.creation.icosphere(subdivisions=4, radius=0.050)
+        b_m = trimesh.creation.icosphere(subdivisions=4, radius=0.0508)
+        in_mm = surface_disagreement(a_mm, b_mm, 1.0, n_samples=50_000)
+        in_m = surface_disagreement(a_m, b_m, 1000.0, n_samples=50_000)
+        # frac_within_1mm, not 0.5mm: at 0.8 mm apart the 0.5 mm figure is 0 for both
+        # and two zeros would agree whatever the conversion did.
+        check(abs(in_mm["frac_within_1mm"] - in_m["frac_within_1mm"]) < 0.02,
+              f"the same pair in mm ({in_mm['frac_within_1mm']:.3f}) and in metres "
+              f"({in_m['frac_within_1mm']:.3f}) agree within 2 points")
+        check(in_mm["frac_within_0.5mm"] < 0.5 < in_mm["frac_within_1mm"],
+              f"0.8 mm apart reads as {in_mm['frac_within_0.5mm']:.0%} within 0.5 mm "
+              f"and {in_mm['frac_within_1mm']:.0%} within 1 mm")
+        old = surface_disagreement(a_m, b_m, 1.0, n_samples=20_000)
+        check(old["frac_within_0.5mm"] > 0.99,
+              f"unconverted, the metres pair would have claimed "
+              f"{old['frac_within_0.5mm']:.1%} of its surface within 0.5 mm")
+
+    print("\nself-test:", "PASS" if state["ok"] else "FAIL")
+    return 0 if state["ok"] else 1
 
 
 def main() -> int:
@@ -355,11 +660,38 @@ def main() -> int:
     ap.add_argument("--milo", required=True, type=Path)
     ap.add_argument("--openmvs", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--mm-per-unit", type=float, default=1.0,
-                    help="millimetres per mesh unit; 1.0 if both meshes are already in mm")
+    ap.add_argument("--shape-only", action="store_true",
+                    help="run only the measure that does not depend on units (outline "
+                         "agreement on held-out views) and print no millimetre figure")
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove the scale gate can refuse as well as pass; needs no data")
     ap.add_argument("--skip-thickness", action="store_true",
                     help="skip wall thickness (ray casting is slow without embree)")
     args = ap.parse_args()
+
+    # The scale gate runs FIRST, before the capture, the COLMAP model or the CUDA
+    # renderer are touched. A refusal that needed a GPU node to happen would not be a
+    # gate; and there is no point loading a million vertices to then decline to measure
+    # them.
+    decision = scale_decision({"milo": args.milo, "openmvs": args.openmvs},
+                              shape_only=args.shape_only)
+    rc = exit_code_for_scale(decision)
+    if rc != RC_OK:
+        print("\nSTOP: this comparison cannot say what units it would be reporting in.\n",
+              file=sys.stderr)
+        for reason in decision["reasons"]:
+            print("  - " + reason, file=sys.stderr)
+        print("\nA mesh scaled by scripts/scale_mesh.py has a <mesh>.scale.json beside it,\n"
+              "naming the physical object that supplied the millimetres. If only the\n"
+              "shape matters -- outline agreement against held-out photographs, which\n"
+              "does not depend on units -- rerun with --shape-only.\n\n"
+              "Nothing was written. No figure above would have been in millimetres.",
+              file=sys.stderr)
+        return rc
+
+    mm_per_unit = (decision["mm_per_unit"]["milo"] if decision["metric"] else None)
+    for line in provenance_lines(decision):
+        print(line)
 
     capture = json.loads(args.capture.read_text())
     dataset = Path(capture["dataset_dir"])
@@ -376,10 +708,12 @@ def main() -> int:
     model = read_model(dataset / "sparse" / "0")
     meshes = {"milo": load_mesh(args.milo), "openmvs": load_mesh(args.openmvs)}
 
-    report = {"capture": str(args.capture), "mm_per_unit": args.mm_per_unit,
+    report = {"capture": str(args.capture), "mm_per_unit": mm_per_unit,
+              "metric": decision["metric"], "shape_only": decision["shape_only"],
+              "scale": decision["sidecars"],
               "meshes": {}, "silhouette": {}, "thickness": {}}
     for tag, mesh in meshes.items():
-        report["meshes"][tag] = describe(mesh)
+        report["meshes"][tag] = describe(mesh, mm_per_unit)
 
     # Both meshes come from the same COLMAP model, so they share a coordinate frame and
     # need no alignment. If their sizes disagree they are not in the same units, and
@@ -406,13 +740,15 @@ def main() -> int:
             "per_view": rows,
         }
         raking_render(renderer, mesh, model, held_out[0] if held_out else None,
-                      args.out / f"raking_{tag}.png", mm_per_unit=args.mm_per_unit)
+                      args.out / f"raking_{tag}.png", mm_per_unit=mm_per_unit)
 
-    report["disagreement_mm"] = surface_disagreement(meshes["milo"], meshes["openmvs"])
+    if decision["metric"]:
+        report["disagreement_mm"] = surface_disagreement(
+            meshes["milo"], meshes["openmvs"], mm_per_unit)
 
-    if not args.skip_thickness:
-        for tag, mesh in meshes.items():
-            report["thickness"][tag] = wall_thickness(mesh)
+        if not args.skip_thickness:
+            for tag, mesh in meshes.items():
+                report["thickness"][tag] = wall_thickness(mesh, mm_per_unit)
 
     (args.out / "comparison.json").write_text(json.dumps(report, indent=2))
 
@@ -428,14 +764,17 @@ def main() -> int:
                   f"{s['n_views']} views)")
         t = report["thickness"].get(tag)
         if t:
-            print(f"         wall thickness median {t['median'] * args.mm_per_unit:.2f} mm "
-                  f"(10-90%: {t['p10'] * args.mm_per_unit:.2f}-"
-                  f"{t['p90'] * args.mm_per_unit:.2f} mm)")
+            print(f"         wall thickness median {t['median']:.2f} mm "
+                  f"(10-90%: {t['p10']:.2f}-{t['p90']:.2f} mm)")
 
-    dis = report["disagreement_mm"]
-    print(f"\nThe two disagree by {dis['median'] * args.mm_per_unit:.2f} mm at the median, "
-          f"{dis['p90'] * args.mm_per_unit:.2f} mm at the 90th percentile.")
-    print("That says where they differ, not which one is right.")
+    if decision["metric"]:
+        dis = report["disagreement_mm"]
+        print(f"\nThe two disagree by {dis['median']:.2f} mm at the median, "
+              f"{dis['p90']:.2f} mm at the 90th percentile.")
+        print("That says where they differ, not which one is right.")
+    else:
+        print("\nNo distance in millimetres is reported: --shape-only was asked for, so "
+              "the\nonly measure run here was the one that does not depend on units.")
 
     best = max(("milo", "openmvs"), key=lambda t: report["silhouette"][t]["iou_mean"] or 0)
     worst_iou = min(report["silhouette"][t]["iou_mean"] or 0 for t in meshes)
@@ -454,4 +793,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Intercepted before argparse, which requires --capture and both meshes:
+    # the self-test needs none of them.
+    sys.exit(self_test() if "--self-test" in sys.argv else main())

@@ -44,6 +44,10 @@ scale error large enough to matter is small enough to be invisible.
 
 ## The gap that makes this live
 
+*(The comparison half of this was closed on 2026-09-03; the paragraph below is what it
+looked like, kept because the other half — derived meshes losing the sidecar — is still
+open.)*
+
 `scripts/compare_meshes.py` computes point-to-surface distance whose own docstring says the
 result is **"in mesh units"** ([line 227](../scripts/compare_meshes.py)), then reports it as
 `frac_within_0.5mm` and `frac_within_1mm` against hardcoded thresholds of `0.5` and `1.0`.
@@ -60,13 +64,20 @@ millimetres, and nothing in the script can notice.** Read from the file, not yet
       non-metric** so nothing quietly measures against it
 - [ ] **A round-trip on at least one sherd**: a caliper measurement in millimetres against
       the same dimension read off the mesh, with the **disagreement** reported, not the
-      agreement. Target: within **0.5% of the measured dimension** — 0.5 mm on a 100 mm
-      sherd — chosen so the scale error stays below the 0.822 mm the route currently
-      resolves. Report the number whether it passes or not
-- [ ] **`compare_meshes.py` refuses to compare two meshes whose scale it cannot establish.**
-      It reads `.scale.json` for both, and if either is missing or the two disagree it exits
-      non-zero. A gate that prints and continues is not a gate — that was the
-      `check_turntable.py` lesson, and it is the same mistake wearing different clothes
+      agreement. Judged against **the precision the mesh's own sidecar declares** — about
+      1% today, because the 190 × 130 mm plate has its long edge verified to 0.42% and its
+      short edge unverified. A fixed target would ask the mesh to beat its own reference,
+      and would go stale the moment the short edge is checked. Report the number whether it
+      passes or not. **This one is a bench measurement, not a ticket** — it needs the
+      physical sherd; it lands in `docs/notes/`
+- [x] **`compare_meshes.py` refuses to compare two meshes whose scale it cannot establish.**
+      **Done 2026-09-03** (`.scratch/scale-provenance/issues/01`). It reads `.scale.json`
+      for both before loading anything, and exits 2 if either is missing and 3 if the two
+      disagree on units; `--shape-only` is the named way to run the unit-free half.
+      `--self-test` asserts the exit status on synthetic fixtures, so the gate is proved
+      able to fail rather than only observed to pass — that was the `check_turntable.py`
+      lesson. It also fixed the defect underneath: `frac_within_0.5mm` was computed against
+      a raw 0.5 in whatever units the mesh happened to be in
 - [ ] **One before/after picture**: the same two meshes overlaid, with the millimetre scale
       bar burnt in, at a view that resolves the wall — the sherd in **section**, not a
       three-quarter view of the whole body, because a scale error is a proportional change

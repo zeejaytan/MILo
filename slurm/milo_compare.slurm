@@ -71,6 +71,14 @@ echo "MILo mesh    : $MILO_MESH"
 echo "OpenMVS mesh : $OPENMVS_MESH"
 
 cd "$REPO_DIR"
+
+# The comparison establishes the units of BOTH meshes before it reports anything, by
+# reading the <mesh>.scale.json sidecar that scale_mesh.py writes. With set -e that means
+# this job now stops rather than printing millimetres it cannot stand behind:
+#   exit 2  a mesh has no sidecar, so nothing records what units it is in
+#   exit 3  the two sidecars declare different units, so one of them was never scaled
+# Neither is a reconstruction failure. Scale the mesh (scripts/scale_mesh.py), or, if only
+# the shape matters, add --shape-only below -- outline agreement does not depend on units.
 python scripts/compare_meshes.py \
     --capture "$DATA_DIR/capture.json" \
     --milo    "$MILO_MESH" \
