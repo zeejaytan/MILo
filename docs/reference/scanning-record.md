@@ -25,6 +25,26 @@ day as N01 but come before it, and their marker is the bad one.** Every row belo
 carries the answer in its Marker column and every record in the JSON carries
 `markers_usable` -- read that field rather than reasoning from the date.
 
+## Where the millimetres come from
+
+- 118 of 118 captures can state where their millimetres come from.
+- 117 from the blue base plate -- precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified
+- 1 from the turntable marker board -- the board's lattice is the ruler; its printed 40.0 mm pitch is a designed value identified by a ruler reading +/-1.25% on a single step, so accuracy is capped there and not by the fit, which is far tighter
+- 58 more carry a usable marker board but no derived reference, so the board is not yet their ruler -- deriving one would tighten them.
+
+**A usable marker is not the same as a marker used for scale.** The Marker column
+answers *may I align on it*; the Scale column answers *what supplied the
+millimetres*. The board becomes a scale source for a capture only once a reference
+has been derived by fitting that capture's own cameras onto it -- one exists
+(`2025-07-03/N01`). Everything else is scaled from the base plate, which the
+spreadsheet declares at the top of each season's sheet.
+
+Gate on `scale.metric` in the JSON, or:
+
+```
+python scripts/build_scanning_record.py --scale-check 03072025/N01 || exit 1
+```
+
 ## 2025
 
 Source: `Rabati 2025 scanning record.xlsx`
@@ -38,86 +58,86 @@ Season notes from the top of the sheet:
 - Camera setting: ISO 100, F/16, 1/1.6, WB auto
 - approx 20min shooting time per tree
 
-| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker |
-|---|---|---|---|---|---|---|---|
-| 2025-06-16 | A01 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Ceramic tray, First trail run, may need to reshot | 177 JPG / 177 NEF | **DO NOT USE** |
-| 2025-06-17 | A02 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Part 2 | 163 JPG / 162 NEF | **DO NOT USE** |
-| 2025-06-17 | A03 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Part 3 | 165 JPG / 164 NEF | **DO NOT USE** |
-| 2025-06-17 | A04 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  | Mark 3-5- 41cm | Part 4 | 161 JPG / 160 NEF | **DO NOT USE** |
-| 2025-06-18 | B01 | RBT 23 D9.1 Loc 1076 Bag 177 |  | Mark 2-3 8.8cm, mark4-5 10.5cm | few small sherds cannot fit on clamp | 119 JPG / 119 NEF | **DO NOT USE** |
-| 2025-06-18 | C01 | RBT 23 D9.1 Loc 1076 Bag 172 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-18 | C02 | RBT 23 D9.1 Loc 1076 Bag 172 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 122 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-18 | D01 | RBT 23 D9.1 Loc 1076 bag 180 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm |  | 119 JPG / 119 NEF | **DO NOT USE** |
-| 2025-06-18 | D02 | RBT 23 D9.1 Loc 1076 bag 180 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-19 | E01 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | One big vessel (?) | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-19 | E02 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-19 | E03 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part3 | 124 JPG / 124 NEF | **DO NOT USE** |
-| 2025-06-19 | E04 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part4 | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-19 | E05 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part5 | 122 JPG / 122 NEF | **DO NOT USE** |
-| 2025-06-21 | F01 | RBT 23 D9.1 Loc 1087/2 bag 126 and Loc 1088 bag 92 | RSPF 10827/2 | Mark1-2: 18cm mark3-4: 42.4cm | Ware:GR-HR.brn | 122 JPG / 122 NEF | **DO NOT USE** |
-| 2025-06-21 | G01 | RBT 23 B10.2 Loc 1827 bag 120 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 129 JPG / 128 NEF | **DO NOT USE** |
-| 2025-06-21 | G02 | RBT 23 B10.2 Loc 1827 bag 120 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Par2 | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-21 | H01 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-21 | H02 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part2 | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-21 | H03 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part3 | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-21 | H04 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part4 | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-21 | H05 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part5 | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-25 | J01 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 | ZRSPF F3.24.13/8, ZRSPF F3.24.13/9, ZRSPF F3.24.13/9 | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Huge bag from kurgan last year (could be Trialeti) | 123 JPG / 122 NEF | **DO NOT USE** |
-| 2025-06-25 | J02 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Diagnostic piece | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-25 | J03 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Mostly Diag, 3 tray pieces | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-25 | J04 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | 2 tray pieces | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-25 | J05 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-25 | J06 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-25 | J07 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-25 | J08 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-25 | J09 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-26 | J10 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-26 | J11 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-26 | J12 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-26 | J13 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-26 | I01 | RBT19 E9.2 Loc 1032 bag 129, 136<br>RBT19 D9.2 Loc 234 bag 44<br>RBT16 F9.1 Loc 300 Bag 1<br>RBT16 F9.1 Loc 300 Bag 2<br>RBT 23 A10.2 Loc 2111 bag 14 | RSPF 1032/1 (C,J) 1032/2(D)<br>RSPF 234/5 (F,H)<br>RSPF 300/16 (A,J)<br>RSPF 300/1 (E)<br>RSPF 2111/3(B,I) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Claudia special interest group; Were: Bedani fine; Were: Bedani fine | 122 JPG / 121 NEF | **DO NOT USE** |
-| 2025-06-27 | K01 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 | ZRSPF F3.24.13/5 (F) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Could be same as J series | 119 JPG / 119 NEF | **DO NOT USE** |
-| 2025-06-27 | K02 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 | ZRSPF F3.24.13/4 (I,J) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | ware:cw d gr | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-27 | K03 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-27 | K04 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-27 | K05 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-27 | K06 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-06-28 | K07 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-01 | L01 | ZVELI24 F3 Loc F3.24.18 bag 95 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 144 JPG / 144 NEF | **DO NOT USE** |
-| 2025-07-01 | L02 | ZVELI24 F3 Loc F3.24.18 bag 95 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-01 | L03 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-07-01 | L04 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 123 JPG / 123 NEF | **DO NOT USE** |
-| 2025-07-01 | L05 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-02 | L06 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 125 JPG / 125 NEF | **DO NOT USE** |
-| 2025-07-02 | L07 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-02 | L08 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 146 JPG / 146 NEF | **DO NOT USE** |
-| 2025-07-02 | Site01 | RBT25, D9.1, Loc1103 |  | Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm | ISO 100, F/8, 1/250 exp, WB:direct sunlight | 98 JPG / 98 NEF | **DO NOT USE** |
-| 2025-07-02 | Site02 | RBT25, D9.1, Loc1106 |  | Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm | same | 239 JPG / 239 NEF | **DO NOT USE** |
-| 2025-07-02 | L09 | as L08 |  | as L08 |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-07-02 | L10 | as L08 |  | as L08 |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-03 | M01 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-07-03 | M02 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 128 JPG / 128 NEF | **DO NOT USE** |
-| 2025-07-03 | M03 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** |
-| 2025-07-03 | M04 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** |
-| 2025-07-03 | N01 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment | No dense cloud straight to model | 126 JPG / 119 NEF | ok |
-| 2025-07-03 | N02 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-03 | N03 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-03 | N04 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 122 JPG / 122 NEF | ok |
-| 2025-07-03 | N05 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O01 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment | the one with animal figure | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O02 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 129 JPG / 129 NEF | ok |
-| 2025-07-04 | O03 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O04 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O05 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O06 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | O07 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 125 JPG / 125 NEF | ok |
-| 2025-07-04 | O08 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | P01 | RBT19 D9.1 Loc 1007 bag 16 |  | Use base as scale, marker on turntable for alignment | Trialeti tray | 121 JPG / 121 NEF | ok |
-| 2025-07-04 | P02 | RBT19 D9.1 Loc 1007 bag 16<br>RBT19 D9.1 Loc 1007 bag 19<br>RBT19 D9.1 Loc 1007 bag 28 | D, J<br><br>A |  |  | 121 JPG / 121 NEF | ok |
-| 2025-07-04 | P03 | RBT19 D9.1 Loc 1007 bag 51<br>RBT19 D9.1 Loc 1007 bag 51<br>RBT23 A10.2 Loc 2106 bag 12<br>RBT23 A10.2 Loc 2111 bag 14 | E, F<br>RSPF 1007/45 (I)<br>RSPF 2106/2 (G)<br>RSPF 2111/3(E) |  |  | 128 JPG / 128 NEF | ok |
-| 2025-07-04 | Pot 01 | RBT23 D8.2/8.3 Loc 11322 bag 317 | RSPF 1122/34 |  | Bedeni, two different handle, deep pot, slipped, | 122 JPG / 122 NEF | ok |
-| 2025-07-04 | Pot 02 |  |  |  | Part2 | 120 JPG / 120 NEF | ok |
-| 2025-07-04 | Q01 | RBT25 D9.1 Loc 1106 bag 246 |  |  | New pot off the ground today | 121 JPG / 121 NEF | ok |
+| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker | Scale |
+|---|---|---|---|---|---|---|---|---|
+| 2025-06-16 | A01 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Ceramic tray, First trail run, may need to reshot | 177 JPG / 177 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-17 | A02 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Part 2 | 163 JPG / 162 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-17 | A03 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  |  | Part 3 | 165 JPG / 164 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-17 | A04 | RBT 22/23 D9.1 Loc 1081 Bag 95 |  | Mark 3-5- 41cm | Part 4 | 161 JPG / 160 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-18 | B01 | RBT 23 D9.1 Loc 1076 Bag 177 |  | Mark 2-3 8.8cm, mark4-5 10.5cm | few small sherds cannot fit on clamp | 119 JPG / 119 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-18 | C01 | RBT 23 D9.1 Loc 1076 Bag 172 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-18 | C02 | RBT 23 D9.1 Loc 1076 Bag 172 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 122 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-18 | D01 | RBT 23 D9.1 Loc 1076 bag 180 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm |  | 119 JPG / 119 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-18 | D02 | RBT 23 D9.1 Loc 1076 bag 180 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-19 | E01 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | One big vessel (?) | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-19 | E02 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part2 | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-19 | E03 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part3 | 124 JPG / 124 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-19 | E04 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part4 | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-19 | E05 | RBT 23 D9.1 Loc 1076 bag 176 |  | Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm | part5 | 122 JPG / 122 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | F01 | RBT 23 D9.1 Loc 1087/2 bag 126 and Loc 1088 bag 92 | RSPF 10827/2 | Mark1-2: 18cm mark3-4: 42.4cm | Ware:GR-HR.brn | 122 JPG / 122 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | G01 | RBT 23 B10.2 Loc 1827 bag 120 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 129 JPG / 128 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | G02 | RBT 23 B10.2 Loc 1827 bag 120 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Par2 | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | H01 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | H02 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part2 | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | H03 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part3 | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | H04 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part4 | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-21 | H05 | RBT 23 B10.3 Loc 1827 bag 88 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Part5 | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J01 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 | ZRSPF F3.24.13/8, ZRSPF F3.24.13/9, ZRSPF F3.24.13/9 | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Huge bag from kurgan last year (could be Trialeti) | 123 JPG / 122 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J02 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Diagnostic piece | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J03 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Mostly Diag, 3 tray pieces | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J04 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | 2 tray pieces | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J05 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J06 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J07 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J08 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-25 | J09 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-26 | J10 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-26 | J11 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-26 | J12 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-26 | J13 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 102 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-26 | I01 | RBT19 E9.2 Loc 1032 bag 129, 136<br>RBT19 D9.2 Loc 234 bag 44<br>RBT16 F9.1 Loc 300 Bag 1<br>RBT16 F9.1 Loc 300 Bag 2<br>RBT 23 A10.2 Loc 2111 bag 14 | RSPF 1032/1 (C,J) 1032/2(D)<br>RSPF 234/5 (F,H)<br>RSPF 300/16 (A,J)<br>RSPF 300/1 (E)<br>RSPF 2111/3(B,I) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Claudia special interest group; Were: Bedani fine; Were: Bedani fine | 122 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K01 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 | ZRSPF F3.24.13/5 (F) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | Could be same as J series | 119 JPG / 119 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K02 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 | ZRSPF F3.24.13/4 (I,J) | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm | ware:cw d gr | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K03 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K04 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K05 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-27 | K06 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-06-28 | K07 | ZVELI24 9.7.24 F3 Loc F3.24.13 bag 109 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-01 | L01 | ZVELI24 F3 Loc F3.24.18 bag 95 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 144 JPG / 144 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-01 | L02 | ZVELI24 F3 Loc F3.24.18 bag 95 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-01 | L03 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-01 | L04 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 123 JPG / 123 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-01 | L05 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | L06 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 125 JPG / 125 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | L07 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | L08 | ZVELI24 F3 Loc F3.24.18 bag 83 |  | Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 146 JPG / 146 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | Site01 | RBT25, D9.1, Loc1103 |  | Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm | ISO 100, F/8, 1/250 exp, WB:direct sunlight | 98 JPG / 98 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | Site02 | RBT25, D9.1, Loc1106 |  | Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm | same | 239 JPG / 239 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | L09 | as L08 |  | as L08 |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-02 | L10 | as L08 |  | as L08 |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-03 | M01 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-03 | M02 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 128 JPG / 128 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-03 | M03 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 121 JPG / 121 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-03 | M04 | RBT25, C8.1, Loc 2509, bag 36 |  | mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm |  | 120 JPG / 120 NEF | **DO NOT USE** | blue base plate |
+| 2025-07-03 | N01 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment | No dense cloud straight to model | 126 JPG / 119 NEF | ok | turntable marker board |
+| 2025-07-03 | N02 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-03 | N03 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-03 | N04 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 122 JPG / 122 NEF | ok | blue base plate |
+| 2025-07-03 | N05 | ZVELI24 F3 8/07/24, Loc F3.29.18 bag 89 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O01 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment | the one with animal figure | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O02 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 129 JPG / 129 NEF | ok | blue base plate |
+| 2025-07-04 | O03 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O04 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O05 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O06 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | O07 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 125 JPG / 125 NEF | ok | blue base plate |
+| 2025-07-04 | O08 | ZVELI24 F3 09/07/24, Loc F3.24.9 bag 113 |  | Use base as scale, marker on turntable for alignment |  | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | P01 | RBT19 D9.1 Loc 1007 bag 16 |  | Use base as scale, marker on turntable for alignment | Trialeti tray | 121 JPG / 121 NEF | ok | blue base plate |
+| 2025-07-04 | P02 | RBT19 D9.1 Loc 1007 bag 16<br>RBT19 D9.1 Loc 1007 bag 19<br>RBT19 D9.1 Loc 1007 bag 28 | D, J<br><br>A |  |  | 121 JPG / 121 NEF | ok | blue base plate |
+| 2025-07-04 | P03 | RBT19 D9.1 Loc 1007 bag 51<br>RBT19 D9.1 Loc 1007 bag 51<br>RBT23 A10.2 Loc 2106 bag 12<br>RBT23 A10.2 Loc 2111 bag 14 | E, F<br>RSPF 1007/45 (I)<br>RSPF 2106/2 (G)<br>RSPF 2111/3(E) |  |  | 128 JPG / 128 NEF | ok | blue base plate |
+| 2025-07-04 | Pot 01 | RBT23 D8.2/8.3 Loc 11322 bag 317 | RSPF 1122/34 |  | Bedeni, two different handle, deep pot, slipped, | 122 JPG / 122 NEF | ok | blue base plate |
+| 2025-07-04 | Pot 02 |  |  |  | Part2 | 120 JPG / 120 NEF | ok | blue base plate |
+| 2025-07-04 | Q01 | RBT25 D9.1 Loc 1106 bag 246 |  |  | New pot off the ground today | 121 JPG / 121 NEF | ok | blue base plate |
 
 ## 2026
 
@@ -136,53 +156,53 @@ Season notes from the top of the sheet:
 - Camera height(mm): 850, 950, 1200, 1310,1450
 - Note for future scan: bag 570, 569, 568, Loc 1401, D8.2 have pieces fit together
 
-| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker |
-|---|---|---|---|---|---|---|---|
-| 2026-06-15 | A01 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 97 JPG / 97 NEF | ok |
-| 2026-06-15 | A02 | Rabati 10/07/25, C8.1, Loc 2522, Bag 73 | RSPF 2522/1 |  |  | 130 JPG / 130 NEF | ok |
-| 2026-06-16 | A01 | Rabati 10/07/25, C8.1, Loc 2522, Bag 73 | RSPF 2522/1 |  | Need to rescale before use | 135 JPG / 135 NEF | ok |
-| 2026-06-16 | A02 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 128 JPG / 128 NEF | ok |
-| 2026-06-16 | A03 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 162 JPG / 162 NEF | ok |
-| 2026-06-16 | B01 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 | RSPF 1375/10 |  |  | 161 JPG / 161 NEF | ok |
-| 2026-06-16 | B02 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 161 JPG / 161 NEF | ok |
-| 2026-06-16 | B03 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-16 | B04 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-16 | B05 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-16 | C01 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 | RSPF2523/1 |  |  | 161 JPG / 161 NEF | ok |
-| 2026-06-16 | C02 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 159 JPG / 159 NEF | ok |
-| 2026-06-16 | C03 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 158 JPG / 158 NEF | ok |
-| 2026-06-16 | C04 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | One big piece | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | C05 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | C06 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | 2 matching pair | 163 JPG / 163 NEF | ok |
-| 2026-06-17 | C07 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 161 JPG / 161 NEF | ok |
-| 2026-06-17 | C08 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | C09 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 162 JPG / 162 NEF | ok |
-| 2026-06-17 | C10 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | C11 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | Pots in west secion | 162 JPG / 162 NEF | ok |
-| 2026-06-17 | D01 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Cennected rim pieces | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | D02 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Cennected rim pieces | 160 JPG / 160 NEF | ok |
-| 2026-06-17 | D03 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Connected handle | 161 JPG / 161 NEF | ok |
-| 2026-06-17 | D04 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | 3 large pieces connected | 165 JPG / 165 NEF | ok |
-| 2026-06-18 | D05 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Connected pieces via marking | 160 JPG / 160 NEF | ok |
-| 2026-06-18 | D06 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | 3 connected pieces via marking also to D05 | 160 JPG / 160 NEF | ok |
-| 2026-06-18 | D07 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Base pieces, 2 pieces join | 162 JPG / 162 NEF | ok |
-| 2026-06-18 | D08 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 170 JPG / 170 NEF | ok |
-| 2026-06-18 | D09 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-18 | D10 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-18 | D11 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-19 | E01 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  | Fragment from tray, base-rim pieces | 181 JPG / 181 NEF | ok |
-| 2026-06-19 | E02 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  | base-rim piece, one intersting curve openning for front | 161 JPG / 161 NEF | ok |
-| 2026-06-19 | E03 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 162 JPG / 162 NEF | ok |
-| 2026-06-19 | E04 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-19 | E05 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok |
-| 2026-06-19 | E06 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 192 JPG / 192 NEF | ok |
-| 2026-06-19 | E07 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 161 JPG / 161 NEF | ok |
-| 2026-06-19 | E08 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok |
+| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker | Scale |
+|---|---|---|---|---|---|---|---|---|
+| 2026-06-15 | A01 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 97 JPG / 97 NEF | ok | blue base plate |
+| 2026-06-15 | A02 | Rabati 10/07/25, C8.1, Loc 2522, Bag 73 | RSPF 2522/1 |  |  | 130 JPG / 130 NEF | ok | blue base plate |
+| 2026-06-16 | A01 | Rabati 10/07/25, C8.1, Loc 2522, Bag 73 | RSPF 2522/1 |  | Need to rescale before use | 135 JPG / 135 NEF | ok | blue base plate |
+| 2026-06-16 | A02 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 128 JPG / 128 NEF | ok | blue base plate |
+| 2026-06-16 | A03 | Rabati 09/07/25, C8.1, Loc 2522, Bag 68 | RSPF 2522/1 |  |  | 162 JPG / 162 NEF | ok | blue base plate |
+| 2026-06-16 | B01 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 | RSPF 1375/10 |  |  | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-16 | B02 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-16 | B03 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-16 | B04 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-16 | B05 | Rabati 14/07/25, D8.2/3, Loc 1375, Bag 545 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-16 | C01 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 | RSPF2523/1 |  |  | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-16 | C02 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 159 JPG / 159 NEF | ok | blue base plate |
+| 2026-06-16 | C03 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 158 JPG / 158 NEF | ok | blue base plate |
+| 2026-06-16 | C04 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | One big piece | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | C05 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | C06 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | 2 matching pair | 163 JPG / 163 NEF | ok | blue base plate |
+| 2026-06-17 | C07 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-17 | C08 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | C09 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 162 JPG / 162 NEF | ok | blue base plate |
+| 2026-06-17 | C10 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | C11 | Rabati 12/07/25, C8.1, Loc 2523, Bag 82 |  |  | Pots in west secion | 162 JPG / 162 NEF | ok | blue base plate |
+| 2026-06-17 | D01 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Cennected rim pieces | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | D02 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Cennected rim pieces | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-17 | D03 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Connected handle | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-17 | D04 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | 3 large pieces connected | 165 JPG / 165 NEF | ok | blue base plate |
+| 2026-06-18 | D05 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Connected pieces via marking | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-18 | D06 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | 3 connected pieces via marking also to D05 | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-18 | D07 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  | Base pieces, 2 pieces join | 162 JPG / 162 NEF | ok | blue base plate |
+| 2026-06-18 | D08 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 170 JPG / 170 NEF | ok | blue base plate |
+| 2026-06-18 | D09 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-18 | D10 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-18 | D11 | Rabati 16/07/25, D9.1, Loc 1103 (11322 from 2023), bag 323 |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-19 | E01 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  | Fragment from tray, base-rim pieces | 181 JPG / 181 NEF | ok | blue base plate |
+| 2026-06-19 | E02 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  | base-rim piece, one intersting curve openning for front | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-19 | E03 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 162 JPG / 162 NEF | ok | blue base plate |
+| 2026-06-19 | E04 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-19 | E05 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
+| 2026-06-19 | E06 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 192 JPG / 192 NEF | ok | blue base plate |
+| 2026-06-19 | E07 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 161 JPG / 161 NEF | ok | blue base plate |
+| 2026-06-19 | E08 | Rabati 15/07/25, D8.2, Loc 1401, various bag |  |  |  | 160 JPG / 160 NEF | ok | blue base plate |
 
 ## Frames on the capture drive
 
-Counted under `D:/` — the laptop's capture drive, a snapshot at generation
-time and **not** the photographs of record (those are on Mediaflux, and on
+Counted under `D:/` — the laptop's capture drive, a snapshot CARRIED FROM AN EARLIER SCAN, not re-counted for this build, and **not**
+the photographs of record (those are on Mediaflux, and on
 Spartan once uploaded). Every tree is shot as a JPG+NEF pair, so the two
 counts should match.
 

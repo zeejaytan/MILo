@@ -5,6 +5,7 @@
     "2026": "Rabati 2026 scanning record.xlsx"
   },
   "frame_counts_from": "D:/",
+  "frame_counts_rescanned": false,
   "seasons": [
     {
       "season": 2025,
@@ -37,6 +38,15 @@
           "note": "Ceramic tray, First trail run, may need to reshot",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062025",
             "jpg": 177,
@@ -63,6 +73,15 @@
           "note": "Part 2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062025/A02",
             "jpg": 163,
@@ -88,6 +107,15 @@
           "note": "Part 3",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062025/A03",
             "jpg": 165,
@@ -113,6 +141,15 @@
           "note": "Part 4",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 3-5- 41cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062025/A04",
             "jpg": 161,
@@ -138,6 +175,15 @@
           "note": "few small sherds cannot fit on clamp",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062025/B01",
             "jpg": 119,
@@ -163,6 +209,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062025/C01",
             "jpg": 121,
@@ -188,6 +243,15 @@
           "note": "part2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062025/C02",
             "jpg": 122,
@@ -213,6 +277,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062025/D01",
             "jpg": 119,
@@ -238,6 +311,15 @@
           "note": "part2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062025/D02",
             "jpg": 120,
@@ -263,6 +345,15 @@
           "note": "One big vessel (?)",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062025/E01",
             "jpg": 120,
@@ -288,6 +379,15 @@
           "note": "part2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062025/E02",
             "jpg": 121,
@@ -313,6 +413,15 @@
           "note": "part3",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062025/E03",
             "jpg": 124,
@@ -338,6 +447,15 @@
           "note": "part4",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062025/E04",
             "jpg": 121,
@@ -363,6 +481,15 @@
           "note": "part5",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark 2-3 8.8cm, mark4-5 10.5cm, mark 1-9 16.5cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062025/E05",
             "jpg": 122,
@@ -388,6 +515,15 @@
           "note": "Ware:GR-HR.brn",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm mark3-4: 42.4cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/F01",
             "jpg": 122,
@@ -413,6 +549,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/G01",
             "jpg": 129,
@@ -438,6 +583,15 @@
           "note": "Par2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/G02",
             "jpg": 121,
@@ -463,6 +617,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/H01",
             "jpg": 120,
@@ -488,6 +651,15 @@
           "note": "Part2",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/H02",
             "jpg": 120,
@@ -513,6 +685,15 @@
           "note": "Part3",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/H03",
             "jpg": 120,
@@ -538,6 +719,15 @@
           "note": "Part4",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/H04",
             "jpg": 120,
@@ -563,6 +753,15 @@
           "note": "Part5",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "21062025/H05",
             "jpg": 121,
@@ -588,6 +787,15 @@
           "note": "Huge bag from kurgan last year (could be Trialeti)",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/G01",
             "jpg": 123,
@@ -614,6 +822,15 @@
           "note": "Diagnostic piece",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J02",
             "jpg": 121,
@@ -639,6 +856,15 @@
           "note": "Mostly Diag, 3 tray pieces",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J03",
             "jpg": 120,
@@ -664,6 +890,15 @@
           "note": "2 tray pieces",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J04",
             "jpg": 121,
@@ -689,6 +924,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J05",
             "jpg": 121,
@@ -714,6 +958,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J06",
             "jpg": 120,
@@ -739,6 +992,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J07",
             "jpg": 121,
@@ -764,6 +1026,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J08",
             "jpg": 120,
@@ -789,6 +1060,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "25062025/J09",
             "jpg": 120,
@@ -814,6 +1094,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "26062025/J10",
             "jpg": 120,
@@ -839,6 +1128,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "26062025/J11",
             "jpg": 121,
@@ -864,6 +1162,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "26062025/J12",
             "jpg": 120,
@@ -889,6 +1196,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "26062025/J13",
             "jpg": 120,
@@ -934,6 +1250,15 @@
           "note": "Claudia special interest group; Were: Bedani fine; Were: Bedani fine",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "26062025/I01",
             "jpg": 122,
@@ -959,6 +1284,15 @@
           "note": "Could be same as J series",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K01",
             "jpg": 119,
@@ -984,6 +1318,15 @@
           "note": "ware:cw d gr",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K02",
             "jpg": 120,
@@ -1009,6 +1352,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K03",
             "jpg": 120,
@@ -1034,6 +1386,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K04",
             "jpg": 120,
@@ -1059,6 +1420,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K05",
             "jpg": 120,
@@ -1084,6 +1454,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "27062025/K06",
             "jpg": 120,
@@ -1109,6 +1488,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "28062025/K07",
             "jpg": 121,
@@ -1134,6 +1522,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "01072025/L01",
             "jpg": 144,
@@ -1159,6 +1556,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "01072025/L02",
             "jpg": 121,
@@ -1184,6 +1590,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "01072025/L03",
             "jpg": 120,
@@ -1209,6 +1624,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "01072025/L04",
             "jpg": 123,
@@ -1234,6 +1658,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "01072025/L05",
             "jpg": 121,
@@ -1259,6 +1692,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/L06",
             "jpg": 125,
@@ -1284,6 +1726,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/L07",
             "jpg": 121,
@@ -1309,6 +1760,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark1-2: 18cm, mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/L08",
             "jpg": 146,
@@ -1334,6 +1794,15 @@
           "note": "ISO 100, F/8, 1/250 exp, WB:direct sunlight",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/Site01",
             "jpg": 98,
@@ -1359,6 +1828,15 @@
           "note": "same",
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Mark7-9: 8.01cm, 9-11: 8.01. 8-10:8.01cm, 10-12: 8.01cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/Site02",
             "jpg": 239,
@@ -1384,6 +1862,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "as L08",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/L09",
             "jpg": 120,
@@ -1409,6 +1896,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "as L08",
+            "metric": true
+          },
           "on_disk": {
             "dir": "02072025/L10",
             "jpg": 121,
@@ -1434,6 +1930,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/M01",
             "jpg": 120,
@@ -1459,6 +1964,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/M02",
             "jpg": 128,
@@ -1484,6 +1998,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/M03",
             "jpg": 121,
@@ -1509,6 +2032,15 @@
           "note": null,
           "markers_usable": false,
           "markers_note": "Marker placed incorrectly. Do NOT use it for feature recognition, registration or alignment -- it will pull the solve off. Scale and align from the 13x19 cm base instead.",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "mark3-4: 42.4cm, mark3-6: 8.7cm, mark4-5: 11cm",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/M04",
             "jpg": 120,
@@ -1534,6 +2066,15 @@
           "note": "No dense cloud straight to model",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "turntable marker board",
+            "how": "16 coded targets on a printed 40 mm lattice, with the factor measured by fitting this capture's own cameras onto the board -- so it is a scale source only where that reference has been derived: docs/reference/turntable-board-03072025-N01.json",
+            "precision": "the board's lattice is the ruler; its printed 40.0 mm pitch is a designed value identified by a ruler reading +/-1.25% on a single step, so accuracy is capped there and not by the fit, which is far tighter",
+            "reference": "docs/reference/turntable-board-03072025-N01.json",
+            "declared_by": null,
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/N01",
             "jpg": 126,
@@ -1559,6 +2100,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/N02",
             "jpg": 120,
@@ -1584,6 +2134,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/N03",
             "jpg": 120,
@@ -1609,6 +2168,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/N04",
             "jpg": 122,
@@ -1634,6 +2202,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "03072025/N05",
             "jpg": 120,
@@ -1659,6 +2236,15 @@
           "note": "the one with animal figure",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O01",
             "jpg": 120,
@@ -1684,6 +2270,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O02",
             "jpg": 129,
@@ -1709,6 +2304,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O03",
             "jpg": 120,
@@ -1734,6 +2338,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O04",
             "jpg": 120,
@@ -1759,6 +2372,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O05",
             "jpg": 120,
@@ -1784,6 +2406,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O06",
             "jpg": 120,
@@ -1809,6 +2440,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O07",
             "jpg": 125,
@@ -1834,6 +2474,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/O08",
             "jpg": 120,
@@ -1859,6 +2508,15 @@
           "note": "Trialeti tray",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": "Use base as scale, marker on turntable for alignment",
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/P01",
             "jpg": 121,
@@ -1894,6 +2552,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/P02",
             "jpg": 121,
@@ -1934,6 +2601,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/P03",
             "jpg": 128,
@@ -1959,6 +2635,15 @@
           "note": "Bedeni, two different handle, deep pot, slipped,",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/Pot01",
             "jpg": 122,
@@ -1979,6 +2664,15 @@
           "note": "Part2",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/Pot02",
             "jpg": 120,
@@ -2005,6 +2699,15 @@
           "note": "New pot off the ground today",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base (blue metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base (blue metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "04052025/Q01",
             "jpg": 121,
@@ -2048,6 +2751,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "15062026/A01",
             "jpg": 97,
@@ -2073,6 +2785,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "15062026/A02",
             "jpg": 130,
@@ -2098,6 +2819,15 @@
           "note": "Need to rescale before use",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/A01",
             "jpg": 135,
@@ -2123,6 +2853,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/A02",
             "jpg": 128,
@@ -2148,6 +2887,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/A03",
             "jpg": 162,
@@ -2173,6 +2921,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/B01",
             "jpg": 161,
@@ -2198,6 +2955,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/B02",
             "jpg": 161,
@@ -2223,6 +2989,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/B03",
             "jpg": 160,
@@ -2248,6 +3023,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/B04",
             "jpg": 160,
@@ -2273,6 +3057,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/B05",
             "jpg": 160,
@@ -2298,6 +3091,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/C01",
             "jpg": 161,
@@ -2323,6 +3125,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/C02",
             "jpg": 159,
@@ -2348,6 +3159,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/C03",
             "jpg": 158,
@@ -2373,6 +3193,15 @@
           "note": "One big piece",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "16062026/C04",
             "jpg": 160,
@@ -2398,6 +3227,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C05",
             "jpg": 160,
@@ -2423,6 +3261,15 @@
           "note": "2 matching pair",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C06",
             "jpg": 163,
@@ -2448,6 +3295,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C07",
             "jpg": 161,
@@ -2473,6 +3329,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C08",
             "jpg": 160,
@@ -2498,6 +3363,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C09",
             "jpg": 162,
@@ -2523,6 +3397,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C10",
             "jpg": 160,
@@ -2548,6 +3431,15 @@
           "note": "Pots in west secion",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/C11",
             "jpg": 162,
@@ -2573,6 +3465,15 @@
           "note": "Cennected rim pieces",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/D01",
             "jpg": 160,
@@ -2598,6 +3499,15 @@
           "note": "Cennected rim pieces",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/D02",
             "jpg": 160,
@@ -2623,6 +3533,15 @@
           "note": "Connected handle",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/D03",
             "jpg": 161,
@@ -2648,6 +3567,15 @@
           "note": "3 large pieces connected",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "17062026/D04",
             "jpg": 165,
@@ -2673,6 +3601,15 @@
           "note": "Connected pieces via marking",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D05",
             "jpg": 160,
@@ -2698,6 +3635,15 @@
           "note": "3 connected pieces via marking also to D05",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D06",
             "jpg": 160,
@@ -2723,6 +3669,15 @@
           "note": "Base pieces, 2 pieces join",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D07",
             "jpg": 162,
@@ -2748,6 +3703,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D08",
             "jpg": 170,
@@ -2773,6 +3737,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D09",
             "jpg": 160,
@@ -2798,6 +3771,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D10",
             "jpg": 160,
@@ -2823,6 +3805,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "18062026/D11",
             "jpg": 160,
@@ -2848,6 +3839,15 @@
           "note": "Fragment from tray, base-rim pieces",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E01",
             "jpg": 181,
@@ -2873,6 +3873,15 @@
           "note": "base-rim piece, one intersting curve openning for front",
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E02",
             "jpg": 161,
@@ -2898,6 +3907,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E03",
             "jpg": 162,
@@ -2923,6 +3941,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E04",
             "jpg": 160,
@@ -2948,6 +3975,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E05",
             "jpg": 160,
@@ -2973,6 +4009,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E06",
             "jpg": 192,
@@ -2998,6 +4043,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E07",
             "jpg": 161,
@@ -3023,6 +4077,15 @@
           "note": null,
           "markers_usable": true,
           "markers_note": "Marker is on the turntable and is the intended alignment reference (N01 batch onwards).",
+          "scale": {
+            "source": "blue base plate",
+            "how": "top face of the tree base, 190 x 130 mm. Declared once per season at the top of the spreadsheet: 'Top of the tree base  (metal base) = 13x19cm'. It is the one physical scale present in every capture of that season.",
+            "precision": "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified",
+            "reference": null,
+            "declared_by": "Top of the tree base  (metal base) = 13x19cm",
+            "recorded": null,
+            "metric": true
+          },
           "on_disk": {
             "dir": "19062026/E08",
             "jpg": 160,

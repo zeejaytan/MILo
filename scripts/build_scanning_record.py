@@ -46,6 +46,13 @@ def _openpyxl():
 REPO = Path(__file__).resolve().parents[1]
 REFERENCE = REPO / "docs" / "reference"
 
+# The scale sources and what each is worth, from the module that also writes them into a
+# mesh's sidecar. Imported rather than restated so the record and the mesh cannot end up
+# quoting different precisions for the same ruler. Stdlib only, so --check still runs on a
+# cluster node with no scientific stack.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from scale_sidecar import BOARD, PLATE, SOURCE_CAVEAT        # noqa: E402
+
 SEASONS = {
     2025: "Rabati 2025 scanning record.xlsx",
     2026: "Rabati 2026 scanning record.xlsx",
@@ -100,6 +107,147 @@ SET_ALIASES = {
     ("04052025", "Pot 01"): "Pot01",
     ("04052025", "Pot 02"): "Pot02",
 }
+
+
+# --------------------------------------------------------------------------------------
+# What physical object supplied the millimetres for each capture
+# --------------------------------------------------------------------------------------
+#
+# WITHOUT THIS FIELD "59 of 118 are metric" is something we remember, not something the
+# data says -- and remembering is how a non-metric capture drifts into a size comparison
+# a year later.
+#
+# THE MARKER BEING USABLE DOES NOT MAKE IT THE RULER. `markers_usable` answers "may I
+# align on this marker", which is a different question from "what supplied the
+# millimetres", and the record says so itself: N01's own measurement cell reads *"Use base
+# as scale, marker on turntable for alignment"*. The board only becomes a scale source for
+# a capture once a reference has actually been DERIVED for it, because the factor is
+# measured by fitting that capture's cameras onto the board. One exists. Crediting the
+# other 58 to the board because the marker is visible in them would be inventing a
+# measurement, which is the thing this whole feature exists to stop.
+#
+# The plate is what the record itself declares, once per season, at the top of the sheet:
+# "Top of the tree base (blue metal base) = 13x19cm". That is a statement about the rig,
+# and the rig is in every capture -- so it covers both seasons. It is a statement of what
+# was SET UP, not a confirmation that the plate is unoccluded in every frame; scale_mesh.py
+# is what finds that out per capture, and it refuses rather than reports when its own
+# checks fail.
+
+# capture_id -> the derived board reference for that capture. A capture is credited to the
+# board only if it is in here AND the file is on disk; both are checked before writing.
+BOARD_REFERENCES = {
+    "2025-07-03/N01": "docs/reference/turntable-board-03072025-N01.json",
+}
+
+PLATE_HOW = ("top face of the tree base, 190 x 130 mm. Declared once per season at the top "
+             "of the spreadsheet: {note!r}. It is the one physical scale present in every "
+             "capture of that season.")
+BOARD_HOW = ("16 coded targets on a printed 40 mm lattice, with the factor measured by "
+             "fitting this capture's own cameras onto the board -- so it is a scale source "
+             "only where that reference has been derived: {ref}")
+NO_SCALE_HOW = ("nothing in this season's record names a physical object of known size. "
+                "Shape questions only: this capture must not enter any measurement that "
+                "depends on size, and no millimetre may be quoted from it.")
+
+# The plate is a scale source because THE RECORD SAYS SO, once per season, not because we
+# remember the rig. The two sheets word it differently -- 2025 "blue metal base", 2026
+# "metal base" -- so match on the dimensions plus the word base, and keep the note verbatim
+# so the JSON carries the evidence rather than our reading of it. A season that stops
+# declaring it becomes non-metric, which is the whole point: the rule has to be able to
+# fail, or "118 of 118 are metric" is an assertion the code cannot lose.
+PLATE_DECLARATION = re.compile(r"13\s*x\s*19", re.I)
+
+
+def plate_declaration(notes):
+    """The season note that declares the base plate, verbatim, or None if there is none."""
+    for n in notes or []:
+        if PLATE_DECLARATION.search(n) and "base" in n.lower():
+            return n
+    return None
+
+
+def flag_scale_sources(seasons, repo=REPO, references=None) -> None:
+    """Give every capture a stated scale source, or mark it non-metric. Neither is silent.
+
+    Writes `scale` on each entry:
+
+        source       the physical object, or None
+        how          what it is, in words a conservator can act on
+        precision    what that source is worth, carried from the sidecar contract so the
+                     record and the mesh cannot state different figures for the same ruler
+        reference    the derived board reference, where one exists
+        declared_by  the season note the plate claim rests on, verbatim
+        recorded     the per-capture measurement cell, verbatim, or None
+        metric       False exactly when there is no source. This is the field to gate on.
+
+    `recorded` is kept beside the source rather than folded into it. The 2025 cells hold
+    hand-ruled distances between marks on the rig ("Mark1-2: 18cm, mark3-4: 42.4cm") at
+    ruler precision on a printed sheet. They corroborate; they are not the ruler, and
+    promoting them to one would quietly re-scale seventy captures.
+    """
+    references = BOARD_REFERENCES if references is None else references
+    for ref_id, rel in references.items():
+        if not (Path(repo) / rel).exists():
+            raise SystemExit(
+                "board reference {} is named for {} but is not on disk. Refusing to write "
+                "a record that credits a capture to a ruler nobody can open."
+                .format(rel, ref_id))
+
+    seen = set()
+    for s in seasons:
+        declared = plate_declaration(s.get("notes"))
+        for e in s["entries"]:
+            cid = e["capture_id"]
+            seen.add(cid)
+            ref = references.get(cid)
+            if ref:
+                source, how = BOARD, BOARD_HOW.format(ref=ref)
+            elif declared:
+                source, how = PLATE, PLATE_HOW.format(note=declared)
+            else:
+                source, how = None, NO_SCALE_HOW
+            e["scale"] = {
+                "source": source,
+                "how": how,
+                "precision": SOURCE_CAVEAT[source] if source else None,
+                "reference": ref,
+                "declared_by": declared if source == PLATE else None,
+                "recorded": e["measurement"],
+                "metric": source is not None,
+            }
+
+    missing = sorted(set(references) - seen)
+    if missing:
+        raise SystemExit(
+            "board reference named for {}, which is not a capture in the record. A "
+            "reference pointed at nothing would silently credit no capture at all."
+            .format(", ".join(missing)))
+
+
+def scale_summary(seasons) -> list:
+    """The counts in plain terms: how much of the corpus can be measured, and on what."""
+    ent = [e for s in seasons for e in s["entries"]]
+    by_source = {}
+    for e in ent:
+        by_source.setdefault(e["scale"]["source"], []).append(e)
+
+    metric = [e for e in ent if e["scale"]["metric"]]
+    lines = ["%d of %d captures can state where their millimetres come from."
+             % (len(metric), len(ent))]
+    for source in sorted(by_source, key=lambda x: (x is None, x or "")):
+        got = by_source[source]
+        if source is None:
+            lines.append("  %3d NON-METRIC -- no scale source. Shape questions only; "
+                         "nothing may measure a size against these." % len(got))
+            continue
+        lines.append("  %3d from the %s -- %s" % (len(got), source, SOURCE_CAVEAT[source]))
+
+    upgradable = [e for e in ent
+                  if e["markers_usable"] and not e["scale"]["reference"]]
+    lines.append("%d more carry a usable marker board but no derived reference, so the "
+                 "board is not yet their ruler -- deriving one would tighten them."
+                 % len(upgradable))
+    return lines
 
 
 def norm(cell) -> str:
@@ -283,12 +431,13 @@ def attach_disk(seasons, disk) -> list:
     return unmatched
 
 
-def check_capture(seasons, wanted) -> int:
-    """Answer 'may I use the marker on this capture?' for one capture.
+def find_capture(seasons, wanted):
+    """One capture from the record, by capture_id or by its directory on the drive.
 
-    Exit 2 when the marker must not be used, so a pipeline step can gate on it:
-
-        python scripts/build_scanning_record.py --check 03072025/M04 || exit 1
+    Returns (entry, None) or (None, why-not). Shared by the two gates below, which ask
+    DIFFERENT questions of the same capture -- "may I align on the marker" and "may I take
+    a millimetre off this" -- and two copies of this lookup could drift into answering one
+    question about a different capture.
     """
     key = wanted.strip().strip("/").replace("\\", "/")
     hits = [
@@ -299,18 +448,39 @@ def check_capture(seasons, wanted) -> int:
         or key.lower() == e["capture_id"].lower()
     ]
     if not hits:
-        print("no such capture in the record: {}".format(wanted))
-        print("(directory names only resolve when --drive is also given)")
-        return 3
+        return None, ("no such capture in the record: {}\n"
+                      "(directory names only resolve when --drive is also given)"
+                      .format(wanted))
     if len(hits) > 1:
-        print("ambiguous: {}".format(", ".join(h["capture_id"] for h in hits)))
-        return 3
-    e = hits[0]
+        return None, "ambiguous: {}".format(", ".join(h["capture_id"] for h in hits))
+    return hits[0], None
+
+
+def describe_capture(e) -> None:
+    """The two lines both gates print first, so a wrong answer names the wrong capture."""
     print("{}  object {}  {}".format(e["capture_id"], e["object"], e["labels"][0]["label"]
                                      if e["labels"] else "(no bag label)"))
     if e.get("on_disk"):
         print("  directory {}  {} JPG / {} NEF".format(
             e["on_disk"]["dir"], e["on_disk"]["jpg"], e["on_disk"]["nef"]))
+
+
+def check_capture(seasons, wanted) -> int:
+    """Answer 'may I use the marker on this capture?' for one capture.
+
+    Exit 2 when the marker must not be used, so a pipeline step can gate on it:
+
+        python scripts/build_scanning_record.py --check 03072025/M04 || exit 1
+
+    This is the ALIGNMENT question. It is not the scale question -- see
+    `scale_check_capture` -- and the record itself keeps them apart: N01's measurement cell
+    reads "Use base as scale, marker on turntable for alignment".
+    """
+    e, why = find_capture(seasons, wanted)
+    if why:
+        print(why)
+        return 3
+    describe_capture(e)
     if e["markers_usable"]:
         print("  MARKER OK - {}".format(e["markers_note"]))
         return 0
@@ -318,7 +488,42 @@ def check_capture(seasons, wanted) -> int:
     return 2
 
 
-def to_markdown(seasons, drive, unmatched) -> str:
+def scale_check_capture(seasons, wanted) -> int:
+    """Answer 'may I take a millimetre off this capture?' for one capture.
+
+    Exit 2 when the capture is non-metric, so a measurement step can gate on it:
+
+        python scripts/build_scanning_record.py --scale-check 03072025/M04 || exit 1
+
+    A capture can pass this and fail --check, and the reverse. Every 2025 capture before
+    2025-07-03/N01 has an unusable marker and is still metric off the base plate; a capture
+    in a season whose sheet never declared the plate would be the other way round.
+
+    Exit 3 -- not 2 -- when the record predates this field. A record that cannot answer the
+    question is not the same as a capture that answers "no", and a gate that conflated them
+    would mark the whole corpus unmeasurable the moment the JSON went stale.
+    """
+    e, why = find_capture(seasons, wanted)
+    if why:
+        print(why)
+        return 3
+    describe_capture(e)
+    sc = e.get("scale")
+    if not sc:
+        print("  this record was built before scale sources were recorded -- rebuild it "
+              "with scripts/build_scanning_record.py before gating on scale")
+        return 3
+    if sc["metric"]:
+        print("  SCALE OK - {} ({})".format(sc["source"], sc["how"]))
+        print("  worth: {}".format(sc["precision"]))
+        if sc.get("recorded"):
+            print("  the sheet also records, by hand: {}".format(sc["recorded"]))
+        return 0
+    print("  NON-METRIC - {}".format(sc["how"]))
+    return 2
+
+
+def to_markdown(seasons, drive, unmatched, rescanned=True) -> str:
     out = [
         "# Rabati scanning record",
         "",
@@ -348,6 +553,24 @@ def to_markdown(seasons, drive, unmatched) -> str:
         "`markers_usable` -- read that field rather than reasoning from the date.",
         "",
     ]
+    out += ["## Where the millimetres come from", ""]
+    out += ["- " + x.strip() for x in scale_summary(seasons)]
+    out += [
+        "",
+        "**A usable marker is not the same as a marker used for scale.** The Marker column",
+        "answers *may I align on it*; the Scale column answers *what supplied the",
+        "millimetres*. The board becomes a scale source for a capture only once a reference",
+        "has been derived by fitting that capture's own cameras onto it -- one exists",
+        "(`2025-07-03/N01`). Everything else is scaled from the base plate, which the",
+        "spreadsheet declares at the top of each season's sheet.",
+        "",
+        "Gate on `scale.metric` in the JSON, or:",
+        "",
+        "```",
+        "python scripts/build_scanning_record.py --scale-check 03072025/N01 || exit 1",
+        "```",
+        "",
+    ]
     for s in seasons:
         out += ["## {}".format(s["season"]), "", "Source: `{}`".format(s["source"]), ""]
         if s["notes"]:
@@ -355,8 +578,9 @@ def to_markdown(seasons, drive, unmatched) -> str:
             out += ["- {}".format(n) for n in s["notes"]]
             out.append("")
         out += [
-            "| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Date | Set | Label (bag) | RSPF | Measurement | Note | Frames | Marker "
+            "| Scale |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
         for e in s["entries"]:
             labels = "<br>".join(l["label"] or "" for l in e["labels"])
@@ -372,6 +596,7 @@ def to_markdown(seasons, drive, unmatched) -> str:
                 e["note"] or "",
                 frames,
                 "ok" if e["markers_usable"] else "**DO NOT USE**",
+                e["scale"]["source"] if e["scale"]["metric"] else "**NON-METRIC**",
             ]
             out.append("| " + " | ".join(c.replace("|", "/") for c in cells) + " |")
         out.append("")
@@ -379,8 +604,10 @@ def to_markdown(seasons, drive, unmatched) -> str:
         out += [
             "## Frames on the capture drive",
             "",
-            "Counted under `{}` — the laptop's capture drive, a snapshot at generation".format(drive),
-            "time and **not** the photographs of record (those are on Mediaflux, and on",
+            "Counted under `{}` — the laptop's capture drive, a snapshot{} and **not**".format(
+                drive, " at generation time" if rescanned
+                else " CARRIED FROM AN EARLIER SCAN, not re-counted for this build,"),
+            "the photographs of record (those are on Mediaflux, and on",
             "Spartan once uploaded). Every tree is shot as a JPG+NEF pair, so the two",
             "counts should match.",
             "",
@@ -418,6 +645,181 @@ def to_markdown(seasons, drive, unmatched) -> str:
     return "\n".join(out) + "\n"
 
 
+# --------------------------------------------------------------------------------------
+# Self-test
+# --------------------------------------------------------------------------------------
+#
+# Same shape as `check_turntable.py` and `compare_meshes.py --self-test`: synthetic
+# records, assertions on the EXIT STATUS a caller would gate on, no framework and no
+# tests/ directory.
+#
+# The one it exists for: TODAY NO CAPTURE IS NON-METRIC. Both sheets declare the base
+# plate, so all 118 captures have a source and the non-metric branch never runs on real
+# data. A branch that never runs is a branch nobody has checked, and the day a season's
+# sheet omits the declaration is the day it matters most. So the fixtures below include a
+# season that does not declare it, and assert the gate says no.
+
+
+def _season(year, notes, entries):
+    """A record shaped like parse_sheet's output, with only the fields scale code reads."""
+    return {"season": year, "source": "fixture.xlsx", "notes": list(notes),
+            "entries": [dict(capture_id=cid, object=cid.split("/")[1][0], date=cid.split("/")[0],
+                             photo_set=cid.split("/")[1], labels=[], measurement=meas,
+                             note=None, markers_usable=mk,
+                             markers_note=MARKER_OK if mk else MARKER_WARNING)
+                        for cid, mk, meas in entries]}
+
+
+DECLARES_PLATE = ["Rabati fixture", "Top of the tree base (blue metal base) = 13x19cm"]
+DECLARES_NOTHING = ["Rabati fixture", "Camera setting: ISO 100, F/16, WB auto"]
+
+
+def carry_disk_counts(seasons, built):
+    """Keep the last drive scan when rebuilding without the drive attached.
+
+    Returns the drive those counts came from, or None. The frame counts are a snapshot of
+    a removable disk, not something the spreadsheets contain, so a rebuild on a day the
+    drive is not plugged in would otherwise DELETE 118 of them from a committed file --
+    and the deletion looks exactly like a record that never had them. Carried, and the
+    drive it was scanned from is carried with it so the read-out cannot imply it is fresh.
+    """
+    if not built.exists():
+        return None
+    prior = json.loads(built.read_text(encoding="utf-8"))
+    disk = {e["capture_id"]: e["on_disk"]
+            for s in prior.get("seasons", []) for e in s["entries"] if e.get("on_disk")}
+    if not disk:
+        return None
+    for s in seasons:
+        for e in s["entries"]:
+            if e["capture_id"] in disk:
+                e["on_disk"] = disk[e["capture_id"]]
+    return prior.get("frame_counts_from")
+
+
+def self_test() -> int:
+    import tempfile
+
+    failures = []
+    ran = []
+
+    def check(cond, what):
+        ran.append(what)
+        print(("  ok   " if cond else "  FAIL ") + what)
+        if not cond:
+            failures.append(what)
+
+    def case(got, want, what):
+        check(got == want, "%s (exit %s, wanted %s)" % (what, got, want))
+
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / "refs").mkdir()
+        ref_rel = "refs/board-fixture.json"
+        (repo / ref_rel).write_text("{}")
+        refs = {"2025-07-03/N01": ref_rel}
+
+        print("-- a season that declares the plate makes every one of its captures metric")
+        good = [_season(2025, DECLARES_PLATE,
+                        [("2025-06-16/A01", False, None),
+                         ("2025-07-03/M04", False, "Mark1-2: 18cm"),
+                         ("2025-07-03/N01", True, "Use base as scale, marker for alignment")])]
+        flag_scale_sources(good, repo=repo, references=refs)
+        ent = {e["capture_id"]: e for e in good[0]["entries"]}
+        check(all(e["scale"]["metric"] for e in ent.values()),
+              "all three state a scale source")
+        check(ent["2025-06-16/A01"]["scale"]["source"] == PLATE, "the plate is the default")
+        check(ent["2025-07-03/N01"]["scale"]["source"] == BOARD,
+              "and the one capture with a derived reference is credited to the board")
+        check(ent["2025-07-03/N01"]["scale"]["reference"] == ref_rel,
+              "naming the reference file, so the claim can be opened")
+        check(ent["2025-06-16/A01"]["scale"]["precision"] == SOURCE_CAVEAT[PLATE],
+              "the plate's caveat travels with it rather than being restated")
+        check("13x19cm" in (ent["2025-07-03/M04"]["scale"]["declared_by"] or ""),
+              "and the sheet's own words are on the record, not our reading of them")
+
+        print("\n-- a usable marker is NOT a scale source on its own")
+        # 19 captures in 2025 and all 40 in 2026 have a usable marker. One has a derived
+        # board reference. If markers_usable were driving this, the other 58 would be
+        # credited to a ruler nobody has measured for them.
+        marked = _season(2026, DECLARES_PLATE, [("2026-06-15/A01", True, None)])
+        flag_scale_sources([marked], repo=repo, references={})
+        e = marked["entries"][0]
+        check(e["markers_usable"] and e["scale"]["source"] == PLATE,
+              "a capture whose marker is usable but unmeasured is still scaled from the plate")
+        check(e["scale"]["reference"] is None, "and claims no board reference")
+
+        print("\n-- a season that declares nothing is marked NON-METRIC, not assumed")
+        bare = [_season(2027, DECLARES_NOTHING, [("2027-01-01/A01", True, None)])]
+        flag_scale_sources(bare, repo=repo, references={})
+        sc = bare[0]["entries"][0]["scale"]
+        check(sc["metric"] is False and sc["source"] is None,
+              "no source, and metric is False -- the field a caller gates on")
+        check(sc["precision"] is None,
+              "and no precision is quoted for a ruler that does not exist")
+
+        print("\n-- the two gates answer different questions about the same capture")
+        # This is the distinction the ticket exists to make. M04's marker is unusable and
+        # its millimetres are fine; a capture in an undeclared season is the reverse.
+        case(check_capture(good, "2025-07-03/M04"), 2, "--check refuses M04's marker")
+        case(scale_check_capture(good, "2025-07-03/M04"), 0,
+             "--scale-check accepts M04's millimetres from the plate")
+        case(check_capture(bare, "2027-01-01/A01"), 0, "--check accepts the marker")
+        case(scale_check_capture(bare, "2027-01-01/A01"), 2,
+             "--scale-check refuses the millimetres")
+
+        print("\n-- and a record built before this field says so instead of failing shut")
+        stale = [_season(2025, DECLARES_PLATE, [("2025-06-16/A01", False, None)])]
+        case(scale_check_capture(stale, "2025-06-16/A01"), 3,
+             "a record with no scale field exits 3, not 2 -- 'cannot answer', not 'no'")
+        case(scale_check_capture(good, "2025-06-16/Z99"), 3, "an unknown capture exits 3")
+
+        print("\n-- a reference nobody can open is refused before anything is written")
+        for bad, why in ((({"2025-07-03/N01": "refs/not-there.json"}), "the file is absent"),
+                         (({"2999-01-01/Q01": ref_rel}), "it names no capture in the record")):
+            try:
+                flag_scale_sources(good, repo=repo, references=bad)
+                check(False, "refused a board reference where %s" % why)
+            except SystemExit:
+                check(True, "refused a board reference where %s" % why)
+
+        print("\n-- rebuilding without the capture drive keeps the last frame counts")
+        # Not hypothetical: rebuilding this record on a day the drive was unplugged
+        # deleted all 118 counts from the committed file, and the deletion read exactly
+        # like a record that never had them.
+        built = repo / "prior.json"
+        built.write_text(json.dumps({
+            "frame_counts_from": "D:/",
+            "seasons": [{"entries": [{"capture_id": "2025-06-16/A01",
+                                      "on_disk": {"dir": "16062025", "jpg": 177,
+                                                  "nef": 177}}]}]}))
+        fresh = [_season(2025, DECLARES_PLATE,
+                         [("2025-06-16/A01", False, None), ("2025-07-03/M04", False, None)])]
+        drive = carry_disk_counts(fresh, built)
+        kept = fresh[0]["entries"][0].get("on_disk") or {}
+        check(kept.get("jpg") == 177, "the earlier scan's counts are carried, not dropped")
+        check(drive == "D:/", "and the drive they came from is carried with them")
+        check(fresh[0]["entries"][1].get("on_disk") is None,
+              "a capture the earlier scan never saw is still left blank")
+        check(carry_disk_counts(fresh, repo / "no-such.json") is None,
+              "and with no earlier record there is nothing to carry")
+
+        print("\n-- the read-out adds up")
+        mixed = good + bare
+        flag_scale_sources(mixed, repo=repo, references=refs)
+        lines = scale_summary(mixed)
+        check(lines[0].startswith("3 of 4 "), "the headline counts metric out of total")
+        check(any("NON-METRIC" in x for x in lines),
+              "the non-metric group is named rather than left out")
+        check(any("1 from the %s" % BOARD in x for x in lines)
+              and any("2 from the %s" % PLATE in x for x in lines),
+              "and the per-source counts are separate")
+
+    print("\nself-test: %s -- %d checks, %d failed"
+          % ("FAIL" if failures else "PASS", len(ran), len(failures)))
+    return 1 if failures else 0
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--drive", help="capture drive to count frames on, e.g. D:/")
@@ -429,19 +831,32 @@ def main() -> None:
         "marker must not be used. Accepts '2026-06-16/A01' or a capture directory "
         "name such as '16062026/A01' or '03072025/N01'.",
     )
+    ap.add_argument(
+        "--scale-check",
+        metavar="CAPTURE",
+        help="do not write anything; print where one capture's millimetres come from and "
+        "exit 2 if there is no scale source, so nothing measures a size against it. A "
+        "different question from --check, which is about alignment.",
+    )
+    ap.add_argument("--self-test", action="store_true",
+                    help="run the built-in checks on synthetic records and exit")
     args = ap.parse_args()
+
+    if args.self_test:
+        sys.exit(self_test())
 
     # --check reads the BUILT RECORD, and takes the short path out before anything
     # touches a spreadsheet. See the note by _openpyxl(): this is the branch that runs on
     # a cluster node from slurm/, where the xlsx toolchain is not installed and where an
     # environment failure would read as a verdict.
-    if args.check and not args.drive:
+    gate = check_capture if args.check else scale_check_capture
+    asked = args.check or args.scale_check
+    if asked and not args.drive:
         built = REFERENCE / "scanning-record.json"
         if not built.exists():
             sys.exit("no built record at {} -- run this script with no arguments first"
                      .format(built))
-        sys.exit(check_capture(json.loads(built.read_text(encoding="utf-8"))["seasons"],
-                               args.check))
+        sys.exit(gate(json.loads(built.read_text(encoding="utf-8"))["seasons"], asked))
 
     seasons = []
     for season, fname in SEASONS.items():
@@ -451,29 +866,37 @@ def main() -> None:
         seasons.append(parse_sheet(path, season))
 
     flag_markers(seasons)
+    flag_scale_sources(seasons)
 
     unmatched = []
+    out_dir = Path(args.out_dir)
+    counted_from = args.drive
     if args.drive:
         unmatched = attach_disk(seasons, scan_drive(Path(args.drive)))
+    else:
+        counted_from = carry_disk_counts(seasons, out_dir / "scanning-record.json")
 
-    if args.check:
-        sys.exit(check_capture(seasons, args.check))
+    if asked:
+        sys.exit(gate(seasons, asked))
 
-    out_dir = Path(args.out_dir)
     doc = {
         "generated_by": "scripts/build_scanning_record.py",
         "sources": {str(k): v for k, v in SEASONS.items()},
-        "frame_counts_from": args.drive,
+        "frame_counts_from": counted_from,
+        "frame_counts_rescanned": bool(args.drive),
         "seasons": seasons,
     }
     (out_dir / "scanning-record.json").write_text(
         json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     (out_dir / "scanning-record.md").write_text(
-        to_markdown(seasons, args.drive, unmatched), encoding="utf-8"
+        to_markdown(seasons, counted_from, unmatched, rescanned=bool(args.drive)),
+        encoding="utf-8"
     )
     total = sum(len(s["entries"]) for s in seasons)
     print("wrote scanning-record.json and scanning-record.md - {} photo sets".format(total))
+    for line in scale_summary(seasons):
+        print(line)
     for u in unmatched:
         print("  unmatched:", u)
 

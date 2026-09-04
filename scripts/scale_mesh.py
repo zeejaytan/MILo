@@ -30,7 +30,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scale_sidecar import PRESENT, UNREADABLE, sidecar_path, sidecar_state  # noqa: E402
+from scale_sidecar import (BOARD, PLATE, PRESENT, SOURCE_CAVEAT, UNREADABLE,  # noqa: E402
+                           sidecar_path, sidecar_state)
 
 MARKER = "comment units:"
 
@@ -67,8 +68,7 @@ def plate_provenance(m, factor):
         # The short edge is still unchecked, because the Metashape point that would
         # have checked it is the one found to be misplaced. This factor is the mean of
         # both edges, so half its reference is now verified and half is not.
-        caveat="precision ~1%; long edge of the 190x130 mm reference verified to "
-               "0.42% against the turntable marker board, short edge unverified",
+        caveat=SOURCE_CAVEAT[PLATE],
         reference_check="turntable board, docs/reference/turntable-board-03072025-N01.json")
     return note, side
 
@@ -150,9 +150,7 @@ def board_factor(ref_path, model_dir):
         mm_per_unit_uncorrected=raw_mm, board_correction_factor=corr,
         mm_per_unit_alternative_dot_to_dot=None if not step else raw_mm * sc["pitch_nominal_mm"] / step,
         board_quality=ref.get("quality"), n_frames=ref["coverage"]["n_frames"],
-        caveat="the board's lattice is the ruler; its printed 40.0 mm pitch is a designed "
-               "value identified by a ruler reading +/-1.25% on a single step, so accuracy "
-               "is capped there and not by the fit, which is far tighter",
+        caveat=SOURCE_CAVEAT[BOARD],
         reference_check="blue base plate in this same mesh, long-minus-short edge "
                         "(rim-independent): see docs/notes/2026-08-22-turntable-markers.md")
     return factor, note, side

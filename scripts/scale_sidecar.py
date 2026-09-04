@@ -59,6 +59,32 @@ ABSENT = "absent"          # no sidecar -- nothing ever measured this mesh
 UNREADABLE = "unreadable"  # a sidecar is there and cannot be trusted -- do not proceed
 
 
+# --------------------------------------------------------------------------------------
+# The two physical objects that supply millimetres here, and what each is worth
+# --------------------------------------------------------------------------------------
+#
+# These live in the contract module because three things now state them -- the mesh
+# sidecar, the scanning record, and the comparison read-out -- and a source whose stated
+# precision differs between two of them is worse than one with no stated precision at all.
+#
+# THE ORDER IS NOT WHAT IT LOOKS LIKE. The board is the far tighter INSTRUMENT: 16 coded
+# targets fitted over a hundred-odd cameras, against four hand-clicked plate corners. But
+# its absolute size rests on a ruler reading of the printed sheet, so its ACCURACY is
+# capped looser than the plate's verified long edge. Precision and accuracy are different
+# questions and the board wins only the first.
+
+PLATE = "blue base plate"
+BOARD = "turntable marker board"
+
+SOURCE_CAVEAT = {
+    PLATE: "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% "
+           "against the turntable marker board, short edge unverified",
+    BOARD: "the board's lattice is the ruler; its printed 40.0 mm pitch is a designed "
+           "value identified by a ruler reading +/-1.25% on a single step, so accuracy "
+           "is capped there and not by the fit, which is far tighter",
+}
+
+
 def sidecar_path(mesh_path) -> Path:
     """<mesh>.ply -> <mesh>.scale.json, the name scale_mesh.py writes."""
     return Path(mesh_path).with_suffix(SIDECAR_SUFFIX)
