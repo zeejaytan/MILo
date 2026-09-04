@@ -39,8 +39,10 @@ ENV_PREFIX=$MILO_ROOT/envs/milo
 DATA_DIR=$MILO_ROOT/data/$CAPTURE
 SRC_DIR=$MILO_ROOT/output/$TRAINED
 OUT_DIR=$MILO_ROOT/output/$OUT_NAME
-KEEP_IDX="$OUT_DIR/kept_idx.npy"
-PRUNED="$OUT_DIR/mesh_learnable_sdf_pruned.ply"
+KEEP_FILE="${4:-kept_idx.npy}"
+OUT_FILE="${5:-mesh_learnable_sdf_pruned.ply}"
+KEEP_IDX="$OUT_DIR/$KEEP_FILE"
+PRUNED="$OUT_DIR/$OUT_FILE"
 
 echo "=== pruned tet extraction started $(date) on $(hostname) ==="
 echo "  Gaussians from : $SRC_DIR"
@@ -106,15 +108,16 @@ fi
 echo
 echo "--- millimetres $(date) ---"
 cd "$REPO_DIR"
+MM_MESH="$OUT_DIR/$(basename "$OUT_FILE" .ply)_mm.ply"
 python scripts/apply_scale.py --capture "$DATA_DIR/capture.json" \
-    --mesh "$PRUNED" --out "$OUT_DIR/mesh_learnable_sdf_pruned_mm.ply" --force-factor "$FACTOR"
+    --mesh "$PRUNED" --out "$MM_MESH" --force-factor "$FACTOR"
 
 echo
 echo "=== what the pruned mesh holds (A03 holds TEN sherds) ==="
-python scripts/mesh_report.py "$OUT_DIR/mesh_learnable_sdf_pruned_mm.ply" --expect-pieces 10
+python scripts/mesh_report.py "$MM_MESH" --expect-pieces 10
 
 echo
 ls -la "$OUT_DIR"/*.ply
 echo "=== finished $(date) ==="
-echo "LOOK AT THE MESH before believing any number above -- ticket 03 renders the"
-echo "0.10 mm/px break-face proof (pruned vs unpruned vs OpenMVS, same window)."
+echo "LOOK AT THE MESH before believing any number above -- ticket 06 renders the"
+echo "0.10 mm/px break-face proof (pruned v2 vs unpruned, same window)."
