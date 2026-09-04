@@ -26,14 +26,26 @@ Prune rig Gaussians after training instead of masking during training or voxelis
 
 - Single seam: filter the Gaussian set after loading and before pivot building, inside the existing tet extraction flow. Everything downstream — pivots, triangulation, refinement, marching tetrahedra, colours — runs unchanged.
 - Vote source is the existing sherd-only outline set already proven on A03 (erode0, on the clay edge), read through the train cameras the way the DTU path reads them. No new mask production, no undistortion work, no retraining.
-- Keep rule: a Gaussian survives only if its centre lands inside the outline in at least 80% of the views where it is in front of the camera. Depth-ordering uses the rendered median depth already available at extraction time.
+- Keep rule v2 (2026-09-05, grilling round 1): a Gaussian survives on an absolute
+  count — centre inside the outline in at least 20 training views where it is in
+  front of the camera. v1 (fraction >= 80% of seen views) failed measured: it kept
+  8,686 of 222,678 Gaussians (~9 per cm², ~3 mm pivot spacing, 19x sparser than the
+  A02 reference at 2.41M vertices), biasing survivors to flat wall centres and voting
+  out the fracture rim it was built to save. Fractions let grazing angles veto rim
+  clay; rig steel is inside the outline from almost nowhere, so a count still drops
+  it. The rerun count verifies the number before anything builds.
+- Depth-ordering uses the rendered median depth already available at extraction time.
 - No change to the refinement losses, edge-collapse flags, or out-of-frustum handling for this ticket; they are measured later, not tuned now.
 - Speck cleaning reuses the existing largest-components shape already present for the regular volume path (keep N largest, report kept vs dropped faces), applied to the tet mesh, never to the Gaussian set.
 - Prototype decision encoded from discussion: projection vote at centres (not scales, not opacities) is the v1 rule; scale-aware voting is explicitly deferred until v1 renders.
 - No dilation on the outline: the vote samples the erode0 alpha raw. Dilating would vote the clamp rim back in; the cull's disk(6) generosity is the opposite choice for the opposite job.
 - Never-seen Gaussians are dropped, not kept. A Gaussian in front of no training camera was photographed by nothing, so it cannot be clay. This is decided here, not inherited from the integration path's never-seen-means-solid convention.
 - Known limitation, v1: the vote has no occlusion term. A rig Gaussian sitting directly behind clay from every angle that sees it would project inside the outline and survive. Rods encircle the tray so most segments stand beside clay from most angles, but if the pruned mesh keeps rig-like solid behind sherd faces, v2 compares projected depth against rendered median depth per view (GPU) before voting.
-- Scope is one capture (A03): the vote runs over the whole cloud, and proof crops to one sherd (piece 1, the large 33 x 79 x 74 mm body) for renders and numbers; the tray-wide verdict is a separate ticket gated on this one passing.
+- Scope is one capture (A03): the vote runs over the whole cloud, and proof is a
+  three-way piece-1 comparison — pruned v2 mesh, unpruned learnable mesh, OpenMVS
+  equivalent if it exists (verify before cutting) — as small crops plus same-window
+  0.10 mm/px renders; the tray-wide verdict is a separate ticket gated on this one
+  passing.
 
 ## Testing Decisions
 
