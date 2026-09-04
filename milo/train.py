@@ -236,12 +236,53 @@ def training(
         # slurm/milo_extract_maskcull.slurm.
 
         # Rendering loss
-        if args.decoupled_appearance:
+        # [SHERD FORK] Masked training (intent M2, masked-training/01). Both-sides
+        # construction from the object-centric splatting literature
+        # (arXiv:2501.08174, eqs. 1-3): mask the render AND the photograph before
+        # the colour loss, plus a background loss on rendered alpha outside the
+        # mask. Off by default -- unpatched runs behave exactly as upstream.
+        # The old one-sided patch (GT masked, render not) painted background over
+        # the 6 px eroded rim and was removed at 770338f; never restore it.
+        mask = getattr(viewpoint_cam, "gt_mask", None)
+        if opt.masked_training and mask is not None:
+            M = mask.float()
+            if M.dim() == 2:
+                M = M.unsqueeze(0)
+            masked_image = image * M
+            masked_gt = gt_image * M
+            if opt.mask_l1_only:
+                # DSSIM windows straddle the sharp mask boundary and can etch
+                # rims; this flag drops the SSIM term without a rebuild.
+                if args.decoupled_appearance:
+                    loss = L1_loss_appearance(masked_image, masked_gt, gaussians, viewpoint_cam.uid)
+                else:
+                    loss = l1_loss(masked_image, masked_gt)
+            else:
+                if args.decoupled_appearance:
+                    Ll1 = L1_loss_appearance(masked_image, masked_gt, gaussians, viewpoint_cam.uid)
+                else:
+                    Ll1 = l1_loss(masked_image, masked_gt)
+                ssim_value = fused_ssim(masked_image.unsqueeze(0), masked_gt.unsqueeze(0))
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_value)
+            # Background pressure only where alpha exists: the first ~3000
+            # iterations render through render_imp, which has no "mask" key --
+            # reading it unconditionally would crash every run at step 0.
+            if reg_kick_on and "mask" in render_pkg and render_pkg["mask"] is not None:
+                A = render_pkg["mask"]
+                loss = loss + opt.mask_bg_weight * (A * (1.0 - M)).mean()
+                if iteration % 1000 == 0:
+                    inside = (A * M).mean().item()
+                    outside = (A * (1.0 - M)).mean().item()
+                    print(f"[SHERD FORK] iter {iteration}: masked-train alpha "
+                          f"inside {inside:.4f} outside {outside:.4f}")
+        elif args.decoupled_appearance:
             Ll1 = L1_loss_appearance(image, gt_image, gaussians, viewpoint_cam.uid)
+            ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))
+            loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_value)
         else:
             Ll1 = l1_loss(image, gt_image)
-        ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))
-        loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_value)
+            ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))
+            loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_value)
         
         # Depth-Normal Consistency Regularization
         if reg_kick_on:

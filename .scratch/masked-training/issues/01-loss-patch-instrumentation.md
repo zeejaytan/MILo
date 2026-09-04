@@ -6,7 +6,16 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** claimed (patch + self-checks green locally; Spartan probe is ticket 02)
+
+## Comments
+
+2026-09-06: `milo/train.py` carries the both-sides loss + background term behind
+`--masked-training` (default off), `--mask-bg-weight 0.5`, `--mask-l1-only`
+fallback flag; background pressure gated on the regulariser kick where alpha
+exists; eroded-band alpha logging every 1000 iters. `scripts/masked_loss_selftest.py`
+green on the laptop (5 assertions incl. the one-sided-tripwire that fails any
+re-animation of 770338f). Unpatched runs behave exactly as upstream.
 
 - [ ] Masked photometric loss (photo times mask vs render times mask) matches control exactly where the mask is one
 - [ ] Background term (mean rendered alpha outside mask, weight 0.5) reads zero where the mask is one; never touches depth or normal terms

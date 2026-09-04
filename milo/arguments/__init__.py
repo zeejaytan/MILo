@@ -85,6 +85,11 @@ class OptimizationParams(ParamGroup):
         self.rotation_lr = 0.001
         self.percent_dense = 0.01
         self.lambda_dssim = 0.2
+        # [SHERD FORK] Masked training (intent M2, masked-training/01). All three
+        # default to upstream behaviour (off / published weight / full loss).
+        self.masked_training = False
+        self.mask_bg_weight = 0.5
+        self.mask_l1_only = False
         self.densification_interval = 100
         self.opacity_reset_interval = 3000
         self.densify_from_iter = 500
