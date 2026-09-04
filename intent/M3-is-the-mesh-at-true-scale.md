@@ -1,7 +1,9 @@
 # M3 — How do we know a mesh is at true scale?
 
 **Status:** open — **a verified route exists for 59 of 118 captures; the other 59 have no
-scale source and nothing marks them** · **Blocked by:** none · **Effort:** ~1 day
+scale source.** They are no longer *silently* measurable: `compare_meshes.py` refuses a
+mesh that cannot state its units (2026-09-04). Nothing else does, and the capture record
+still does not mark which is which · **Blocked by:** none · **Effort:** ~half a day left
 
 ## Why it matters
 

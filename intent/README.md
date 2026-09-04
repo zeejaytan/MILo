@@ -10,14 +10,20 @@ history. The runs live in [`../docs/notes/`](../docs/notes/).
 
 Prefix **`M`**, permanent. Numbers are never reused. **M4 is next.**
 
-**M3 is the one to do first** — it is about a day, the data is on the laptop, and M1's
-route comparison is measured with a script that can silently report the wrong units.
+**M3's blocking half is done** (2026-09-04) — `compare_meshes.py` no longer reports
+millimetres it cannot stand behind, so M1's route comparison can now be measured on the
+same ruler. What remains in M3 is bookkeeping and one bench measurement, neither of which
+blocks anything.
+
+**M1 is the one to do next.** Both its first two boxes are cheap and unblocked, and the
+second one — what OpenMVS already achieves on A03 — decides whether lifting MILo's
+extraction ceiling is worth doing *for this material*.
 
 | # | Question | Status | Blocked by |
 |---|---|---|---|
-| [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | open — the authors' DTU route is closed, the ceiling may be liftable | [M3](M3-is-the-mesh-at-true-scale.md) for the OpenMVS comparison only |
+| [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | open — the authors' DTU route is closed, the ceiling may be liftable | none (was M3; lifted 2026-09-04) |
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
-| [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — verified route covers **59 of 118 captures**; the other 59 are unmarked and ungated | none |
+| [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — verified route covers **59 of 118 captures**; the comparison now refuses the rest instead of measuring them, but the capture record still does not mark which is which | none |
 
 ## What is established
 
@@ -33,6 +39,8 @@ route comparison is measured with a script that can silently report the wrong un
 | The metric route is **built and verified**: board pitch measured with a ruler on the physical sheet at 40 mm, 2026-08-23 — a reference about sixty times tighter than the base plate. | 1 capture (N01) | `docs/notes/2026-08-22-turntable-markers.md` §8 |
 | The **N01 Metashape chunk is 1.2–1.4% too large** — 1.2–1.4 mm on a 100 mm sherd — from one misplaced click. Broken measurement, not broken method. | 1 capture (N01) | ibid. §8 |
 | The blue plate is **190 × 130 mm as recorded**, confirmed by two routes that never touch Metashape, so **A01–A04 need no correction**. | 3 trees | ibid. §10 |
+| **`compare_meshes.py` reported a millimetre figure that was not in millimetres** — `frac_within_0.5mm` compared distances against a raw 0.5 in whatever units the mesh held. A broken measurement, not a broken method; it never reached a published number. Fixed and gated 2026-09-03/04. | read from the file, then reproduced: the same sphere pair in metres claimed **100.0%** of its surface within 0.5 mm | `.scratch/scale-provenance/issues/01`, commits `41b96ce`, `7e7bdf8` |
+| A mesh with no scale sidecar is now **refused rather than measured** — exit 2 unknown units, exit 3 units disagree, `--shape-only` for the unit-free half. Proved able to refuse, not only observed to pass. | 20 assertions on synthetic fixtures; verified against A02's real sidecars and against a real derived mesh (`milo_mm_cropped_to_rig.ply`) that has none | ibid. |
 
 ## Before writing any more extraction code
 

@@ -1,8 +1,11 @@
 # M1 — Can either route reach the resolution a break face needs?
 
 **Status:** open — the authors' route is closed; the ceiling looks liftable
-**Blocked by:** none for the first box — but the **second** box needs [M3](M3-is-the-mesh-at-true-scale.md) first: `compare_meshes.py` can report a
-millimetre figure that is not in millimetres, and "the same ruler" is the whole point
+**Blocked by:** none. The second box was blocked on [M3](M3-is-the-mesh-at-true-scale.md)
+— `compare_meshes.py` could report a millimetre figure that was not in millimetres, and
+"the same ruler" is the whole point. **Lifted 2026-09-04**: the script now refuses a mesh
+that cannot state its units, and A02 and A03 both carry a scale sidecar, so the OpenMVS
+comparison can be run on the same ruler
 
 ## Why it matters
 
@@ -27,7 +30,9 @@ detail.
 - [ ] **Cross-view depth disagreement measured in millimetres** on at least one capture.
       This is the honest resolution floor; the voxel size is only what we asked for
 - [ ] **What OpenMVS already achieves on A03**, measured the same way, so the two routes
-      are compared on the same ruler — **scale established for both meshes first**, see
+      are compared on the same ruler. **Scale is now established by the tool, not by
+      hand**: `compare_meshes.py` refuses a mesh without a sidecar rather than measuring
+      it, so this box can no longer be ticked against an unscaled mesh — see
       [M3](M3-is-the-mesh-at-true-scale.md)
 - [ ] A stated requirement in millimetres: what a break face actually needs, argued from
       the ridge scale we can see in the photographs, not from what the tool can deliver
