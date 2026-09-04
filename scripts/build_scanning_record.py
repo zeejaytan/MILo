@@ -139,9 +139,16 @@ BOARD_REFERENCES = {
     "2025-07-03/N01": "docs/reference/turntable-board-03072025-N01.json",
 }
 
-PLATE_HOW = ("top face of the tree base, 190 x 130 mm. Declared once per season at the top "
-             "of the spreadsheet: {note!r}. It is the one physical scale present in every "
-             "capture of that season.")
+# What `frame_counts_from` says when the drive was not attached for this build.
+CARRIED_MARKER = "CARRIED FROM AN EARLIER SCAN"
+CARRIED_COUNTS = ("{drive}, " + CARRIED_MARKER + " -- not re-counted for this build, so a "
+                  "capture added or deleted since is not reflected here")
+
+PLATE_HOW = ("top face of the tree base, 190 x 130 mm, as declared once at the top of this "
+             "season's sheet: {note!r}. That is the record's own statement about the rig "
+             "this season was shot on -- it is not a confirmation that the plate is "
+             "unoccluded in any given capture, which is what scale_mesh.py finds out per "
+             "mesh, and refuses rather than reports when its checks fail.")
 BOARD_HOW = ("16 coded targets on a printed 40 mm lattice, with the factor measured by "
              "fitting this capture's own cameras onto the board -- so it is a scale source "
              "only where that reference has been derived: {ref}")
@@ -152,9 +159,15 @@ NO_SCALE_HOW = ("nothing in this season's record names a physical object of know
 # The plate is a scale source because THE RECORD SAYS SO, once per season, not because we
 # remember the rig. The two sheets word it differently -- 2025 "blue metal base", 2026
 # "metal base" -- so match on the dimensions plus the word base, and keep the note verbatim
-# so the JSON carries the evidence rather than our reading of it. A season that stops
-# declaring it becomes non-metric, which is the whole point: the rule has to be able to
-# fail, or "118 of 118 are metric" is an assertion the code cannot lose.
+# in `declared_by` so the JSON carries the evidence rather than our reading of it. A season
+# that stops declaring it becomes non-metric, which is the whole point: the rule has to be
+# able to fail, or "118 of 118 are metric" is an assertion the code cannot lose.
+#
+# THE DECLARATION IS PER SEASON AND SO IS THE OBJECT. 2026's sheet says "metal base",
+# without the colour, and nothing in the record says it is the same plate as 2025's. Each
+# season is therefore credited from its own line, and the caveat says where the 0.42%
+# long-edge check was actually made -- on the 2025 rig, through 2025-07-03/N01 -- rather
+# than implying it was repeated later. Same dimensions is not the same object measured.
 PLATE_DECLARATION = re.compile(r"13\s*x\s*19", re.I)
 
 
@@ -180,10 +193,14 @@ def flag_scale_sources(seasons, repo=REPO, references=None) -> None:
         recorded     the per-capture measurement cell, verbatim, or None
         metric       False exactly when there is no source. This is the field to gate on.
 
-    `recorded` is kept beside the source rather than folded into it. The 2025 cells hold
-    hand-ruled distances between marks on the rig ("Mark1-2: 18cm, mark3-4: 42.4cm") at
-    ruler precision on a printed sheet. They corroborate; they are not the ruler, and
-    promoting them to one would quietly re-scale seventy captures.
+    `recorded` is the measurement cell VERBATIM, kept beside the source rather than folded
+    into it, because the cells are not one kind of statement. Most hold hand-ruled
+    distances between marks on the rig ("Mark1-2: 18cm, mark3-4: 42.4cm") at ruler
+    precision on a printed sheet -- those corroborate, they are not the ruler, and
+    promoting them to one would quietly re-scale seventy captures. Fourteen say something
+    else entirely and say it better than any field here does: "Use base as scale, marker on
+    turntable for alignment". Reading them is worth more than parsing them, so they are
+    carried whole and printed by --scale-check.
     """
     references = BOARD_REFERENCES if references is None else references
     for ref_id, rel in references.items():
@@ -242,11 +259,19 @@ def scale_summary(seasons) -> list:
             continue
         lines.append("  %3d from the %s -- %s" % (len(got), source, SOURCE_CAVEAT[source]))
 
-    upgradable = [e for e in ent
-                  if e["markers_usable"] and not e["scale"]["reference"]]
-    lines.append("%d more carry a usable marker board but no derived reference, so the "
-                 "board is not yet their ruler -- deriving one would tighten them."
-                 % len(upgradable))
+    # NOT "would tighten them". The board is the tighter INSTRUMENT and the LOOSER ruler:
+    # its lattice fits to a fraction of a millimetre, but its absolute size rests on a
+    # ruler reading of the printed sheet at +/-1.25%, against the plate's long edge
+    # verified to 0.42%. Precision and accuracy are different questions -- see
+    # scale_sidecar.py -- and telling a conservator the looser ruler is the upgrade is
+    # exactly the confusion this record exists to remove.
+    derivable = [e for e in ent
+                 if e["markers_usable"] and not e["scale"]["reference"]]
+    lines.append("%d more carry a usable marker board that no reference has been derived "
+                 "from, so the board is not their ruler. Deriving one would make them far "
+                 "more REPEATABLE, not more accurate: the board's absolute size is a ruler "
+                 "reading of the printed sheet (+/-1.25%%), looser than the plate's "
+                 "verified long edge." % len(derivable))
     return lines
 
 
@@ -523,7 +548,7 @@ def scale_check_capture(seasons, wanted) -> int:
     return 2
 
 
-def to_markdown(seasons, drive, unmatched, rescanned=True) -> str:
+def to_markdown(seasons, drive, unmatched) -> str:
     out = [
         "# Rabati scanning record",
         "",
@@ -604,9 +629,7 @@ def to_markdown(seasons, drive, unmatched, rescanned=True) -> str:
         out += [
             "## Frames on the capture drive",
             "",
-            "Counted under `{}` — the laptop's capture drive, a snapshot{} and **not**".format(
-                drive, " at generation time" if rescanned
-                else " CARRIED FROM AN EARLIER SCAN, not re-counted for this build,"),
+            "Counted under `{}` — the laptop's capture drive. A snapshot, and **not**".format(drive),
             "the photographs of record (those are on Mediaflux, and on",
             "Spartan once uploaded). Every tree is shot as a JPG+NEF pair, so the two",
             "counts should match.",
@@ -645,6 +668,37 @@ def to_markdown(seasons, drive, unmatched, rescanned=True) -> str:
     return "\n".join(out) + "\n"
 
 
+def carry_disk_counts(seasons, built):
+    """Keep the last drive scan when rebuilding without the drive attached.
+
+    Returns the drive those counts came from, or None. The frame counts are a snapshot of
+    a removable disk, not something the spreadsheets contain, so a rebuild on a day the
+    drive is not plugged in would otherwise DELETE 118 of them from a committed file --
+    and the deletion looks exactly like a record that never had them. Carried, and the
+    drive it was scanned from is carried with it so the read-out cannot imply it is fresh.
+    """
+    if not built.exists():
+        return None
+    prior = json.loads(built.read_text(encoding="utf-8"))
+    disk = {e["capture_id"]: e["on_disk"]
+            for s in prior.get("seasons", []) for e in s["entries"] if e.get("on_disk")}
+    if not disk:
+        return None
+    for s in seasons:
+        for e in s["entries"]:
+            if e["capture_id"] in disk:
+                e["on_disk"] = disk[e["capture_id"]]
+    # ONE value, not a drive name plus a flag beside it saying not to believe it. A reader
+    # who takes `frame_counts_from` alone is entitled to be right about what it means.
+    #
+    # Idempotent: carrying an already-carried value returns it unchanged, or every rebuild
+    # on a day the drive is unplugged would wrap the sentence in itself again.
+    was = prior.get("frame_counts_from") or "an unnamed drive"
+    if CARRIED_MARKER in was:
+        return was
+    return CARRIED_COUNTS.format(drive=was)
+
+
 # --------------------------------------------------------------------------------------
 # Self-test
 # --------------------------------------------------------------------------------------
@@ -672,29 +726,6 @@ def _season(year, notes, entries):
 
 DECLARES_PLATE = ["Rabati fixture", "Top of the tree base (blue metal base) = 13x19cm"]
 DECLARES_NOTHING = ["Rabati fixture", "Camera setting: ISO 100, F/16, WB auto"]
-
-
-def carry_disk_counts(seasons, built):
-    """Keep the last drive scan when rebuilding without the drive attached.
-
-    Returns the drive those counts came from, or None. The frame counts are a snapshot of
-    a removable disk, not something the spreadsheets contain, so a rebuild on a day the
-    drive is not plugged in would otherwise DELETE 118 of them from a committed file --
-    and the deletion looks exactly like a record that never had them. Carried, and the
-    drive it was scanned from is carried with it so the read-out cannot imply it is fresh.
-    """
-    if not built.exists():
-        return None
-    prior = json.loads(built.read_text(encoding="utf-8"))
-    disk = {e["capture_id"]: e["on_disk"]
-            for s in prior.get("seasons", []) for e in s["entries"] if e.get("on_disk")}
-    if not disk:
-        return None
-    for s in seasons:
-        for e in s["entries"]:
-            if e["capture_id"] in disk:
-                e["on_disk"] = disk[e["capture_id"]]
-    return prior.get("frame_counts_from")
 
 
 def self_test() -> int:
@@ -798,7 +829,15 @@ def self_test() -> int:
         drive = carry_disk_counts(fresh, built)
         kept = fresh[0]["entries"][0].get("on_disk") or {}
         check(kept.get("jpg") == 177, "the earlier scan's counts are carried, not dropped")
-        check(drive == "D:/", "and the drive they came from is carried with them")
+        check(drive and drive.startswith("D:/") and CARRIED_MARKER in drive,
+              "and one value names the drive AND says it was not re-counted -- no reader "
+              "of it alone can think the counts are fresh")
+        built.write_text(json.dumps({"frame_counts_from": drive, "seasons": [
+            {"entries": [{"capture_id": "2025-06-16/A01", "on_disk": kept}]}]}))
+        again = carry_disk_counts(fresh, built)
+        check(again == drive,
+              "and carrying an already-carried value leaves it alone, so a rebuild on a "
+              "second unplugged day does not wrap the sentence in itself")
         check(fresh[0]["entries"][1].get("on_disk") is None,
               "a capture the earlier scan never saw is still left blank")
         check(carry_disk_counts(fresh, repo / "no-such.json") is None,
@@ -849,6 +888,10 @@ def main() -> None:
     # touches a spreadsheet. See the note by _openpyxl(): this is the branch that runs on
     # a cluster node from slurm/, where the xlsx toolchain is not installed and where an
     # environment failure would read as a verdict.
+    if args.check and args.scale_check:
+        ap.error("--check and --scale-check ask different questions -- may I align on the "
+                 "marker, and may I take a millimetre off this. Run one at a time, or the "
+                 "exit status says which?")
     gate = check_capture if args.check else scale_check_capture
     asked = args.check or args.scale_check
     if asked and not args.drive:
@@ -883,15 +926,13 @@ def main() -> None:
         "generated_by": "scripts/build_scanning_record.py",
         "sources": {str(k): v for k, v in SEASONS.items()},
         "frame_counts_from": counted_from,
-        "frame_counts_rescanned": bool(args.drive),
         "seasons": seasons,
     }
     (out_dir / "scanning-record.json").write_text(
         json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     (out_dir / "scanning-record.md").write_text(
-        to_markdown(seasons, counted_from, unmatched, rescanned=bool(args.drive)),
-        encoding="utf-8"
+        to_markdown(seasons, counted_from, unmatched), encoding="utf-8"
     )
     total = sum(len(s["entries"]) for s in seasons)
     print("wrote scanning-record.json and scanning-record.md - {} photo sets".format(total))

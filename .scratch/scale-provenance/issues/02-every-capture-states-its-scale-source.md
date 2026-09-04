@@ -85,3 +85,61 @@ precision.
 **Not fixed, pre-existing:** `--check 16062025/A01` exits 3 because that capture's
 directory is the bare date with no per-tree subdirectory, so the directory-name lookup
 misses it. `--check 2025-06-16/A01` works. Same on `HEAD`; not introduced here.
+
+### What `/code-review` changed (2026-09-04, after the above)
+
+The review ran two axes against `1d16acf`. Seven findings held up; all are fixed here.
+Two of them were **wrong statements**, not untidy ones — the record was telling a
+conservator something false:
+
+- **The read-out inverted precision and accuracy.** It said deriving board references for
+  the other 58 captures "would tighten them". The board is the tighter *instrument* (16
+  coded targets, lattice fit far below a millimetre) but the *looser ruler*: its absolute
+  size is a ruler reading of the printed sheet at ±1.25%, against the plate's long edge
+  verified to 0.42%. Deriving them buys **repeatability, not accuracy**, and the summary
+  now says so. It had contradicted the comment in `scale_sidecar.py` that explains exactly
+  this.
+- **2026 was credited with a check made on the 2025 rig.** All 40 of 2026's captures were
+  stamped `blue base plate` with a caveat quoting the 0.42% long-edge verification — which
+  was made through `2025-07-03/N01`, on the 2025 rig. 2026's sheet says only "metal base",
+  and nothing in the record says it is the same object. The caveat now names where the
+  check was made and states it has **not** been repeated on any later rig. Same dimensions
+  is not the same object measured.
+- **`PLATE_HOW` asserted more than the record does** — "the one physical scale present in
+  every capture of that season" is a claim about the rig, not a reading of the sheet. It
+  now says what the sheet declares, and that unocclusion is what `scale_mesh.py` finds out
+  per mesh.
+- **Two gates could be asked at once.** `--check` and `--scale-check` together made the
+  exit status ambiguous about which question it answered. `ap.error` now refuses the pair.
+- **`frame_counts_from` could be read half-way.** It carried a bare drive name with a
+  sibling `frame_counts_rescanned: false` beside it saying not to believe it. One value
+  now carries the whole sentence, the sibling key is gone, and `to_markdown` lost the
+  parameter that travelled with it (Standards: Data Clumps).
+- **`carry_disk_counts` sat below the self-test banner** in a file already edited for two
+  reasons (Standards: Divergent Change). Moved up with the other record-building code.
+- **The `recorded` docstring called all the cells hand-ruled distances.** Fourteen are the
+  record's clearest scale statement — *"Use base as scale, marker on turntable for
+  alignment"*. The paragraph now says both, which is why the cells are carried whole and
+  printed rather than parsed.
+
+**A defect the fixes themselves introduced, found by the self-test.** Wrapping the drive
+name in the CARRIED sentence made `carry_disk_counts` non-idempotent: a second rebuild on
+a second unplugged day would have wrapped the sentence inside itself, and a third inside
+that. It is now a no-op on an already-carried value, and there is a check for it.
+
+**Checks: 26, all passing. Eight deliberate mutations, all eight caught** — the seven from
+the first pass plus the re-wrapping one above.
+
+Two review points were **considered and rejected, with reasons**:
+
+- *Drop `--scale-check` and the second `--self-test` seam.* Kept. The gate is what makes
+  the field enforceable rather than decorative, and the spec's "one seam" line bans a test
+  *framework*, not a second `--self-test` in a second script.
+- *Create `CONTEXT.md`.* Not created. `AGENTS.md` says `/domain-modeling` writes it lazily
+  when the first term is actually resolved, and explicitly that it must not be created
+  empty.
+
+**The regenerated record is not purely additive any more, and should not be.** 238
+insertions against 239 deletions: 117 `precision` lines and 117 `how` lines carry the
+corrected wording, and the two `frame_counts_*` header keys became one. All 118 entries
+still carry `on_disk` and all 118 carry `scale` — no data was dropped.

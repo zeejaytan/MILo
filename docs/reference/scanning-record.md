@@ -28,9 +28,9 @@ carries the answer in its Marker column and every record in the JSON carries
 ## Where the millimetres come from
 
 - 118 of 118 captures can state where their millimetres come from.
-- 117 from the blue base plate -- precision ~1%; long edge of the 190x130 mm reference verified to 0.42% against the turntable marker board, short edge unverified
+- 117 from the blue base plate -- precision ~1%. The long edge of the 190x130 mm reference was verified to 0.42% against the turntable marker board, on the 2025 rig via the 2025-07-03/N01 capture; the short edge is unverified, and the check has not been repeated on any later rig
 - 1 from the turntable marker board -- the board's lattice is the ruler; its printed 40.0 mm pitch is a designed value identified by a ruler reading +/-1.25% on a single step, so accuracy is capped there and not by the fit, which is far tighter
-- 58 more carry a usable marker board but no derived reference, so the board is not yet their ruler -- deriving one would tighten them.
+- 58 more carry a usable marker board that no reference has been derived from, so the board is not their ruler. Deriving one would make them far more REPEATABLE, not more accurate: the board's absolute size is a ruler reading of the printed sheet (+/-1.25%), looser than the plate's verified long edge.
 
 **A usable marker is not the same as a marker used for scale.** The Marker column
 answers *may I align on it*; the Scale column answers *what supplied the
@@ -201,7 +201,7 @@ Season notes from the top of the sheet:
 
 ## Frames on the capture drive
 
-Counted under `D:/` — the laptop's capture drive, a snapshot CARRIED FROM AN EARLIER SCAN, not re-counted for this build, and **not**
+Counted under `D:/, CARRIED FROM AN EARLIER SCAN -- not re-counted for this build, so a capture added or deleted since is not reflected here` — the laptop's capture drive. A snapshot, and **not**
 the photographs of record (those are on Mediaflux, and on
 Spartan once uploaded). Every tree is shot as a JPG+NEF pair, so the two
 counts should match.

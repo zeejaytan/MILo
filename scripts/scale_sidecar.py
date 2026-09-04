@@ -77,8 +77,10 @@ PLATE = "blue base plate"
 BOARD = "turntable marker board"
 
 SOURCE_CAVEAT = {
-    PLATE: "precision ~1%; long edge of the 190x130 mm reference verified to 0.42% "
-           "against the turntable marker board, short edge unverified",
+    PLATE: "precision ~1%. The long edge of the 190x130 mm reference was verified to "
+           "0.42% against the turntable marker board, on the 2025 rig via the "
+           "2025-07-03/N01 capture; the short edge is unverified, and the check has not "
+           "been repeated on any later rig",
     BOARD: "the board's lattice is the ruler; its printed 40.0 mm pitch is a designed "
            "value identified by a ruler reading +/-1.25% on a single step, so accuracy "
            "is capped there and not by the fit, which is far tighter",
