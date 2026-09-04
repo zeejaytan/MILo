@@ -44,10 +44,11 @@ nvidia-smi | head -8 || true
 
 [[ -f "$DATA_DIR/capture.json" ]] || { echo "No dataset at $DATA_DIR" >&2; exit 1; }
 for d in "$CTRL_DIR" "$MASKED_DIR"; do
-    [[ -e "$d/point_cloud/iteration_8000/point_cloud.ply" ]] && {
-        echo "$d already holds an 8k probe -- move it aside first." >&2; exit 1; }
     mkdir -p "$d"
 done
+
+# Per-leg skip (not an upfront refusal): a resubmission after a leg-B-only
+# failure must reuse the finished leg-A pair, never retrain or overwrite it.
 
 module purge
 module load GCC/11.3.0 OpenMPI/4.1.4
@@ -63,6 +64,10 @@ cd "$REPO_DIR/milo"
 
 run_probe() {  # $1 = out dir, $2... = extra train flags
     local out="$1"; shift
+    if [[ -f "$out/point_cloud/iteration_8000/point_cloud.ply" ]]; then
+        echo "  $out already holds an 8k probe -- reusing it, not retraining."
+        return 0
+    fi
     python -u train.py \
         -s "$DATA_DIR" \
         -m "$out" \
@@ -83,7 +88,9 @@ run_probe "$CTRL_DIR"
 
 echo
 echo "--- probe B: masked training (both sides + background loss) $(date) ---"
-run_probe "$MASKED_DIR" --masked-training
+# Flag spelling is underscores (--masked_training): ParamGroup derives CLI names
+# from attribute names verbatim, and job 30090865 died on --masked-training.
+run_probe "$MASKED_DIR" --masked_training
 
 echo
 echo "--- held-out renders for rim crops $(date) ---"

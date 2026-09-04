@@ -61,8 +61,28 @@ def main():
     assert bg_term(np.ones((1, 8, 8)), np.zeros((1, 8, 8))) == \
         bg_term(np.ones((1, 32, 32)), np.zeros((1, 32, 32))) == 0.5
 
-    print("self-checks: 5 assertions passed "
-          "(parity, bg-zero, fully-masked, one-sided-tripwire, scale-free gamma).")
+    # 6. CLI-name guard: ParamGroup derives flag names verbatim from attribute
+    # names (underscores, not dashes). Job 30090865 died on --masked-training.
+    # This fails here, on the laptop, instead of two GPU-hours later.
+    from pathlib import Path as _P
+    repo = _P(__file__).resolve().parent.parent
+    train_src = (repo / "milo" / "train.py").read_text()
+    arg_src = (repo / "milo" / "arguments" / "__init__.py").read_text()
+    probe_src = (repo / "slurm" / "milo_probe.slurm").read_text()
+    for attr in ("masked_training", "mask_bg_weight", "mask_l1_only"):
+        assert f"self.{attr}" in arg_src, f"flag --{attr} has no attribute"
+    assert "--masked_training" in probe_src, "probe job never enables the patch"
+    probe_code = "\n".join(l for l in probe_src.splitlines()
+                        if l.strip() and not l.strip().startswith("#"))
+    train_code = "\n".join(l for l in train_src.splitlines()
+                         if l.strip() and not l.strip().startswith("#"))
+    for bad in ("--masked-training", "--mask-bg-weight", "--mask-l1-only"):
+        assert bad not in probe_code, f"dash-spelled flag {bad} kills argparse"
+        assert bad not in train_code, f"dash-spelled flag {bad} kills argparse"
+
+    print("self-checks: 6 assertions passed "
+          "(parity, bg-zero, fully-masked, one-sided-tripwire, scale-free gamma, "
+          "cli-names).")
 
 
 if __name__ == "__main__":
