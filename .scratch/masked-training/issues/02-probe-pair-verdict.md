@@ -6,7 +6,14 @@
 
 **Blocked by:** 01 (needs the patched loss and its instrumentation).
 
-**Status:** ready-for-agent
+**Status:** claimed (human contact-boxing skipped per conservator 2026-09-06 — deviation recorded below; probe submitting)
+
+## Comments
+
+2026-09-06: contact-face hand-marking skipped at the conservator's call. Consequence
+stated plainly: arc scoring will include permanently unobserved clamp-contact faces,
+so the masked run may read worse than it is where honesty leaves holes. Read any
+contact-zone arc gap as missing surface, never as wrong surface, until boxes exist.
 
 - [ ] Contact-exclusion boxes named per edge and recorded before any run; excluded from all arc scoring
 - [ ] Both probe runs complete past depth re-init with identical seed and config, differing only in the patch flag
