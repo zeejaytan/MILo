@@ -2,7 +2,7 @@
 
 **What to build:** the both-sides masked loss plus background loss behind a flag in the training script (production radegs path only, background term gated on the regulariser kick around iteration 3000), the L1 fallback behind its own flag, per-view eroded-band alpha logging plus rim renders, and self-checks green without a GPU.
 
-**Answers:** M2
+**Answers:** M5
 
 **Blocked by:** None (can start immediately).
 

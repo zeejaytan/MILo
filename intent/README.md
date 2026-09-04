@@ -8,7 +8,7 @@ look like a reconstruction failure downstream, it looks like the *method* failin
 This folder is **state, not a log**. Edit a line when it turns out wrong; git holds the
 history. The runs live in [`../docs/notes/`](../docs/notes/).
 
-Prefix **`M`**, permanent. Numbers are never reused. **M5 is next.**
+Prefix **`M`**, permanent. Numbers are never reused. **M6 is next.**
 
 **M3's blocking half is done** (2026-09-04) — `compare_meshes.py` no longer reports
 millimetres it cannot stand behind, so M1's route comparison can now be measured on the
@@ -26,6 +26,7 @@ extraction ceiling is worth doing *for this material*.
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
 | [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); what is left is a caliper round-trip and a section picture | none |
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
+| [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | open — patch built, probe pair running (job 30090865) | none |
 
 ## What is established
 

@@ -1,6 +1,6 @@
 ## Problem Statement
 
-**Answers:** M2 (MILo project — this spec is the plan that settles whether training-time masking eats the break face).
+**Answers:** M5 (MILo project — this spec is the plan that settles whether training-time masking eats the break face).
 
 MILo trains unmasked by design, so the clamp rig trains alongside the clay and every extraction path inherits steel. The one attempt at training-time masking painted background over 0.6–0.9 mm of real fracture edge and was removed. The published both-sides-plus-alpha construction fits this codebase in about 15 lines, costs ~3% shape on its benchmark — but that benchmark's masks are tight with sporadic errors, while ours are shrunk 6 px on every view along exactly the edge reassembly reads, the paper's stated uncovered case. The conservator needs a measured answer, not a citation.
 

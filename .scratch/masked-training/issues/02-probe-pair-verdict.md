@@ -2,7 +2,7 @@
 
 **What to build:** hand-marked clamp-contact exclusion boxes on the 2–3 sampled break-face edges recorded on the ticket, two ~8k-iteration probe runs (patched weight 0.5 vs unpatched control, identical seed and config over the existing sherd-only dataset), eroded-band alpha curves plus rim renders, and the go/no-go on the stop rule.
 
-**Answers:** M2
+**Answers:** M5
 
 **Blocked by:** 01 (needs the patched loss and its instrumentation).
 

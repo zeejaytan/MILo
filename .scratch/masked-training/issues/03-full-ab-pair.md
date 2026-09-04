@@ -2,7 +2,7 @@
 
 **What to build:** two full 30k-iteration A03 trainings (patched vs control, identical seed and config), run only if the probe pair in ticket 02 gives the go, with logs and checkpoints intact for scoring.
 
-**Answers:** M2
+**Answers:** M5
 
 **Blocked by:** 02 (needs the probe go verdict).
 
