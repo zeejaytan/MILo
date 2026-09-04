@@ -29,8 +29,10 @@ Port the both-sides masked loss plus background loss into MILo training, gated a
 - Rasterizer stays on the production radegs path, the only one whose render dict carries gradient-capable alpha; the GOF path has no alpha hook and is out of scope for this ticket.
 - The background term starts with the regulariser kick around iteration 3000, never from zero: the early render path has no alpha key and would crash, and holding pressure also spares rim seed points before densification and depth re-init.
 - Occlusion-aware pruning from the paper is deliberately not ported (kernel change, not loss change); existing opacity-plus-size pruning plus frustum culling stands, and surviving interior floaters cost memory, not rim geometry.
-- DSSIM-over-masked-frames is watched, not pre-fixed: its window straddles the sharp mask boundary and can etch rims. If rims etch, weight shifts to L1 on the masked term or SSIM runs over valid pixels only.
+- DSSIM-over-masked-frames is watched, not pre-fixed: its window straddles the sharp mask boundary and can etch rims. The L1 fallback ships behind a flag from the start, so the probe can flip it without a rebuild; it runs only if rims etch.
 - The gamma ladder (0.25/0.5/1.0) runs only if 0.5 damages rims; the A/B runs once at the published value.
+- Clamp-contact faces are hand-marked boxes on the sampled edges before any run, recorded in the probe ticket, and excluded from arc scoring: honesty about unobserved clay is never punished as damage.
+- The probe stops on a number plus a picture: mean alpha inside the eroded band below 0.2 at 8k iterations *and* receding rim renders stop the full pair; the number alone never stops it.
 - Scope is one capture (A03) and one seed; second seeds and second trees follow only if the verdict is releasable.
 
 ## Testing Decisions
