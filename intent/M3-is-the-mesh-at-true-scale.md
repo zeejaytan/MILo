@@ -2,8 +2,10 @@
 
 **Status:** open — **a verified route exists for 59 of 118 captures; the other 59 have no
 scale source.** They are no longer *silently* measurable: `compare_meshes.py` refuses a
-mesh that cannot state its units (2026-09-04). Nothing else does, and the capture record
-still does not mark which is which · **Blocked by:** none · **Effort:** ~half a day left
+mesh that cannot state its units, and a crop now keeps the record of the mesh it was cut
+from (2026-09-04). The capture record still does not mark which captures are metric, and no
+sherd has been checked against a caliper · **Blocked by:** none · **Effort:** ~half a day
+left
 
 ## Why it matters
 
@@ -51,8 +53,23 @@ scale error large enough to matter is small enough to be invisible.
 — produces a file with no sidecar beside it. The scaled parent knew what units it was in;
 the crop does not, and looks identical.
 
-`compare_meshes.py` now refuses such a mesh rather than measuring it (below). Nothing else
-does. Every other script that reports millimetres still takes the units on trust, and
+**Cropping is closed. 2026-09-04** (`.scratch/scale-provenance/issues/03`): `crop_mesh.py`
+carries the parent's statement onto the crop, naming the mesh it was cut from and what the
+cut kept, and the read-out marks an inherited scale as inherited rather than letting it read
+like one taken off the object. Provenance is carried, never invented — a crop of an unscaled
+mesh gets nothing, and is refused downstream. Verified on A02: the fresh crop of
+`milo_mm.ply` (4,766,738 of 7,352,174 faces, 731.6 × 450.8 × 509.6 mm) compares at exit 0
+and prints `cut from milo_mm.ply`; the crop made before this work still exits 2. The same
+work found and closed a hole it would otherwise have widened — `scale_mesh.py` looked only
+at the PLY header, which a crop no longer has, so a crop could have been scaled a **second**
+time: 377× too large, invisible in the file.
+
+**Decimating and re-exporting are still open**, and so is sherd extraction — sixteen meshes
+in `artifacts/A03_metric/` still have no scale record. They are refused rather than measured,
+which is the correct state until those scripts are next touched.
+
+`compare_meshes.py` and `crop_mesh.py` are the only two scripts that hold the line. Every
+other one that reports millimetres still takes the units on trust, and
 `silhouette_compare.py` still falls back to `mm_per_unit = 1.0` when the sidecar is absent —
 the degrade-to-default that ADR 0001 exists to ban.
 
