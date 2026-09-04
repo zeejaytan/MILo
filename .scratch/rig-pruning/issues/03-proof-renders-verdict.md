@@ -12,3 +12,4 @@
 - [ ] Edge-arc loss vs unpruned reported in mm of arc, flat-wall noise in mm for all three on the same box
 - [ ] Component clean reported as kept vs dropped faces; occlusion gaps stay open, no invented surface, or the failure is stated plainly
 - [ ] Stop rule applied on numbers (rig solid above 5 mm fails; break-face loss above ~1 mm of arc fails) and M4 is updated with the date whatever the outcome
+- [ ] Human in the loop: the pruned `_mm.ply` is fetched to `artifacts/` for conservator eye verification in CloudCompare, and no box ticks on geometry without that visual sign-off beside the numbers
