@@ -6,7 +6,7 @@
 
 **Blocked by:** 02 (needs the pruned mesh).
 
-**Status:** ready-for-agent
+**Status:** wontfix (superseded — v1 mesh judged too coarse by conservator eye 2026-09-05 at 19x sparser than reference; proof moves to ticket 06 on the v2 mesh)
 
 - [ ] Break-face crops at 0.10 mm/px from the same window for all three meshes exist under `artifacts/` and resolve the ridge scale
 - [ ] Edge-arc loss vs unpruned reported in mm of arc, flat-wall noise in mm for all three on the same box

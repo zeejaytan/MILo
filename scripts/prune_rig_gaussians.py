@@ -50,12 +50,16 @@ read_extrinsics_binary = _colmap_loader.read_extrinsics_binary
 read_intrinsics_binary = _colmap_loader.read_intrinsics_binary
 
 
-def vote_keep(X, views, keep_ratio=0.8):
+def vote_keep(X, views, keep_ratio=0.8, min_inside=None):
     """Vote each point against per-view sherd outlines.
 
     X: (N, 3) float64 centres in COLMAP world frame.
     views: list of dicts with R (3,3), t (3,), fx, fy, cx, cy, W, H,
         alpha (H, W) bool sherd outline. No dilation is applied here.
+    keep_ratio: keep iff inside in at least this fraction of seen views.
+    min_inside: when set, the fraction rule is replaced by an absolute count
+        (inside in at least this many views). Absolute counts do not let
+        grazing angles veto rim clay the way fractions do (spec v2).
     Returns (keep (N,) bool, inside_counts (N,) int32, seen_counts (N,) int32).
     A point seen in front of no camera is dropped (0/0 keeps nothing).
     """
@@ -76,9 +80,12 @@ def vote_keep(X, views, keep_ratio=0.8):
         inframe = front & (u >= 0) & (u < v["W"]) & (vv >= 0) & (vv < v["H"])
         seen += inframe
         inside += (v["alpha"][vi, ui] & inframe).astype(np.int32)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        frac = np.where(seen > 0, inside / np.maximum(seen, 1), -1.0)
-    keep = frac >= keep_ratio
+    if min_inside is not None:
+        keep = inside >= min_inside
+    else:
+        with np.errstate(invalid="ignore", divide="ignore"):
+            frac = np.where(seen > 0, inside / np.maximum(seen, 1), -1.0)
+        keep = frac >= keep_ratio
     return keep, inside, seen
 
 
@@ -157,14 +164,23 @@ def self_test():
         f"edge counts wrong: seen {seen_e}, inside {inside_e}"
     assert keep_e.tolist() == [True], "1 px inside the outline must survive"
 
+    # Absolute rule (spec v2): inside in >=2 of 2 views keeps at min_inside=2,
+    # drops at min_inside=3; the rim point survives either way.
+    keep_a, _, _ = vote_keep(X, [v, v], min_inside=2)
+    assert keep_a.tolist() == [True, False, False], f"absolute keep wrong: {keep_a}"
+    keep_a, _, _ = vote_keep(X, [v, v], min_inside=3)
+    assert keep_a.tolist() == [False, False, False], \
+        f"absolute strict wrong: {keep_a}"
+
     # Determinism: two runs agree exactly.
     k1, _, _ = vote_keep(X, [v, v])
     k2, _, _ = vote_keep(X, [v, v])
     assert (k1 == k2).all(), "vote is not deterministic"
 
-    print("self-test: 7 assertions passed "
+    print("self-test: 9 assertions passed "
           "(clay kept, rig blob dropped, rim dropped, edge survives, boundary "
-          "drops at 0.8 and keeps at 0.5, deterministic).")
+          "drops at 0.8 and keeps at 0.5, absolute keeps at 2 and drops at 3, "
+          "deterministic).")
 
 
 def main():
@@ -176,7 +192,11 @@ def main():
                     help="RGBA images whose alpha is the mask, i.e. images_masked")
     ap.add_argument("--llffhold", type=int, default=8,
                     help="--eval holds out every Nth view; 0 to use all views")
-    ap.add_argument("--keep-ratio", type=float, default=0.8)
+    ap.add_argument("--keep-ratio", type=float, default=0.8,
+                    help="fraction rule (spec v1); ignored when --min-inside is set")
+    ap.add_argument("--min-inside", type=int, default=None,
+                    help="absolute rule (spec v2): keep iff inside in at least "
+                         "this many front-facing views")
     ap.add_argument("--out", type=Path, default=None,
                     help="where to write the kept indices (.npy)")
     ap.add_argument("--plot", type=Path, default=None)
@@ -195,9 +215,12 @@ def main():
     print(f"{len(X):,} Gaussians in {args.point_cloud.name}")
 
     views = load_views(args.data, args.masked_images, args.llffhold)
-    print(f"{len(views)} training views vote at keep-ratio {args.keep_ratio}")
+    if args.min_inside is not None:
+        print(f"{len(views)} training views vote at min-inside {args.min_inside} (spec v2 absolute rule)")
+    else:
+        print(f"{len(views)} training views vote at keep-ratio {args.keep_ratio} (spec v1 fraction rule)")
 
-    keep, inside, seen = vote_keep(X, views, args.keep_ratio)
+    keep, inside, seen = vote_keep(X, views, args.keep_ratio, args.min_inside)
     nk = int(keep.sum())
     print(f"kept {nk:,} of {len(X):,} ({100.0 * nk / max(len(X), 1):.2f}%)")
     print(f"never seen in front of any view (dropped): {int((seen == 0).sum()):,}")
