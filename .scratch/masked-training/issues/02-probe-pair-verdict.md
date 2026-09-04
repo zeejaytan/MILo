@@ -6,7 +6,7 @@
 
 **Blocked by:** 01 (needs the patched loss and its instrumentation).
 
-**Status:** claimed (probe job 30090865 submitted 2026-09-06: control A03_probe_ctrl vs masked A03_probe_masked; log MILo/logs/milo_probe_30090865.log; conservator pre-approved 03–04 on green while away)
+**Status:** claimed (probe job 30090865 FAILED on my flag spelling — `--masked-training` vs `--masked_training`; control leg had finished clean. Fixed with per-leg skip + CLI-name guard; resubmitted as 30094277, reusing control. Standing go for 03–04 on green holds.)
 
 ## Comments
 
