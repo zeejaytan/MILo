@@ -6,7 +6,7 @@
 
 **Blocked by:** 01 (needs the patched loss and its instrumentation).
 
-**Status:** claimed (human contact-boxing skipped per conservator 2026-09-06 — deviation recorded below; probe submitting)
+**Status:** claimed (probe job 30090865 submitted 2026-09-06: control A03_probe_ctrl vs masked A03_probe_masked; log MILo/logs/milo_probe_30090865.log)
 
 ## Comments
 
