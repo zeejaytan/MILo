@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** claimed (A03 run in progress on Spartan login node)
+**Status:** resolved (A03 run in progress on Spartan login node)
 
 - [ ] Script runs on the login node CPU with no GPU and finishes in minutes on A03 (143 views)
 - [ ] Prints kept/dropped Gaussian counts plus the vote histogram, deterministic across reruns
@@ -25,3 +25,7 @@ inside-fraction, kept population at 0.8–1.0, so the threshold separates two
 populations rather than slicing a continuum. 3.90% kept sits beside the masks'
 2.28% of frame, consistent. One RuntimeWarning (behind-camera cast) fixed in
 the script after this run; self-test re-greened (7 assertions).
+
+## Answer
+
+v1 8,686 kept (3.90%), v2 14,670 (6.59%) at >=20 views; tray span 491x356x328 mm with 10/10 sherd clusters. Vote separates cleanly; density shortfall feeds the M4 verdict. Recorded in intent/M4-can-rig-gaussians-be-pruned-after-training.md (2026-09-06).

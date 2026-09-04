@@ -6,7 +6,7 @@
 
 **Blocked by:** 01 (needs the keep set and its counts).
 
-**Status:** claimed (wiring done, job submitting)
+**Status:** resolved (wiring done, job submitting)
 
 - [ ] Single GPU job on Spartan runs end to end from the filtered set and writes `mesh_learnable_sdf_pruned.ply` for piece 1
 - [ ] Mesh is non-empty and carries vertex colours like the unpruned reference
@@ -20,3 +20,7 @@
 Watch the log at `/data/gpfs/projects/punim2657/MILo/logs/milo_prune_30056136.log`
 for the `[SHERD FORK] Pruned Delaunay set` line, then the pruned mesh plus its
 `_mm.ply` and the mesh_report piece count.
+
+## Answer
+
+v1 mesh built by job 30056136: 128k verts, zero steel, too sparse. Counts toward the M4 no. Recorded in intent/M4-can-rig-gaussians-be-pruned-after-training.md (2026-09-06).

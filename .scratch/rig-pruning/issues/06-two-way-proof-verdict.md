@@ -6,7 +6,7 @@
 
 **Blocked by:** 05 (needs the v2 pruned mesh).
 
-**Status:** ready-for-agent
+**Status:** resolved (M4 answered NO 2026-09-06 — see intent write-back; arc/noise mm deliberately unmeasured, webs + footprint disqualify regardless)
 
 - [ ] Piece-1 crops of both meshes exist under `artifacts/` at millimetre scale for hand-checking
 - [ ] Same-window 0.10 mm/px renders resolve the ridge scale for both meshes
@@ -29,3 +29,7 @@ validation.
   replacement cannot carry break-face density on A03 (1 capture). M4 answered no for
   this tree; per-sherd split or SuGaR-shaped regrow is the next branch, or the M1 gate
   closes extraction work."
+
+## Answer
+
+v1 mesh (job 30056136): 128k verts, zero steel, too sparse for 0.21 mm relief. v2 mesh (job 30086544): 204k verts, zero steel, two components webbed across 331/218 mm. Kept footprint median 1.76 mm. Conservator eye 2026-09-06: too coarse for any reassembly use. Verdict and weight recorded in intent/M4-can-rig-gaussians-be-pruned-after-training.md; close-out drafts above retired with the ticket.
