@@ -6,7 +6,7 @@
 
 **Blocked by:** 01 (needs the keep set and its counts).
 
-**Status:** ready-for-agent
+**Status:** claimed (wiring done, job submitting)
 
 - [ ] Single GPU job on Spartan runs end to end from the filtered set and writes `mesh_learnable_sdf_pruned.ply` for piece 1
 - [ ] Mesh is non-empty and carries vertex colours like the unpruned reference

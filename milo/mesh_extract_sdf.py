@@ -56,6 +56,7 @@ def extract_mesh_with_sdf_refinement(
     initialization_method,
     args,
     mesh_config,
+    keep_idx=None,
 ):
     torch.cuda.set_device("cuda:0")
     device = torch.device(torch.cuda.current_device())
@@ -81,9 +82,29 @@ def extract_mesh_with_sdf_refinement(
     with torch.no_grad():
         n_gaussians_to_sample_from = gaussians._xyz.shape[0]
         n_max_gaussians_for_delaunay = int(n_max_points_in_delaunay / 9.)
-        downsample_gaussians_for_delaunay = n_max_gaussians_for_delaunay < n_gaussians_to_sample_from
-
-        if downsample_gaussians_for_delaunay:            
+        # [SHERD FORK] Post-training pruning (intent M4): a keep-index array from
+        # scripts/prune_rig_gaussians.py replaces importance sampling at this seam.
+        # Pivots are then drawn from kept (clay-voted) Gaussians only, and every
+        # downstream consumer of delaunay_xyz_idx -- get_tetra_points, occupancy
+        # reset, refinement indexing -- already indexes the full set, so all of
+        # them stay aligned with no further change. Nothing upstream is altered;
+        # without --keep-idx this block behaves exactly as the authors wrote it.
+        if keep_idx is not None:
+            kept = np.unique(np.asarray(keep_idx, dtype=np.int64))
+            if kept.size == 0:
+                raise ValueError("[SHERD FORK] --keep-idx selected no Gaussians; "
+                                 "refusing to extract a mesh from an empty set.")
+            if kept.min() < 0 or kept.max() >= n_gaussians_to_sample_from:
+                raise ValueError(
+                    f"[SHERD FORK] --keep-idx holds indices outside this run "
+                    f"({kept.min()}..{kept.max()} vs 0..{n_gaussians_to_sample_from - 1}); "
+                    f"it was built for a different point cloud.")
+            delaunay_xyz_idx = torch.from_numpy(kept).long().cuda()
+            print(f"[SHERD FORK] Pruned Delaunay set: {len(kept):,} of "
+                  f"{n_gaussians_to_sample_from:,} Gaussians "
+                  f"({100.0 * len(kept) / n_gaussians_to_sample_from:.2f}% kept).")
+        elif (downsample_gaussians_for_delaunay := (
+                n_max_gaussians_for_delaunay < n_gaussians_to_sample_from)):
             print(f"[INFO] Downsampling Delaunay Gaussians from {n_gaussians_to_sample_from} to {n_max_gaussians_for_delaunay}.")
             n_nonzero = (gaussians._base_occupancy != 0.).any(dim=-1).sum().item()
             if n_nonzero == 0:
@@ -112,6 +133,10 @@ def extract_mesh_with_sdf_refinement(
             downsample_ratio=None,
             let_gradients_flow=False,
             xyz_idx=delaunay_xyz_idx, # Pass the computed indices
+            # [SHERD FORK] A pruned set keeps full clay density, so its pivot
+            # spread stays at trained scale. The compensation below is only
+            # correct for a thinned (downsampled) set.
+            scale_points_with_downsample_ratio=(keep_idx is None),
             verbose=True
         )
                 
@@ -540,7 +565,7 @@ def extract_mesh_with_sdf_refinement(
         if dmtet_face_mask is not None:
             mesh.update_faces(dmtet_face_mask.cpu().numpy())
 
-        mesh.export(os.path.join(dataset.model_path,f"mesh_learnable_sdf.ply"))
+        mesh.export(os.path.join(dataset.model_path, args.out_name))
 
 
 if __name__ == "__main__":
@@ -566,6 +591,14 @@ if __name__ == "__main__":
     parser.add_argument("--remove_oof_vertices", action="store_true")
     # For initialization
     parser.add_argument("--init", default="learnable", type=str)
+    # [SHERD FORK] Post-training pruning (intent M4). --keep-idx points at the
+    # index array scripts/prune_rig_gaussians.py writes; --out-name keeps the
+    # pruned mesh beside unpruned ones. Both default to upstream behaviour.
+    parser.add_argument("--keep-idx", default=None, type=str,
+                        help="numpy .npy of kept Gaussian indices into this run's "
+                             "point cloud; pivots are drawn from these only.")
+    parser.add_argument("--out-name", default="mesh_learnable_sdf.ply", type=str,
+                        help="output filename inside the model directory.")
     parser.add_argument("--sdf_default_isosurface", default=0.5, type=float)
     parser.add_argument("--transform_initial_sdf_to_linear_space", action="store_true")
     parser.add_argument("--min_occupancy_value", default=1e-10, type=float)
@@ -601,6 +634,11 @@ if __name__ == "__main__":
         if args.imp_metric == 'none':
             raise ValueError("imp_metric must be specified for using delaunay downsampling: Either 'indoor' or 'outdoor'")
     
+    # [SHERD FORK] --keep-idx is loaded here (CPU numpy) so the GPUs only ever
+    # see validated indices; the validation against this run's cloud happens
+    # inside extract_mesh_with_sdf_refinement, where a mismatch refuses loudly.
+    keep_idx = np.load(args.keep_idx) if args.keep_idx else None
+
     extract_mesh_with_sdf_refinement(
         model.extract(args), 
         args.iteration, 
@@ -612,5 +650,6 @@ if __name__ == "__main__":
         initialization_method=args.init,
         args=args,
         mesh_config=mesh_config,
+        keep_idx=keep_idx,
     )
     
