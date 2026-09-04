@@ -55,6 +55,16 @@ import trimesh
 from PIL import Image as PILImage
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+# The sidecar contract -- what units a mesh is in, and what said so. It lives in its own
+# module because crop_mesh.py now has to CARRY it, and a second copy of these rules would
+# be a second thing to keep right.
+from scale_sidecar import (                                          # noqa: E402
+    MM_PER_UNIT_BY_NAME, NO_PARENT_SCALE, SCALE_FACTOR_KEYS, UNREADABLE,
+    carry_sidecar, internal_disagreements, read_scale, sidecar_path,
+    without_scale_factors,
+)
 
 
 def _load_colmap_loader():
@@ -91,60 +101,16 @@ SUSPECT_IOU = 0.5
 # reading it, a distance "in mesh units" gets printed as millimetres and nothing here can
 # notice. That was true of this script until 2026-09-03: its --mm-per-unit flag reached
 # only the render's scale bar, and frac_within_0.5mm was computed against a raw 0.5.
-
-SIDECAR_SUFFIX = ".scale.json"
-
-# Unit names a sidecar may declare, and what one mesh unit is worth in millimetres.
-# Anything not on this list is refused rather than guessed at.
-MM_PER_UNIT_BY_NAME = {
-    "millimetres": 1.0, "millimeters": 1.0, "mm": 1.0,
-    "centimetres": 10.0, "centimeters": 10.0, "cm": 10.0,
-    "metres": 1000.0, "meters": 1000.0, "m": 1000.0,
-}
+#
+# The sidecar itself -- how it is named, which unit names are accepted, what counts as a
+# scale factor, and how a derived mesh carries its parent's statement -- is
+# `scale_sidecar.py`, imported above. What stays here is what this SCRIPT does with it.
 
 # Exit statuses. 1 stays with the failures this script already had (no masks; two meshes
 # whose sizes disagree). These two are about the scale record itself.
 RC_OK = 0
 RC_NO_SCALE = 2        # a mesh cannot say what units it is in
 RC_SCALE_CONFLICT = 3  # the two meshes say different things
-
-
-def sidecar_path(mesh_path: Path) -> Path:
-    """<mesh>.ply -> <mesh>.scale.json, the name scale_mesh.py writes."""
-    return Path(mesh_path).with_suffix(SIDECAR_SUFFIX)
-
-
-def read_scale(mesh_path: Path):
-    """The scale sidecar beside a mesh, or None if there is not one we can read."""
-    p = sidecar_path(mesh_path)
-    if not p.exists():
-        return None
-    try:
-        return json.loads(p.read_text())
-    except (OSError, ValueError):
-        return None
-
-
-def internal_disagreements(sidecar: dict) -> list:
-    """What the scale measurement recorded about disagreeing with itself.
-
-    A02/A03 were scaled off a 190 x 130 mm plate measured on two edges and on two point
-    clouds. Those figures live in the sidecar and have never been printed anywhere: a
-    5.4 % gap between the sparse and dense clouds was reachable only by opening the JSON.
-    """
-    out = []
-    m = sidecar.get("measured") or {}
-    d = m.get("disagreement")
-    if isinstance(d, (int, float)):
-        out.append("the two reference edges disagree by %.1f%%" % (d * 100))
-    x = m.get("cross_cloud_disagreement")
-    if isinstance(x, (int, float)):
-        out.append("the sparse and dense clouds disagree by %.1f%%" % (x * 100))
-    for sub in m.get("measurements") or []:
-        if sub.get("accepted") is False:
-            out.append("the %s cloud's measurement was rejected"
-                       % (sub.get("cloud") or "unnamed"))
-    return out
 
 
 def scale_decision(paths: dict, shape_only: bool = False) -> dict:
@@ -202,26 +168,6 @@ def scale_decision(paths: dict, shape_only: bool = False) -> dict:
     }
 
 
-# Every key in a sidecar whose value is a scale FACTOR -- a number a reader could
-# multiply a mesh coordinate by to get millimetres. Under --shape-only none of them may
-# reach the written report: a suppressed read-out with the factor still in the JSON is
-# not a suppressed millimetre, it is a millimetre one multiplication away.
-SCALE_FACTOR_KEYS = ("mm_per_unit", "mm_per_unit_long", "mm_per_unit_short",
-                     "long_units", "short_units", "measured")
-
-
-def without_scale_factors(sidecar):
-    """The sidecar's provenance -- who supplied the millimetres -- with no factor left.
-
-    Keeps units, source, capture, method, scaled_at and caveat, because under
-    --shape-only it is still worth recording which meshes could have been measured and
-    on whose authority. Drops everything a downstream reader could compute with.
-    """
-    if not isinstance(sidecar, dict):
-        return sidecar
-    return {k: v for k, v in sidecar.items() if k not in SCALE_FACTOR_KEYS}
-
-
 def exit_code_for_scale(decision: dict) -> int:
     """The status the caller branches on.
 
@@ -247,6 +193,16 @@ def provenance_lines(decision: dict) -> list:
         lines.append("  %-9s capture %s, %s, scaled %s"
                      % ("", sc.get("capture") or "?", sc.get("method") or "?",
                         sc.get("scaled_at") or "?"))
+        # A crop's millimetres were never measured on the crop. They were measured on the
+        # mesh it was cut from and carried across, which is legitimate and is not the same
+        # thing -- so say which mesh, and what the cut was. Without this line an inherited
+        # scale reads exactly like one taken off the object.
+        if sc.get("derived_from"):
+            lines.append("  %-9s not scaled directly: cut from %s"
+                         % ("", Path(sc["derived_from"]).name))
+            lines.append("  %-9s   by %s" % ("", sc.get("derived_by") or "an unrecorded operation"))
+            if sc.get("derived_note"):
+                lines.append("  %-9s   %s" % ("", sc["derived_note"]))
         # How precisely the millimetres are known, and how much the scale measurement
         # disagreed with itself, only mean something when millimetres are being
         # reported. Under --shape-only they would be precision figures for a number
@@ -599,6 +555,7 @@ def self_test() -> int:
     the scale gate is decided before any of those are touched.
     """
     import re
+    import subprocess
     import tempfile
 
     state = {"ok": True}
@@ -678,6 +635,121 @@ def self_test() -> int:
               "the factor itself appears nowhere")
         check("blue base top face" in written,
               "which mesh could have been measured, and on whose authority, is still recorded")
+
+        # ---- a crop is as accountable as the mesh it was cut from -------------------
+        # These run crop_mesh.py itself, in a subprocess, rather than calling the helper
+        # it uses. The helper being right is not the claim; the claim is that cropping a
+        # mesh produces a crop that can be measured, and only the script can settle that.
+        def crop(parent, box_from, out_name):
+            proc = subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("crop_mesh.py")),
+                 "--mesh", str(parent), "--box-from", str(box_from), "--out", str(d / out_name)],
+                capture_output=True, text=True)
+            return proc, d / out_name
+
+        print("\n-- cropping a scaled mesh: the crop carries the scale record")
+        box = _fixture(d, "box_ref", 40.0, None)
+        proc, cropped = crop(a, box, "milo_ok_cropped.ply")
+        case(proc.returncode, 0)
+        check(cropped.exists(), "the crop was written")
+        carried = read_scale(cropped)
+        check(carried is not None, "the crop has a sidecar of its own")
+        check((carried or {}).get("units") == "millimetres",
+              "it declares the same units as its parent -- cutting a mesh does not "
+              "change what it is measured in")
+        check(Path((carried or {}).get("derived_from", "")).name == a.name,
+              "it names the mesh it was cut from (%s)"
+              % Path((carried or {}).get("derived_from", "nothing")).name)
+        check("crop_mesh.py" in (carried or {}).get("derived_by", ""),
+              "it names the operation that produced it")
+
+        print("\n-- the comparison accepts the crop against its parent")
+        dec = scale_decision({"milo": a, "openmvs": cropped})
+        case(exit_code_for_scale(dec), RC_OK)
+        text = "\n".join(provenance_lines(dec))
+        check("blue base top face" in text,
+              "the source the crop inherited is printed, not invented")
+        check("cut from %s" % a.name in text,
+              "and it is marked as inherited, not measured on the crop itself")
+
+        print("\n-- cropping an UNSCALED mesh invents nothing")
+        # This is the half that matters most. A crop that acquired a scale record its
+        # parent never had would be a fabricated measurement wearing a provenance field.
+        proc, bare_crop = crop(c, box, "mvs_bare_cropped.ply")
+        case(proc.returncode, 0)
+        check(bare_crop.exists() and read_scale(bare_crop) is None,
+              "the crop of a mesh with no scale record has none either")
+        dec = scale_decision({"milo": a, "openmvs": bare_crop})
+        case(exit_code_for_scale(dec), RC_NO_SCALE)
+
+        print("\n-- a stale sidecar beside the output is removed, not left to lie")
+        # Same --out, re-cropped from an unscaled parent. The sidecar sitting there
+        # describes the previous crop; leaving it would make an unscaled mesh claim
+        # millimetres, which is the one outcome worse than refusing. Through the script,
+        # because it is the script's ORDER that decides this -- a helper checked in
+        # isolation passes here while the file on disk still lies.
+        sidecar_path(bare_crop).write_text(json.dumps(_mm_sidecar()))
+        proc, bare_crop = crop(c, box, "mvs_bare_cropped.ply")
+        case(proc.returncode, 0)
+        check(not sidecar_path(bare_crop).exists(),
+              "the sidecar from the earlier run was removed")
+        dec = scale_decision({"milo": a, "openmvs": bare_crop})
+        case(exit_code_for_scale(dec), RC_NO_SCALE)
+
+        print("\n-- a damaged sidecar stops the cut BEFORE the crop is written")
+        # The whole point of the refusal. A check that runs after the export leaves an
+        # unaccountable mesh on disk and prints "REFUSED" over the top of it, which is
+        # worse than no check at all -- so what is asserted here is the absence of the
+        # output file, not the wording of the message.
+        broken = _fixture(d, "milo_broken_side", 50.0, None)
+        sidecar_path(broken).write_text("{ this is not json")
+        proc, broken_crop = crop(broken, box, "milo_broken_crop.ply")
+        check(proc.returncode != 0,
+              "a corrupt scale record stops the crop instead of silently becoming "
+              "'never scaled'")
+        check(not broken_crop.exists(),
+              "and no crop was left behind for someone to measure")
+        check(not sidecar_path(broken_crop).exists(),
+              "nor a sidecar beside one")
+
+        print("\n-- and scale_mesh.py will not scale a crop a second time")
+        # A crop is written by trimesh, so the `comment units:` line scale_mesh.py looks
+        # for is gone while the scale is not. Doubling the factor is invisible in the
+        # file and makes every millimetre wrong by 377x here. Both refusals, through the
+        # script: a readable sidecar, and a damaged one.
+        # `accepted` matters: without it scale_mesh.py refuses the MEASUREMENT and never
+        # reaches the guard being tested, so both assertions below would pass for the
+        # wrong reason. A non-zero exit only means something once the run gets far enough
+        # to have a choice.
+        meas = d / "base_measurement.json"
+        meas.write_text(json.dumps({"accepted": True, "mm_per_unit_long": 377.5,
+                                    "mm_per_unit_short": 377.5, "mm_per_unit": 377.5,
+                                    "disagreement": 0.0, "aspect": 1.4615}))
+        clean = _fixture(d, "milo_unscaled_ok", 50.0, None)
+        control = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("scale_mesh.py")),
+             "--mesh", str(clean), "--out", str(d / "control.ply"),
+             "--measurement", str(meas)], capture_output=True, text=True)
+        case(control.returncode, 0)
+        check((d / "control.ply").exists(),
+              "control: an unscaled mesh with no sidecar IS scaled, so the two refusals "
+              "below are refusals and not a fixture that never got that far")
+
+        def rescale(mesh):
+            return subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("scale_mesh.py")),
+                 "--mesh", str(mesh), "--out", str(d / "rescaled.ply"),
+                 "--measurement", str(meas)],
+                capture_output=True, text=True)
+
+        proc = rescale(cropped)
+        check(proc.returncode != 0 and not (d / "rescaled.ply").exists(),
+              "a crop whose sidecar says millimetres is refused, though its PLY header "
+              "no longer says anything")
+        proc = rescale(broken)
+        check(proc.returncode != 0 and not (d / "rescaled.ply").exists(),
+              "and so is a mesh whose scale record is damaged -- that is not the same "
+              "as one that was never measured")
 
         print("\n-- a sidecar whose own measurement disagreed with itself")
         noisy = _mm_sidecar(measured={

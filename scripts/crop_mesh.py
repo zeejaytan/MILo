@@ -17,6 +17,14 @@ tool's silence gets mistaken for a finding.
 Faces are kept by CENTROID, not by all-three-vertices: a face straddling the boundary is
 kept whole rather than punching a hole along every wall of the box.
 
+THE CROP KEEPS ITS PARENT'S SCALE STATEMENT. Cutting a mesh down does not change what
+units it is in, but it does produce a new file, and a new file has nothing beside it
+saying so -- trimesh writes its own PLY header, so even the `comment units:` line
+scale_mesh.py put there is gone. Sixteen meshes in artifacts/A03_metric are in that state.
+So the sidecar is carried across, naming this mesh's parent and the cut that made it. If
+the parent has no scale record, neither does the crop: provenance is carried, never
+invented.
+
 Usage:
     python crop_mesh.py --mesh <in.ply> --box-from <ref.ply> [--box-from <ref2.ply> ...]
         --out <out.ply> [--margin 0.02] [--min-keep 0.001]
@@ -27,6 +35,9 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from scale_sidecar import UNREADABLE, carry_sidecar, check_parent_sidecar  # noqa: E402
 
 
 def box_of(paths, margin):
@@ -59,6 +70,13 @@ def main():
                     help="refuse to write if less than this fraction of faces survives")
     args = ap.parse_args()
 
+    # Before anything is read or written. A refusal that fires after `out.export` has not
+    # refused: the crop is on disk, unaccountable, and the word REFUSED on the console is
+    # then simply false -- worse than no check, because it reads as though nothing happened.
+    ok, why = check_parent_sidecar(args.mesh)
+    if not ok:
+        sys.exit("REFUSED: " + why)
+
     lo, hi = box_of(args.box_from, args.margin)
     print(f"  crop box: {np.round(lo, 3)} .. {np.round(hi, 3)}  "
           f"span {np.round(hi - lo, 3)}")
@@ -88,6 +106,23 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     out.export(args.out)
     print(f"  wrote {args.out}")
+
+    outcome, message = carry_sidecar(
+        args.mesh, args.out,
+        operation="crop_mesh.py: faces whose centroid falls inside the union of the "
+                  "bounding boxes of " + ", ".join(p.name for p in args.box_from) +
+                  f", grown by {100 * args.margin:.1f}%",
+        note=f"kept {keep.sum():,} of {len(F):,} faces ({100 * frac:.1f}%); "
+             "cutting a mesh down does not change its units")
+    print(f"  scale: {message}")
+    if outcome == UNREADABLE:
+        # Unreachable via the pre-flight above unless the sidecar was damaged while this
+        # was running. Kept so the two checks cannot silently diverge, and the crop is
+        # removed rather than left claiming nothing.
+        args.out.unlink(missing_ok=True)
+        sys.exit("REFUSED: the parent's scale record became unreadable mid-run; the crop "
+                 "has been deleted rather than left without one.")
+
     print("  The crop is a VIEWING aid, not a result: it says what the method put in the "
           "box, and nothing about what it put outside.")
 

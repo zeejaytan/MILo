@@ -29,6 +29,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from scale_sidecar import PRESENT, UNREADABLE, sidecar_path, sidecar_state  # noqa: E402
+
 MARKER = "comment units:"
 
 
@@ -190,6 +193,32 @@ def main():
         sys.exit(f"{args.mesh.name} already carries a units comment -- it has been scaled "
                  "before. Scaling twice is invisible and would make every measurement "
                  "wrong by the square of the factor. Refusing.")
+
+    # The header comment is not the only place a mesh can say it is already scaled, and
+    # since 2026-09-04 it is not even the reliable one. A crop written by crop_mesh.py
+    # goes through trimesh, which writes its own PLY header, so the units comment is gone
+    # while the scale is not -- the sidecar carried it across. Checking only the header
+    # would let exactly those files be scaled a second time.
+    #
+    # `sidecar_state`, not `read_scale`: read_scale returns None for a DAMAGED sidecar as
+    # well as an absent one, and here those mean opposite things. A damaged one is a mesh
+    # that was probably already scaled and whose evidence is broken -- the case where
+    # proceeding is worst. Refuse rather than degrade to a default
+    # (docs/adr/0001-refuse-rather-than-degrade-when-scale-is-unknown.md).
+    state, prior = sidecar_state(args.mesh)
+    if state == UNREADABLE:
+        sys.exit(f"{prior}. A damaged scale record is not an absent one: this mesh may "
+                 "already be in millimetres and the file that would have said so is "
+                 "broken. Scaling it again would multiply the factor in twice and nothing "
+                 "downstream could tell. Fix or delete the sidecar first. Refusing.")
+    if state == PRESENT:
+        sys.exit(f"{sidecar_path(args.mesh).name} says {args.mesh.name} is already in "
+                 f"{prior.get('units')}"
+                 + (f", carried from {Path(prior['derived_from']).name}"
+                    if prior.get("derived_from") else "")
+                 + ". Its PLY header does not say so, which is what a crop looks like. "
+                   "Scaling it again would multiply the factor in twice and nothing "
+                   "downstream could tell. Refusing.")
 
     # Vertex layout: x,y,z are the first three properties of the vertex element in every
     # file this pipeline produces, but check rather than assume.
