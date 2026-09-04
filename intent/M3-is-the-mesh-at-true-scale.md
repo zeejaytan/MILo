@@ -44,17 +44,15 @@ scale error large enough to matter is small enough to be invisible.
 
 ## The gap that makes this live
 
-*(The comparison half of this was closed on 2026-09-03; the paragraph below is what it
-looked like, kept because the other half — derived meshes losing the sidecar — is still
-open.)*
+**A mesh can lose its sidecar and nothing notices.** `scale_mesh.py` writes
+`<mesh>.scale.json`, but anything that *derives* a mesh — cropping, decimating, re-exporting
+— produces a file with no sidecar beside it. The scaled parent knew what units it was in;
+the crop does not, and looks identical.
 
-`scripts/compare_meshes.py` computes point-to-surface distance whose own docstring says the
-result is **"in mesh units"** ([line 227](../scripts/compare_meshes.py)), then reports it as
-`frac_within_0.5mm` and `frac_within_1mm` against hardcoded thresholds of `0.5` and `1.0`.
-Its `--mm-per-unit` flag is passed only to the render's scale bar, never to the distance
-calculation, and it does not read the `.scale.json` sidecar that would tell it. **A mesh in
-any units other than millimetres produces a millimetre agreement figure that is not in
-millimetres, and nothing in the script can notice.** Read from the file, not yet run.
+`compare_meshes.py` now refuses such a mesh rather than measuring it (below). Nothing else
+does. Every other script that reports millimetres still takes the units on trust, and
+`silhouette_compare.py` still falls back to `mm_per_unit = 1.0` when the sidecar is absent —
+the degrade-to-default that ADR 0001 exists to ban.
 
 ## Done when
 
@@ -77,7 +75,11 @@ millimetres, and nothing in the script can notice.** Read from the file, not yet
       `--self-test` asserts the exit status on synthetic fixtures, so the gate is proved
       able to fail rather than only observed to pass — that was the `check_turntable.py`
       lesson. It also fixed the defect underneath: `frac_within_0.5mm` was computed against
-      a raw 0.5 in whatever units the mesh happened to be in
+      a raw 0.5 in whatever units the mesh happened to be in. **Reviewed and corrected
+      2026-09-04**: as first written the gate refused `mm` against `millimetres` as a unit
+      conflict, and `--shape-only` still wrote the scale factor into the report — a gate
+      that rejects correct work, and a suppression one multiplication from leaking. Both
+      fixed and asserted
 - [ ] **One before/after picture**: the same two meshes overlaid, with the millimetre scale
       bar burnt in, at a view that resolves the wall — the sherd in **section**, not a
       three-quarter view of the whole body, because a scale error is a proportional change

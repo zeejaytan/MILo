@@ -31,10 +31,19 @@ seen to pass is indistinguishable from one that always passes.
       figures printed above the results for both meshes
 - [x] Either sidecar missing → non-zero exit naming which mesh, and **no millimetre
       figure anywhere** in stdout, stderr or the written report
-- [x] The two sidecars disagree on units → non-zero exit
-- [x] `--shape-only` with no sidecar at all → exit 0, outline agreement present, every
-      millimetre figure absent — **the gate and the suppression are asserted; the outline
-      figures themselves were not run**, because that path needs nvdiffrast on a GPU node
+- [x] The two sidecars disagree on units → non-zero exit. **Two spellings of the same
+      unit are not a disagreement** — `mm` and `millimetres` compare equal, because the
+      comparison is on the size the name denotes, not on the string
+- [x] `--shape-only` → exit 0, outline agreement present, every millimetre figure absent.
+      Asserted in both the no-sidecar case and the case that could actually leak: **both
+      meshes fully scaled and `--shape-only` asked for anyway**, where no scale factor
+      may reach stdout or the written report. Scope stated exactly, because the ADR
+      lesson is not to claim reach you do not enforce: what is suppressed is every
+      figure measured off the mesh and every factor that could produce one. The
+      sidecar's naming provenance — which mesh could have been measured and on whose
+      authority — is deliberately kept, and the reference plate's own name contains its
+      dimensions. **The gate and the suppression are asserted; the outline figures
+      themselves were not run**, because that path needs nvdiffrast on a GPU node
 - [x] A sidecar recording a rejected sub-measurement and a large cross-cloud
       disagreement → exit 0, with that disagreement printed rather than buried in JSON
 - [x] `frac_within_0.5mm` / `frac_within_1mm` are computed against thresholds converted
@@ -59,3 +68,42 @@ Two things came out of the work that were not in the ticket:
 Verified against the real sidecars in `artifacts/A02_metric` and `artifacts/A03_metric`:
 the gate passes and prints the source, the ~1 % stated precision, and A03's 5.4 %
 sparse-versus-dense disagreement, which until now was reachable only by opening the JSON.
+
+### 2026-09-04 — after code review
+
+`/code-review` against `fae2c88` ran two axes. Five findings were fixed here; three
+became follow-up work.
+
+Fixed:
+
+- **`mm` and `millimetres` were refused as a unit conflict.** `MM_PER_UNIT_BY_NAME`
+  existed to accept aliases and the agreement test compared the raw strings, so a
+  correctly-scaled pair got exit 3 and the message "one of them was never scaled" —
+  false, and the kind of wrong refusal that gets a gate commented out. Now compares the
+  factor the name denotes. Asserted.
+- **`--shape-only` wrote `mm_per_unit: 373.73` into `comparison.json`** via the raw
+  sidecar echo, and printed the sidecar's precision caveat. A suppressed millimetre with
+  the factor still in the JSON is one multiplication from being reported. Scale factors
+  are now stripped from the report and the caveat is not printed in shape-only; the
+  naming provenance stays. Asserted on the case that could leak, which was previously
+  unasserted.
+- **`--self-test` was registered in argparse and unreachable** — dispatch scanned
+  `sys.argv` while three flags were `required=True`, so `--help` advertised a flag the
+  parser could never accept. The four paths are now checked after parsing, and the
+  self-test dispatches through argparse as `check_turntable.py` does.
+- **The module docstring still said "renders are written whatever the numbers say"**,
+  which a scale refusal makes false — it returns before any mesh is loaded.
+- **`slurm/milo_compare.slurm` documented exit 2 as "no sidecar"**; it also fires for
+  units the script will not guess at.
+
+Follow-up, not done here:
+
+- `silhouette_compare.py:176` still does `doc.get("mm_per_unit", 1.0)` — the exact
+  degrade-to-default ADR 0001 bans, inside the ADR's stated scope. **Ticket 05 or an ADR
+  scope amendment; open decision.**
+- `self_test` asserts `exit_code_for_scale(scale_decision(...))`, never `main()`. The
+  spec asked for the real path. Ticket 05.
+- `sidecar_path` / `read_scale` are private to this script and there is no writer for
+  derived sidecars — ticket 03 is blocked on that extraction, which is where the
+  `ScaleDecision` type and the `extents_mm` / `extents_units` schema switch should be
+  dealt with too.

@@ -21,7 +21,9 @@ number this script prints should be described as accuracy. What it can do honest
   4. PICTURES. Raking-light renders of both meshes from matched viewpoints with a
      millimetre scale bar burnt in. Required, not optional: a wear bug in this workspace
      once survived three rounds of numeric validation and was obvious within seconds of
-     drawing the geometry. Renders are written whatever the numbers say.
+     drawing the geometry. Once the comparison runs at all, renders are written whatever
+     the numbers say — but a scale refusal (below) stops before any mesh is loaded, so it
+     produces no picture either.
 
 BEFORE ANY OF THAT, this script finds out what units each mesh is in, by reading the
 `<mesh>.scale.json` sidecar that `scale_mesh.py` writes beside a scaled mesh. If either
@@ -170,10 +172,16 @@ def scale_decision(paths: dict, shape_only: bool = False) -> dict:
             continue
         units[tag] = name
 
+    # Compare the SIZE the unit names denote, not the names. MM_PER_UNIT_BY_NAME exists
+    # precisely so that "mm" and "millimetres" are the same unit; comparing the strings
+    # made the table decorative and refused correctly-scaled pairs -- telling the
+    # conservator one of the meshes was never scaled, which was false.
+    factors = {t: MM_PER_UNIT_BY_NAME[u] for t, u in units.items()}
+
     scale_code = RC_OK
     if len(units) < len(paths):
         scale_code = RC_NO_SCALE
-    elif len(set(units.values())) > 1:
+    elif len(set(factors.values())) > 1:
         scale_code = RC_SCALE_CONFLICT
         reasons.append(
             "the two meshes do not agree on units -- " +
@@ -190,8 +198,28 @@ def scale_decision(paths: dict, shape_only: bool = False) -> dict:
         "metric": scale_ok and not shape_only,
         "reasons": reasons,
         "sidecars": sidecars,
-        "mm_per_unit": {t: MM_PER_UNIT_BY_NAME[u] for t, u in units.items()} if scale_ok else {},
+        "mm_per_unit": factors if scale_ok else {},
     }
+
+
+# Every key in a sidecar whose value is a scale FACTOR -- a number a reader could
+# multiply a mesh coordinate by to get millimetres. Under --shape-only none of them may
+# reach the written report: a suppressed read-out with the factor still in the JSON is
+# not a suppressed millimetre, it is a millimetre one multiplication away.
+SCALE_FACTOR_KEYS = ("mm_per_unit", "mm_per_unit_long", "mm_per_unit_short",
+                     "long_units", "short_units", "measured")
+
+
+def without_scale_factors(sidecar):
+    """The sidecar's provenance -- who supplied the millimetres -- with no factor left.
+
+    Keeps units, source, capture, method, scaled_at and caveat, because under
+    --shape-only it is still worth recording which meshes could have been measured and
+    on whose authority. Drops everything a downstream reader could compute with.
+    """
+    if not isinstance(sidecar, dict):
+        return sidecar
+    return {k: v for k, v in sidecar.items() if k not in SCALE_FACTOR_KEYS}
 
 
 def exit_code_for_scale(decision: dict) -> int:
@@ -219,6 +247,12 @@ def provenance_lines(decision: dict) -> list:
         lines.append("  %-9s capture %s, %s, scaled %s"
                      % ("", sc.get("capture") or "?", sc.get("method") or "?",
                         sc.get("scaled_at") or "?"))
+        # How precisely the millimetres are known, and how much the scale measurement
+        # disagreed with itself, only mean something when millimetres are being
+        # reported. Under --shape-only they would be precision figures for a number
+        # that never appears.
+        if decision["shape_only"]:
+            continue
         if sc.get("caveat"):
             lines.append("  %-9s stated precision: %s" % ("", sc["caveat"]))
         checks = internal_disagreements(sc)
@@ -229,7 +263,10 @@ def provenance_lines(decision: dict) -> list:
     if decision["shape_only"]:
         lines.append("  --shape-only: outline agreement only. No distance, thickness or "
                      "size figure is reported below,")
-        lines.append("  because none of them would be in millimetres.")
+        lines.append("  because none of them would be in millimetres. The sidecars are "
+                     "named above so it is on record")
+        lines.append("  which meshes could have been measured, but no scale factor is "
+                     "printed or written.")
     return lines
 
 
@@ -599,6 +636,17 @@ def self_test() -> int:
         dec = scale_decision({"milo": a, "openmvs": e})
         case(exit_code_for_scale(dec), RC_SCALE_CONFLICT)
 
+        print("\n-- two spellings of the same unit are the same unit")
+        # "mm" and "millimetres" are both millimetres. Comparing the unit STRINGS
+        # refused this pair as a conflict and told the conservator one of the meshes
+        # had never been scaled, which was false. A gate that rejects correct work with
+        # a wrong explanation is a gate that gets commented out.
+        alias = _fixture(d, "mvs_mm_alias", 50.8, _mm_sidecar(units="mm"))
+        dec = scale_decision({"milo": a, "openmvs": alias})
+        case(exit_code_for_scale(dec), RC_OK)
+        check(dec["metric"] and dec["mm_per_unit"]["openmvs"] == 1.0,
+              "'mm' resolves to the same millimetre as 'millimetres'")
+
         print("\n-- a sidecar declaring units nobody here recognises")
         f = _fixture(d, "mvs_cubits", 50.8, _mm_sidecar(units="cubits"))
         dec = scale_decision({"milo": a, "openmvs": f})
@@ -611,6 +659,25 @@ def self_test() -> int:
         check(not dec["metric"], "millimetres stay suppressed")
         check(re.search(r"\d\s*mm", "\n".join(provenance_lines(dec))) is None,
               "no millimetre figure appears in the read-out")
+
+        print("\n-- --shape-only with sidecars that WOULD have allowed millimetres")
+        # The case above cannot fail: with no sidecars there is nothing to leak. This is
+        # the one that could. Both meshes are fully scaled and --shape-only is still
+        # asked for, so the read-out and the written report must carry no scale factor
+        # -- a suppressed figure with mm_per_unit still in the JSON is one
+        # multiplication away from being reported.
+        dec = scale_decision({"milo": a, "openmvs": alias}, shape_only=True)
+        case(exit_code_for_scale(dec), RC_OK)
+        check(not dec["metric"], "millimetres stay suppressed even though both are scaled")
+        written = json.dumps({t: without_scale_factors(sc)
+                              for t, sc in dec["sidecars"].items()})
+        leaked = [k for k in SCALE_FACTOR_KEYS if k in written]
+        check(not leaked, "no scale factor reaches the written report (%s)"
+              % (", ".join(leaked) or "none"))
+        check("373.73" not in written and "373.73" not in "\n".join(provenance_lines(dec)),
+              "the factor itself appears nowhere")
+        check("blue base top face" in written,
+              "which mesh could have been measured, and on whose authority, is still recorded")
 
         print("\n-- a sidecar whose own measurement disagreed with itself")
         noisy = _mm_sidecar(measured={
@@ -656,10 +723,13 @@ def self_test() -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Compare a MILo mesh with an OpenMVS mesh")
-    ap.add_argument("--capture", required=True, type=Path)
-    ap.add_argument("--milo", required=True, type=Path)
-    ap.add_argument("--openmvs", required=True, type=Path)
-    ap.add_argument("--out", required=True, type=Path)
+    # Not argparse-`required`, because --self-test needs none of them and a `required`
+    # flag would make the self-test unreachable through the parser that advertises it.
+    # They are required for a comparison, and checked as such below.
+    ap.add_argument("--capture", type=Path)
+    ap.add_argument("--milo", type=Path)
+    ap.add_argument("--openmvs", type=Path)
+    ap.add_argument("--out", type=Path)
     ap.add_argument("--shape-only", action="store_true",
                     help="run only the measure that does not depend on units (outline "
                          "agreement on held-out views) and print no millimetre figure")
@@ -668,6 +738,14 @@ def main() -> int:
     ap.add_argument("--skip-thickness", action="store_true",
                     help="skip wall thickness (ray casting is slow without embree)")
     args = ap.parse_args()
+
+    if args.self_test:
+        return self_test()
+
+    missing = [n for n in ("capture", "milo", "openmvs", "out")
+               if getattr(args, n) is None]
+    if missing:
+        ap.error("a comparison needs " + ", ".join("--" + n for n in missing))
 
     # The scale gate runs FIRST, before the capture, the COLMAP model or the CUDA
     # renderer are touched. A refusal that needed a GPU node to happen would not be a
@@ -710,7 +788,9 @@ def main() -> int:
 
     report = {"capture": str(args.capture), "mm_per_unit": mm_per_unit,
               "metric": decision["metric"], "shape_only": decision["shape_only"],
-              "scale": decision["sidecars"],
+              "scale": ({t: without_scale_factors(sc)
+                         for t, sc in decision["sidecars"].items()}
+                        if decision["shape_only"] else decision["sidecars"]),
               "meshes": {}, "silhouette": {}, "thickness": {}}
     for tag, mesh in meshes.items():
         report["meshes"][tag] = describe(mesh, mm_per_unit)
@@ -793,6 +873,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    # Intercepted before argparse, which requires --capture and both meshes:
-    # the self-test needs none of them.
-    sys.exit(self_test() if "--self-test" in sys.argv else main())
+    sys.exit(main())
