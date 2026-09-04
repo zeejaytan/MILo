@@ -8,7 +8,7 @@ look like a reconstruction failure downstream, it looks like the *method* failin
 This folder is **state, not a log**. Edit a line when it turns out wrong; git holds the
 history. The runs live in [`../docs/notes/`](../docs/notes/).
 
-Prefix **`M`**, permanent. Numbers are never reused. **M4 is next.**
+Prefix **`M`**, permanent. Numbers are never reused. **M5 is next.**
 
 **M3's blocking half is done** (2026-09-04) — `compare_meshes.py` no longer reports
 millimetres it cannot stand behind, so M1's route comparison can now be measured on the
@@ -25,6 +25,7 @@ extraction ceiling is worth doing *for this material*.
 | [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | open — the authors' DTU route is closed, the ceiling may be liftable | none (was M3; lifted 2026-09-04) |
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
 | [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); what is left is a caliper round-trip and a section picture | none |
+| [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | open — unmasked tet looks sharp with rig, DTU fusion clean at 0.822 mm | none |
 
 ## What is established
 
