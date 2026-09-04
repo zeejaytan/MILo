@@ -1,11 +1,12 @@
 # M3 — How do we know a mesh is at true scale?
 
-**Status:** open — **a verified route exists for 59 of 118 captures; the other 59 have no
-scale source.** They are no longer *silently* measurable: `compare_meshes.py` refuses a
-mesh that cannot state its units, and a crop now keeps the record of the mesh it was cut
-from (2026-09-04). The capture record still does not mark which captures are metric, and no
-sherd has been checked against a caliper · **Blocked by:** none · **Effort:** ~half a day
-left
+**Status:** open — **every one of the 118 captures now states where its millimetres come
+from** (2026-09-04): 117 from the blue base plate, 1 from the turntable marker board. The
+corpus is not halved and never was; the earlier "59 of 118" was a *marker* count wearing a
+*scale* count's name. A mesh that cannot state its units is refused rather than measured
+(`compare_meshes.py`), and a crop keeps the record of the mesh it was cut from. What is
+left is a bench measurement — **no sherd has been checked against a caliper** — and the
+section picture · **Blocked by:** none · **Effort:** ~half a day left
 
 ## Why it matters
 
@@ -27,8 +28,13 @@ scale error large enough to matter is small enough to be invisible.
 ## What is already known
 
 - **The metric route is built and verified** (2026-08-23). The turntable marker board's
-  printed pitch was measured with a ruler on the physical sheet at **40 mm**, giving a
-  reference about sixty times tighter than the blue base plate.
+  printed pitch was measured with a ruler on the physical sheet at **40 mm**.
+  **The board is the tighter instrument and the looser ruler, and the two must not be
+  confused** (corrected 2026-09-04): its lattice fits to a fraction of a millimetre — rms
+  0.196 mm over 16 coded targets, pitch SD 0.0146 mm on a 40 mm pitch — but its *absolute
+  size* rests on a single ruler reading of a printed sheet, so its accuracy is capped at
+  about **±1.25%**, looser than the plate's long edge verified to **0.42%**. Deriving board
+  references for more captures would buy **repeatability, not accuracy**.
 - **The N01 Metashape chunk is 1.2–1.4% too large** — about **1.2–1.4 mm on a 100 mm
   sherd** — from one misplaced click on a hand-clicked scale bar. Recorded in
   `docs/reference/turntable-board-03072025-N01.json`; apply it if any N01 measurement is
@@ -37,10 +43,22 @@ scale error large enough to matter is small enough to be invisible.
 - **The blue plate itself is fine, and A01–A04 need no correction.** Two routes that never
   touch Metashape both land where a 190 × 130 mm plate should. Those meshes were never
   scaled through the broken reference.
-- **The scanning record enumerates every capture and flags marker usability**:
-  **118 captures**, all with files on disk. **59 have a usable marker** — 19 in 2025 from
-  `2025-07-03/N01` onward, plus all 40 in 2026. **59 do not** — every 2025 capture before
-  `2025-07-03/N01`, marker placed incorrectly.
+- **The scanning record enumerates every capture, flags marker usability, and — since
+  2026-09-04 — states each capture's scale source.** **118 captures**, all with files on
+  disk. **59 have a usable marker** — 19 in 2025 from `2025-07-03/N01` onward, plus all 40
+  in 2026. **59 do not** — every 2025 capture before `2025-07-03/N01`, marker placed
+  incorrectly.
+- **A usable marker is not a scale source, and conflating the two was the error here.**
+  `markers_usable` answers *may I align on this*. The record says so in its own words: N01's
+  measurement cell reads *"Use base as scale, marker on turntable for alignment"*. The
+  board's factor is derived by fitting a capture's own cameras onto it, and only
+  `docs/reference/turntable-board-03072025-N01.json` has ever been derived — so the board is
+  the ruler for **one** capture, not 59. The plate is the ruler for the other 117, because
+  each season's sheet declares it at the top: 2025 *"Top of the tree base (blue metal base)
+  = 13x19cm"*, 2026 *"Top of the tree base (metal base) = 13x19cm"*.
+- **2026's plate is credited from 2026's own line, and the 0.42% check was not repeated on
+  it.** 2026's sheet says only "metal base", and nothing in the record says it is the same
+  object as 2025's. Same dimensions is not the same object measured.
 - **A scale sidecar already exists.** `scale_mesh.py` writes `<mesh>.scale.json`.
 - **The reconstruction pipeline already gates on the board** where a reference exists
   (`slurm/reconstruct_group.slurm`, strict branch, exit 3 = the check could not be made and
@@ -75,10 +93,20 @@ the degrade-to-default that ADR 0001 exists to ban.
 
 ## Done when
 
-- [ ] **Every one of the 118 captures has a stated scale source**, recorded with the
-      capture rather than inferred later. For the 59 with a usable marker that is the board;
-      for the other 59 it is either a named alternative or the capture is **marked
-      non-metric** so nothing quietly measures against it
+- [x] **Every one of the 118 captures has a stated scale source**, recorded with the
+      capture rather than inferred later, with the rule able to say **non-metric** so
+      nothing quietly measures against a capture that has none. **Done 2026-09-04**
+      (`.scratch/scale-provenance/issues/02`, commits `92772e8`, `8ed9c29`): **118 of 118**
+      — 117 from the blue base plate, 1 (`2025-07-03/N01`) from the marker board. Each
+      entry carries what the source is, how it was established, what it is worth, the
+      reference file where there is one, and the sheet's own declaring words. The gate is
+      `build_scanning_record.py --scale-check <capture>`: exit 0 metric, 2 non-metric,
+      **3 when the record cannot answer** — "cannot answer" is not "no", and conflating them
+      would mark the whole corpus unmeasurable the moment the JSON went stale. The
+      non-metric branch is **live, not decorative**: the plate counts because the sheet
+      declares it, so a season that stops declaring it becomes non-metric, and the self-test
+      drives that branch on a fixture season with no declaration. 26 checks; 8 deliberate
+      mutations, all 8 caught
 - [ ] **A round-trip on at least one sherd**: a caliper measurement in millimetres against
       the same dimension read off the mesh, with the **disagreement** reported, not the
       agreement. Judged against **the precision the mesh's own sidecar declares** — about
@@ -110,9 +138,14 @@ Where scale cannot be established for a capture, that capture may still be used 
 questions but must not enter any **size-dependent** measurement. Say which is which in the
 capture record.
 
-If the 59 unmarked captures have no alternative scale source, that is not a failure — it is
-a scope statement, and it halves the metric corpus. Record it as such rather than letting
-those captures drift into a comparison later.
+**The scope statement, as of 2026-09-04: the metric corpus is the whole corpus.** All 118
+captures can state a scale source, so none is barred from size-dependent measurement on
+these grounds, and nothing is halved. That is a statement about *provenance*, not accuracy:
+117 of them rest on a plate whose long edge is verified to 0.42% and whose short edge is
+not, and 40 of those are a 2026 rig on which that check has never been repeated. A season
+whose sheet stops declaring the plate would become non-metric, and `--scale-check` would
+say so — the rule can fail, which is what makes "118 of 118" a finding rather than a
+memory.
 
 ## Source
 
