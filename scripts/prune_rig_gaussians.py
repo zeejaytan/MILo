@@ -66,12 +66,15 @@ def vote_keep(X, views, keep_ratio=0.8):
         Xc = X @ v["R"].T + v["t"]
         z = Xc[:, 2]
         front = z > 1e-6
-        u = v["fx"] * Xc[:, 0] / np.where(front, z, 1.0) + v["cx"]
-        vv = v["fy"] * Xc[:, 1] / np.where(front, z, 1.0) + v["cy"]
+        # Behind-camera points divide into inf/nan here; inframe excludes them
+        # below, so the warning is suppressed rather than fixed.
+        with np.errstate(invalid="ignore", divide="ignore"):
+            u = v["fx"] * Xc[:, 0] / np.where(front, z, 1.0) + v["cx"]
+            vv = v["fy"] * Xc[:, 1] / np.where(front, z, 1.0) + v["cy"]
+            ui = np.clip(u.astype(np.int32), 0, v["W"] - 1)
+            vi = np.clip(vv.astype(np.int32), 0, v["H"] - 1)
         inframe = front & (u >= 0) & (u < v["W"]) & (vv >= 0) & (vv < v["H"])
         seen += inframe
-        ui = np.clip(u.astype(np.int32), 0, v["W"] - 1)
-        vi = np.clip(vv.astype(np.int32), 0, v["H"] - 1)
         inside += (v["alpha"][vi, ui] & inframe).astype(np.int32)
     with np.errstate(invalid="ignore", divide="ignore"):
         frac = np.where(seen > 0, inside / np.maximum(seen, 1), -1.0)
