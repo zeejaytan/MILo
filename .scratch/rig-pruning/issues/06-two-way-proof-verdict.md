@@ -12,4 +12,20 @@
 - [ ] Same-window 0.10 mm/px renders resolve the ridge scale for both meshes
 - [ ] Edge-arc loss vs unpruned in mm of arc, flat-wall noise in mm for both on the same box
 - [ ] Human in the loop: conservator eye verification in CloudCompare beside the numbers; no geometry box ticks without it
-- [ ] Stop rule applied on numbers and M4 updated with the date whatever the outcome
+- [ ] Stop rule applied on numbers and M4 updated with the date whatever the outcome (paste exactly one draft below).
+
+## Comments
+
+Close-out drafts for the M4 write-back. Neither is true until the renders exist:
+an unchecked geometry box is how the wear bug survived three rounds of numeric
+validation.
+
+- PASS: "Pruned v2 tet mesh holds break-face arc within ~1 mm of unpruned on piece 1
+  at 0.10 mm/px, no rig solid above 5 mm, flat-wall noise within [x] mm of unpruned.
+  Post-training pruning separates steel from clay on A03 (1 capture). M4 answered yes
+  for this tree; density ([n]/sherd) and footprint ([x] mm median) bound the generality."
+- FAIL: "Pruned v2 mesh [webs sherds across gaps|loses [x] mm of break-face arc|keeps
+  rig solid above 5 mm] on piece 1 at 0.10 mm/px. Post-training pruning without
+  replacement cannot carry break-face density on A03 (1 capture). M4 answered no for
+  this tree; per-sherd split or SuGaR-shaped regrow is the next branch, or the M1 gate
+  closes extraction work."
