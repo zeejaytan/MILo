@@ -12,3 +12,11 @@
 - [ ] Mesh is non-empty and carries vertex colours like the unpruned reference
 - [ ] No rig steel larger than 5 mm survives in the pruned mesh on coarse inspection, or the ticket reports the failure with figures (including rig surviving behind clay faces — the recorded v1 occlusion limitation)
 - [ ] Training data and unpruned Gaussians are untouched; the job log records the keep-set source from ticket 01
+
+## Comments
+
+2026-09-04: wiring committed (68c0a2b), submitted as Slurm job 30056136
+(`milo_prune_extract.slurm 17062025/A03_sherds 17062025/A03_nomask 17062025/A03_prune`).
+Watch the log at `/data/gpfs/projects/punim2657/MILo/logs/milo_prune_30056136.log`
+for the `[SHERD FORK] Pruned Delaunay set` line, then the pruned mesh plus its
+`_mm.ply` and the mesh_report piece count.

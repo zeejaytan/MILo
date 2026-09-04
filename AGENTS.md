@@ -107,6 +107,12 @@ Keep this list current; it is what a rebase onto upstream has to survive.
    job 29694649 ran to 581% of its reservation with nothing lost. The real cost of
    under-reserving is that the old buffers stay alive through the growth, so the card holds
    far more than the grid's nominal size and the *extraction* then fails.
+5. **`milo/mesh_extract_sdf.py` — post-training prune hook (intent M4).** New flags
+   `--keep-idx` (numpy index array from `scripts/prune_rig_gaussians.py`) and `--out-name`;
+   both default to upstream behaviour. With a keep set, pivots are drawn from kept
+   Gaussians only at the existing downsample-index seam, and pivot spread stays at trained
+   scale (no downsample compensation — a pruned set keeps full clay density, unlike a
+   thinned one). Empty or out-of-range keep sets refuse loudly. Search `[SHERD FORK]`.
 
 Everything else this fork adds lives in `scripts/` and `slurm/` and touches no upstream file.
 
