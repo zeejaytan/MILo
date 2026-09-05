@@ -565,7 +565,7 @@ def extract_mesh_with_sdf_refinement(
         if dmtet_face_mask is not None:
             mesh.update_faces(dmtet_face_mask.cpu().numpy())
 
-        mesh.export(os.path.join(dataset.model_path, args.out_name))
+        mesh.export(os.path.join(dataset.model_path, getattr(args, "out_name", "mesh_learnable_sdf.ply")))
 
 
 if __name__ == "__main__":
@@ -637,7 +637,9 @@ if __name__ == "__main__":
     # [SHERD FORK] --keep-idx is loaded here (CPU numpy) so the GPUs only ever
     # see validated indices; the validation against this run's cloud happens
     # inside extract_mesh_with_sdf_refinement, where a mismatch refuses loudly.
-    keep_idx = np.load(args.keep_idx) if args.keep_idx else None
+    # getattr, not args.keep_idx: a cfg_args copied from a run predating the flag
+    # has no such attribute, and direct access crashes (job log, 30123272).
+    keep_idx = np.load(args.keep_idx) if getattr(args, "keep_idx", None) else None
 
     extract_mesh_with_sdf_refinement(
         model.extract(args), 
