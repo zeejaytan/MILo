@@ -19,3 +19,14 @@ contact-zone arc gap as missing surface, never as wrong surface, until boxes exi
 - [ ] Both probe runs complete past depth re-init with identical seed and config, differing only in the patch flag
 - [ ] Band-alpha curves plus rim close-ups at 0.10 mm/px or tighter exist for both runs
 - [ ] Go/no-go applied on the recorded rule (band alpha below 0.2 *and* receding rims stops the pair); the verdict names numbers and pictures
+
+## Comments 2 — probe collapsed into full runs (2026-09-06)
+
+Job 30094277 taught us the probe design was fiction: train.py read_config lets
+milo/configs/fast stomp --iterations, so both legs trained toward 18k, not 8k, and
+the job died on its 6h limit with masked at ~14k. Control finished full-length
+([ITER 18000] Saving Gaussians) and stands as the A/B control — no second control
+ever runs. Masked-leg alpha to iter 13k: outside 0.0008–0.0037 (far below the 0.2
+tripwire — background draining as designed), inside 0.009–0.017 and rising. The
+number half of the stop rule reads GO; rim renders from the completed masked run
+carry the other half.

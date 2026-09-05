@@ -6,12 +6,19 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=06:00:00
+#SBATCH --time=14:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/milo_probe_%j.log
 
-# Masked-training probe pair (intent M2, ticket masked-training/02): two ~8k
-# runs on the SAME capture, config and data, differing ONLY in --masked-training.
-# Past depth re-init (2000), into densification, before the 15k cutoff.
+# Masked-training probe pair (intent M5, ticket masked-training/02): two runs on
+# the SAME capture, config and data, differing ONLY in --masked_training.
+# Past depth re-init (2000), through densification, to the config's 18k.
+#
+# CONFIG-FILE WARNING (measured, job 30094277): train.py's read_config lets
+# milo/configs/fast stomp the CLI unconditionally, so --iterations is decorative
+# and every run trains the config's 18_000 iterations (~11 h at 2.26 s/it). Do not
+# re-add an --iterations flag expecting a short probe. The 8k-probe design is
+# superseded: control already finished full-length, the masked leg's own alpha
+# curve IS the probe, and renders close it.
 #
 # Contact-face hand-marking was skipped at the conservator's call (recorded on
 # the ticket): arc scoring later reads contact-zone gaps as missing surface,
@@ -64,8 +71,9 @@ cd "$REPO_DIR/milo"
 
 run_probe() {  # $1 = out dir, $2... = extra train flags
     local out="$1"; shift
-    if [[ -f "$out/point_cloud/iteration_8000/point_cloud.ply" ]]; then
-        echo "  $out already holds an 8k probe -- reusing it, not retraining."
+    # Full config length is 18k (the fast config stomps --iterations, see header).
+    if [[ -f "$out/point_cloud/iteration_18000/point_cloud.ply" ]]; then
+        echo "  $out already holds a finished run -- reusing it, not retraining."
         return 0
     fi
     python -u train.py \
@@ -78,7 +86,6 @@ run_probe() {  # $1 = out dir, $2... = extra train flags
         --rasterizer radegs \
         --dense_gaussians \
         --decoupled_appearance \
-        --iterations 8000 \
         "$@" 2>&1 | tee "$out/probe_train.log"
 }
 
