@@ -245,3 +245,136 @@ def carry_sidecar(parent_mesh, out_mesh, operation, note=None):
     return CARRIED, ("wrote %s -- %s, from %s, carried from %s"
                      % (out_side.name, derived.get("units"),
                         derived.get("source") or "an unrecorded source", parent.name))
+
+
+# --------------------------------------------------------------------------------------
+# May this pair of meshes be measured in millimetres, and on whose authority
+# --------------------------------------------------------------------------------------
+#
+# Moved here from `compare_meshes.py` on 2026-09-04, when `section_overlay.py` became the
+# second script that has to make the same decision. The decision IS the gate -- two copies
+# of it would be two gates, and the one nobody ran a self-test against would be the one
+# that quietly said yes.
+# Exit statuses, shared by every script that imports this gate. 1 is left free for each
+# script's own ordinary failures (`compare_meshes.py` uses it when two meshes' sizes
+# disagree; `section_overlay.py` for a bad argument). These two mean something narrower and
+# the same everywhere: the SCALE RECORD is missing or self-contradictory. A caller that
+# adds a status of its own names it beside these -- `section_overlay.py`'s RC_PLANE_MISSES
+# = 4 -- rather than returning a bare number, because the self-tests assert exit STATUS and
+# a status that lives only as a literal is one edit from being asserted against itself.
+RC_OK = 0
+RC_NO_SCALE = 2        # a mesh cannot say what units it is in
+RC_SCALE_CONFLICT = 3  # the two meshes say different things
+
+
+def scale_decision(paths: dict, shape_only: bool = False) -> dict:
+    """Can this comparison honestly report millimetres, and on whose authority.
+
+    `paths` maps a tag ("milo", "openmvs") to a mesh path. Nothing is loaded and nothing
+    is written; this only reads the sidecars, so it can run before the capture, the
+    COLMAP model or the CUDA renderer exist. That is deliberate -- the refusal must not
+    depend on a GPU being present.
+    """
+    sidecars, units, reasons = {}, {}, []
+    for tag, path in paths.items():
+        sc = read_scale(Path(path))
+        sidecars[tag] = sc
+        if sc is None:
+            reasons.append(
+                "%s: no scale sidecar beside %s. Nothing records what units it is in, or "
+                "what physical object supplied them." % (tag, Path(path).name))
+            continue
+        name = str(sc.get("units", "")).strip().lower()
+        if name not in MM_PER_UNIT_BY_NAME:
+            reasons.append(
+                "%s: its sidecar declares units %r, which is not a unit this script will "
+                "guess at." % (tag, sc.get("units")))
+            continue
+        units[tag] = name
+
+    # Compare the SIZE the unit names denote, not the names. MM_PER_UNIT_BY_NAME exists
+    # precisely so that "mm" and "millimetres" are the same unit; comparing the strings
+    # made the table decorative and refused correctly-scaled pairs -- telling the
+    # conservator one of the meshes was never scaled, which was false.
+    factors = {t: MM_PER_UNIT_BY_NAME[u] for t, u in units.items()}
+
+    scale_code = RC_OK
+    if len(units) < len(paths):
+        scale_code = RC_NO_SCALE
+    elif len(set(factors.values())) > 1:
+        scale_code = RC_SCALE_CONFLICT
+        reasons.append(
+            "the two meshes do not agree on units -- " +
+            ", ".join("%s says %s" % (t, u) for t, u in sorted(units.items())) +
+            ". They come from the same camera solve, so one of them was never scaled.")
+
+    scale_ok = scale_code == RC_OK
+    return {
+        "scale_ok": scale_ok,
+        "scale_code": scale_code,
+        "shape_only": bool(shape_only),
+        # Metric means: millimetres may be printed. Asking for --shape-only suppresses
+        # them even when the sidecars would have allowed them.
+        "metric": scale_ok and not shape_only,
+        "reasons": reasons,
+        "sidecars": sidecars,
+        "mm_per_unit": factors if scale_ok else {},
+    }
+
+
+def exit_code_for_scale(decision: dict) -> int:
+    """The status the caller branches on.
+
+    Separate from the printing on purpose. check_turntable.py printed a perfectly correct
+    page of disagreeing frames while returning 0, so the gate was dead and the pipeline
+    ran on regardless. The status is the thing that has to be proven, so it is the thing
+    the self-test asserts.
+    """
+    if decision["scale_ok"] or decision["shape_only"]:
+        return RC_OK
+    return decision["scale_code"]
+
+
+def provenance_lines(decision: dict) -> list:
+    """Where each mesh's millimetres came from, printed above the results, not beneath."""
+    lines = ["Scale provenance"]
+    for tag, sc in sorted(decision["sidecars"].items()):
+        if sc is None:
+            lines.append("  %-9s no sidecar -- units unknown" % tag)
+            continue
+        lines.append("  %-9s %s, from %s" % (tag, sc.get("units"),
+                                             sc.get("source") or "an unrecorded source"))
+        lines.append("  %-9s capture %s, %s, scaled %s"
+                     % ("", sc.get("capture") or "?", sc.get("method") or "?",
+                        sc.get("scaled_at") or "?"))
+        # A crop's millimetres were never measured on the crop. They were measured on the
+        # mesh it was cut from and carried across, which is legitimate and is not the same
+        # thing -- so say which mesh, and what the cut was. Without this line an inherited
+        # scale reads exactly like one taken off the object.
+        if sc.get("derived_from"):
+            lines.append("  %-9s not scaled directly: cut from %s"
+                         % ("", Path(sc["derived_from"]).name))
+            lines.append("  %-9s   by %s" % ("", sc.get("derived_by") or "an unrecorded operation"))
+            if sc.get("derived_note"):
+                lines.append("  %-9s   %s" % ("", sc["derived_note"]))
+        # How precisely the millimetres are known, and how much the scale measurement
+        # disagreed with itself, only mean something when millimetres are being
+        # reported. Under --shape-only they would be precision figures for a number
+        # that never appears.
+        if decision["shape_only"]:
+            continue
+        if sc.get("caveat"):
+            lines.append("  %-9s stated precision: %s" % ("", sc["caveat"]))
+        checks = internal_disagreements(sc)
+        if checks:
+            lines.append("  %-9s the scale measurement's own checks:" % "")
+            for d in checks:
+                lines.append("  %-9s   - %s" % ("", d))
+    if decision["shape_only"]:
+        lines.append("  --shape-only: outline agreement only. No distance, thickness or "
+                     "size figure is reported below,")
+        lines.append("  because none of them would be in millimetres. The sidecars are "
+                     "named above so it is on record")
+        lines.append("  which meshes could have been measured, but no scale factor is "
+                     "printed or written.")
+    return lines

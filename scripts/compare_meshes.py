@@ -61,8 +61,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # module because crop_mesh.py now has to CARRY it, and a second copy of these rules would
 # be a second thing to keep right.
 from scale_sidecar import (                                          # noqa: E402
-    MM_PER_UNIT_BY_NAME, NO_PARENT_SCALE, SCALE_FACTOR_KEYS, UNREADABLE,
-    carry_sidecar, internal_disagreements, read_scale, sidecar_path,
+    MM_PER_UNIT_BY_NAME, NO_PARENT_SCALE, RC_NO_SCALE, RC_OK, RC_SCALE_CONFLICT,
+    SCALE_FACTOR_KEYS, UNREADABLE, carry_sidecar, exit_code_for_scale,
+    internal_disagreements, provenance_lines, read_scale, scale_decision, sidecar_path,
     without_scale_factors,
 )
 
@@ -105,127 +106,6 @@ SUSPECT_IOU = 0.5
 # The sidecar itself -- how it is named, which unit names are accepted, what counts as a
 # scale factor, and how a derived mesh carries its parent's statement -- is
 # `scale_sidecar.py`, imported above. What stays here is what this SCRIPT does with it.
-
-# Exit statuses. 1 stays with the failures this script already had (no masks; two meshes
-# whose sizes disagree). These two are about the scale record itself.
-RC_OK = 0
-RC_NO_SCALE = 2        # a mesh cannot say what units it is in
-RC_SCALE_CONFLICT = 3  # the two meshes say different things
-
-
-def scale_decision(paths: dict, shape_only: bool = False) -> dict:
-    """Can this comparison honestly report millimetres, and on whose authority.
-
-    `paths` maps a tag ("milo", "openmvs") to a mesh path. Nothing is loaded and nothing
-    is written; this only reads the sidecars, so it can run before the capture, the
-    COLMAP model or the CUDA renderer exist. That is deliberate -- the refusal must not
-    depend on a GPU being present.
-    """
-    sidecars, units, reasons = {}, {}, []
-    for tag, path in paths.items():
-        sc = read_scale(Path(path))
-        sidecars[tag] = sc
-        if sc is None:
-            reasons.append(
-                "%s: no scale sidecar beside %s. Nothing records what units it is in, or "
-                "what physical object supplied them." % (tag, Path(path).name))
-            continue
-        name = str(sc.get("units", "")).strip().lower()
-        if name not in MM_PER_UNIT_BY_NAME:
-            reasons.append(
-                "%s: its sidecar declares units %r, which is not a unit this script will "
-                "guess at." % (tag, sc.get("units")))
-            continue
-        units[tag] = name
-
-    # Compare the SIZE the unit names denote, not the names. MM_PER_UNIT_BY_NAME exists
-    # precisely so that "mm" and "millimetres" are the same unit; comparing the strings
-    # made the table decorative and refused correctly-scaled pairs -- telling the
-    # conservator one of the meshes was never scaled, which was false.
-    factors = {t: MM_PER_UNIT_BY_NAME[u] for t, u in units.items()}
-
-    scale_code = RC_OK
-    if len(units) < len(paths):
-        scale_code = RC_NO_SCALE
-    elif len(set(factors.values())) > 1:
-        scale_code = RC_SCALE_CONFLICT
-        reasons.append(
-            "the two meshes do not agree on units -- " +
-            ", ".join("%s says %s" % (t, u) for t, u in sorted(units.items())) +
-            ". They come from the same camera solve, so one of them was never scaled.")
-
-    scale_ok = scale_code == RC_OK
-    return {
-        "scale_ok": scale_ok,
-        "scale_code": scale_code,
-        "shape_only": bool(shape_only),
-        # Metric means: millimetres may be printed. Asking for --shape-only suppresses
-        # them even when the sidecars would have allowed them.
-        "metric": scale_ok and not shape_only,
-        "reasons": reasons,
-        "sidecars": sidecars,
-        "mm_per_unit": factors if scale_ok else {},
-    }
-
-
-def exit_code_for_scale(decision: dict) -> int:
-    """The status the caller branches on.
-
-    Separate from the printing on purpose. check_turntable.py printed a perfectly correct
-    page of disagreeing frames while returning 0, so the gate was dead and the pipeline
-    ran on regardless. The status is the thing that has to be proven, so it is the thing
-    the self-test asserts.
-    """
-    if decision["scale_ok"] or decision["shape_only"]:
-        return RC_OK
-    return decision["scale_code"]
-
-
-def provenance_lines(decision: dict) -> list:
-    """Where each mesh's millimetres came from, printed above the results, not beneath."""
-    lines = ["Scale provenance"]
-    for tag, sc in sorted(decision["sidecars"].items()):
-        if sc is None:
-            lines.append("  %-9s no sidecar -- units unknown" % tag)
-            continue
-        lines.append("  %-9s %s, from %s" % (tag, sc.get("units"),
-                                             sc.get("source") or "an unrecorded source"))
-        lines.append("  %-9s capture %s, %s, scaled %s"
-                     % ("", sc.get("capture") or "?", sc.get("method") or "?",
-                        sc.get("scaled_at") or "?"))
-        # A crop's millimetres were never measured on the crop. They were measured on the
-        # mesh it was cut from and carried across, which is legitimate and is not the same
-        # thing -- so say which mesh, and what the cut was. Without this line an inherited
-        # scale reads exactly like one taken off the object.
-        if sc.get("derived_from"):
-            lines.append("  %-9s not scaled directly: cut from %s"
-                         % ("", Path(sc["derived_from"]).name))
-            lines.append("  %-9s   by %s" % ("", sc.get("derived_by") or "an unrecorded operation"))
-            if sc.get("derived_note"):
-                lines.append("  %-9s   %s" % ("", sc["derived_note"]))
-        # How precisely the millimetres are known, and how much the scale measurement
-        # disagreed with itself, only mean something when millimetres are being
-        # reported. Under --shape-only they would be precision figures for a number
-        # that never appears.
-        if decision["shape_only"]:
-            continue
-        if sc.get("caveat"):
-            lines.append("  %-9s stated precision: %s" % ("", sc["caveat"]))
-        checks = internal_disagreements(sc)
-        if checks:
-            lines.append("  %-9s the scale measurement's own checks:" % "")
-            for d in checks:
-                lines.append("  %-9s   - %s" % ("", d))
-    if decision["shape_only"]:
-        lines.append("  --shape-only: outline agreement only. No distance, thickness or "
-                     "size figure is reported below,")
-        lines.append("  because none of them would be in millimetres. The sidecars are "
-                     "named above so it is on record")
-        lines.append("  which meshes could have been measured, but no scale factor is "
-                     "printed or written.")
-    return lines
-
-
 
 # --------------------------------------------------------------------------------------
 # COLMAP model
@@ -416,6 +296,14 @@ def wall_thickness(mesh: trimesh.Trimesh, mm_per_unit: float, n_samples=20_000, 
     Sampled rather than exhaustive: a refined OpenMVS mesh has ~1M vertices and this is a
     distribution, not a per-vertex map. Rays that exit without hitting anything are
     dropped — those are break faces and rim edges, where "wall thickness" has no meaning.
+
+    THERE IS A SECOND "WALL" IN THIS REPO AND IT IS NOT THIS ONE.
+    `section_overlay.py`'s `wall_chords()` measures the wall in 2D, across the outlines
+    left by ONE cutting plane, and reports the median with its spread. This one measures
+    in 3D, over the whole surface, and reports median with p10/p90. They will not agree,
+    and neither is wrong: a section reports the wall WHERE THE CUT IS, which is the number
+    a conservator can check with callipers at a named place; this reports the wall over the
+    whole sherd, which is the number that describes the object. Quote which one you mean.
     """
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(mesh.vertices), size=min(n_samples, len(mesh.vertices)),
