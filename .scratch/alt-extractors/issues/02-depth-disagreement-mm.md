@@ -21,3 +21,6 @@
   arrays to 2D at the seam plus a loud shape refusal inside `unproject`;
   reproduced the exact crash with the old lines and verified the new lines on a
   synthetic case on the laptop. Committed and resubmitted below.
+- 2026-09-06: fix committed (`1ae8a7f`, pushed) and resubmitted as job 30132793
+  via pull-then-sbatch with the same args. Next: read
+  `depth_disagreement.json` + log against the ~1 mm bar when the job completes.

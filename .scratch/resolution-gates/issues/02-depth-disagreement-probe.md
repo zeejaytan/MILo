@@ -29,3 +29,6 @@ in 04).
   `.scratch/alt-extractors` ticket 02 (squeeze to 2D at the seam + loud shape
   refusal in `unproject`; crash reproduced and fix verified synthetically on
   the laptop). Resubmitted; see alt-extractors ticket 02 for the new job id.
+- 2026-09-06: resubmitted with the fix as job 30132793 (same args
+  `17062025/A03_sherds 17062025/A03_nomask`). Number lands in
+  `output/17062025/A03_nomask/depth_disagreement.json`.
