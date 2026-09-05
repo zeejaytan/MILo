@@ -6,7 +6,7 @@
 
 **Blocked by:** 03 (needs both trained models).
 
-**Status:** ready-for-agent
+**Status:** claimed (extracting both verdict meshes, then arc/noise scoring)
 
 - [ ] Arc agreement deltas in mm of arc per sampled edge, contact faces excluded throughout
 - [ ] Flat-wall noise deltas in mm on the same boxes for both runs
