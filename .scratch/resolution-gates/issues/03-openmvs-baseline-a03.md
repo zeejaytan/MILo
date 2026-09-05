@@ -17,3 +17,15 @@ break-face close-up renders at a resolving view.
 - [ ] Break-face close-up renders for both routes at a view resolving ~0.2 mm ridges
       (whole-sherd views do not count — they have misled repeatedly)
 - [ ] M1's second box ticked with the date
+
+## Comments
+
+- 2026-09-06: both routes scaled on the node with sidecars at the same factor
+  (373.733 mm/unit, blue plate): `output/17062025/A03/mesh_mm.ply` (MILo native,
+  1.4M verts) and `dense_masked/scene_refined_mm.ply` (OpenMVS refined, 464k
+  verts). Follows the A02 method (`dense_masked` refined, learnable-SDF MILo).
+  Compare itself needs a GPU (nvdiffrast) → Slurm `milo_compare.slurm`, awaiting
+  submission approval.
+- 2026-09-06: approved, submitted as job 30131757 (partition auto-bumped to
+  gpu-a100: 128G exceeds the short partition). Boxes stay open until numbers +
+  renders land and are read against the ~1 mm bar in 04.

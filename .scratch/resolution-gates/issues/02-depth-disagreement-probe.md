@@ -18,3 +18,9 @@ in 04).
 - [ ] Job submission approved explicitly before sbatch (standing rule); logs fetched to
       `artifacts/`, never committed
 - [ ] M1's first box ticked with the date, or the failure written into M1 in one line
+
+## Comments
+
+- 2026-09-06: script + job reviewed, committed (`8ac54fb`), submitted as job
+  30131641 (`A03_sherds` / `A03_nomask`). Boxes stay open until the number lands
+  and is read against the ~1 mm bar in 04.
