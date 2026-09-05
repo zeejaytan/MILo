@@ -1,6 +1,6 @@
 # M5 — Can both-sides-plus-alpha training exclude the rig without eating the rim?
 
-**Status:** open — patch built, probe pair running (job 30090865) · **Blocked by:** none
+**Status:** open — probe GO (see below); full-pair scoring (ticket 04) pending · **Blocked by:** none
 
 ## Why it matters
 
@@ -15,8 +15,11 @@ erosion carves, training-time masking stays closed with numbers attached.
 
 ## Done when
 
-- [ ] Probe pair verdict: eroded-band alpha curves plus rim renders at 0.10 mm/px or
-      tighter for patched vs control, with the go/no-go applied on the recorded rule
+- [x] Probe pair verdict (2026-09-06): band alpha outside 0.0008–0.0037 (tripwire 0.2
+      never threatened); 6 rim-band pairs hold fracture relief with no 0.6–0.9 mm
+      recession. GO. Bonus: control masked-PSNR on held-out clay swings 10–28 dB
+      (median 18.2) vs masked 20–25 (median 23.9) — unmasked training fails novel
+      views on ~1/3 of held-out angles; masked holds all 21.
 - [ ] Full A/B deltas (if the probe survives): break-face arc agreement in mm on 2–3
       edges, flat-wall noise in mm on the same boxes, held-out masked rendering deltas
 - [ ] Conservator eye sign-off beside the numbers; whole-object chamfer never scores this

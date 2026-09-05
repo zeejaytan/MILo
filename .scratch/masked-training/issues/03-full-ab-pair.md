@@ -6,7 +6,7 @@
 
 **Blocked by:** 02 (needs the probe go verdict).
 
-**Status:** claimed (masked full run resubmitted as job 30099987 with 14h limit; control reused from 30094277; log MILo/logs/milo_probe_30099987.log)
+**Status:** resolved (masked full run resubmitted as job 30099987 with 14h limit; control reused from 30094277; log MILo/logs/milo_probe_30099987.log)
 
 - [ ] Both runs train to completion on the same seed, config, dataset and rasterizer, differing only in the patch flag
 - [ ] Checkpoints and logs retained for both; held-out every-8th-view renders kept for scoring
@@ -17,3 +17,11 @@
 A03_probe_ctrl finished all 18k iterations in job 30094277. Remaining work is the
 masked leg only: resubmit the probe script (per-leg skip reuses control) with a
 14h limit for ~11h of training plus renders.
+
+## Answer
+
+Both halves exist at full 18k: A03_probe_ctrl (220,347 Gaussians, loss 0.046) and
+A03_probe_masked (18,443 Gaussians). Control doubles as the A/B control — no second
+control ever runs. Caveat recorded: control cannot render ~1/3 of held-out views,
+so control-side scoring uses training views or stands as a novel-view failure, not
+a rim measurement.

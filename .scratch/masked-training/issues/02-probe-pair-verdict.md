@@ -6,7 +6,7 @@
 
 **Blocked by:** 01 (needs the patched loss and its instrumentation).
 
-**Status:** claimed (probe job 30090865 FAILED on my flag spelling — `--masked-training` vs `--masked_training`; control leg had finished clean. Fixed with per-leg skip + CLI-name guard; resubmitted as 30094277, reusing control. Standing go for 03–04 on green holds.)
+**Status:** resolved (probe job 30090865 FAILED on my flag spelling — `--masked-training` vs `--masked_training`; control leg had finished clean. Fixed with per-leg skip + CLI-name guard; resubmitted as 30094277, reusing control. Standing go for 03–04 on green holds.)
 
 ## Comments
 
@@ -38,3 +38,15 @@ iteration_8000 clouds; runs are 18k — fixed). Masked run facts: 18,000/18,000
 iters, final 18,443 Gaussians (background loss + density control drained ~91% of
 the 222k start), band alpha outside 0.0018 / inside 0.0112 at close. Renders-only
 resubmission 30121191 skips both finished trainings.
+
+## Answer — GO (2026-09-06)
+
+Number half: band alpha outside 0.0008–0.0037 from iter 8k to 18k, far below the
+0.2 tripwire — background drains as designed. Picture half: 6 rim-band pairs
+(3 spread held-out views x 2 windows) show masked renders rig-free with fracture
+relief intact; no 0.6–0.9 mm rim recession anywhere. Bonus finding that dwarfs the
+probe: control masked-PSNR on held-out clay pixels swings 10.1–28.0 dB view to
+view (median 18.2) while masked holds 20.4–25.3 (median 23.9) — unmasked training
+fails novel-view synthesis on ~1/3 of held-out views (renders empty room where
+photos show sherds), masked training holds all 21. Renders + pairs fetched to the
+laptop; per-view table on the ticket thread. Recorded into intent/M5.
