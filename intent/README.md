@@ -8,7 +8,7 @@ look like a reconstruction failure downstream, it looks like the *method* failin
 This folder is **state, not a log**. Edit a line when it turns out wrong; git holds the
 history. The runs live in [`../docs/notes/`](../docs/notes/).
 
-Prefix **`M`**, permanent. Numbers are never reused. **M6 is next.**
+Prefix **`M`**, permanent. Numbers are never reused. **M7 is next.**
 
 **M3's blocking half is done** (2026-09-04) — `compare_meshes.py` no longer reports
 millimetres it cannot stand behind, so M1's route comparison can now be measured on the
@@ -28,6 +28,7 @@ extraction ceiling is worth doing *for this material*.
 | [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); the section picture is built and shows an 8% error; what is left is a caliper round-trip | none |
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
 | [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | retired — answered NO on A03 2026-09-06 (rim holds, rig gone, but 91% density drain → eye-confirmed too coarse) | none |
+| [M6](M6-does-2dgs-reach-break-face-resolution.md) | Does 2D Gaussian Splatting get sherds out of the rig at the resolution a break face needs? | open — blocked on the M1 requirement and OpenMVS baseline | [M1](M1-resolution-the-material-needs.md) |
 
 ## What is established
 

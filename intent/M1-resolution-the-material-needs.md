@@ -22,6 +22,10 @@ detail.
 ## What is already known
 
 - The authors' DTU extraction route is closed on quality grounds (2026-09-01).
+- First ridge-scale lead (2026-09-06): break-face brightness relief correlates over
+  3–5 px ≈ 0.36–0.60 mm (~0.7–1.2 mm grains), 6 native crops, 1 capture — albedo and
+  shading conflated, scale ±20%. Conservator concurred 2026-09-06: the working
+  requirement is ~1 mm relief. See `docs/notes/2026-09-06-breakface-ridge-scale.md`.
 - The 32,768-block cliff is **per extraction call**, so per-sherd tiling should reach about
   **0.45 mm** — better, still not 0.21 mm.
 
@@ -34,8 +38,9 @@ detail.
       hand**: `compare_meshes.py` refuses a mesh without a sidecar rather than measuring
       it, so this box can no longer be ticked against an unscaled mesh — see
       [M3](M3-is-the-mesh-at-true-scale.md)
-- [ ] A stated requirement in millimetres: what a break face actually needs, argued from
-      the ridge scale we can see in the photographs, not from what the tool can deliver
+- [x] A stated requirement in millimetres: **~1 mm break-face relief** (grains
+      ~0.7–1.2 mm from 2026-09-06 photo measurement; conservator concurred 2026-09-06).
+      Argued from visible relief in the photographs, not from what any tool delivers
 - [ ] Meshes rendered at a view that resolves ridges — a whole-sherd view looks fine at
       every resolution and has already misled here four times running
 
