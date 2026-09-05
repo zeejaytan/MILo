@@ -112,6 +112,8 @@ echo "=== eroded-band alpha summary (masked run) ==="
 grep -h "masked-train alpha" "$MASKED_DIR/probe_train.log" | tail -8 || true
 
 echo
-ls -la "$CTRL_DIR/point_cloud/iteration_8000/" "$MASKED_DIR/point_cloud/iteration_8000/"
+echo "--- outputs (full config length is 18k; the 8k probe design is superseded) ---"
+ls "$CTRL_DIR/point_cloud/iteration_18000/" "$MASKED_DIR/point_cloud/iteration_18000/"
+ls "$CTRL_DIR/test/ours_18000/renders/" "$MASKED_DIR/test/ours_18000/renders/" | head -8
 echo "=== probe finished $(date) ==="
 echo "Verdict needs rim close-ups at 0.10 mm/px beside these curves (ticket 02)."
