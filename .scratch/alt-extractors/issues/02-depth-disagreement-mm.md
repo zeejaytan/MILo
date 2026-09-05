@@ -31,3 +31,6 @@
   (synthetic proof in ticket: old (0,0,5), fixed (1,2,8)). Fixed with
   un-transpose-before-invert plus a comment recording the trap. Resubmitting
   as a new job after commit+push.
+- 2026-09-06: frame fix committed (`d883607`, pushed), resubmitted as job
+  30133070. If this still reports absurd scale, next suspect is `median_depth`
+  semantics (z vs ray distance), not the frame.
