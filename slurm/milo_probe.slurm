@@ -102,7 +102,8 @@ run_probe "$MASKED_DIR" --masked_training
 echo
 echo "--- held-out renders for rim crops $(date) ---"
 for d in "$CTRL_DIR" "$MASKED_DIR"; do
-    python -u render.py -m "$d" --iteration 8000 --skip_train \
+    # Full config length is 18k (the fast config stomps --iterations, see header).
+    python -u render.py -m "$d" --iteration 18000 --skip_train \
         --rasterizer radegs 2>&1 | tail -2
 done
 
