@@ -13,3 +13,9 @@
 - [ ] Held-out masked rendering deltas reported before any meshing claim
 - [ ] Rim renders at 0.10 mm/px or tighter resolve the erosion band for both runs
 - [ ] Human in the loop: conservator eye verification beside the numbers; M2 updated with the date whatever the outcome
+
+## Comments — verdict meshes building (2026-09-06)
+
+Native tet extractions submitted: job 30123272 (masked probe -> A03_probe_masked_mesh),
+job 30123273 (control probe -> A03_probe_ctrl_mesh). Scoring (arc-mm, noise-mm, eye,
+M5 write-back) runs when both land.
