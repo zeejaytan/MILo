@@ -4,9 +4,10 @@
 from** (2026-09-04): 117 from the blue base plate, 1 from the turntable marker board. The
 corpus is not halved and never was; the earlier "59 of 118" was a *marker* count wearing a
 *scale* count's name. A mesh that cannot state its units is refused rather than measured
-(`compare_meshes.py`), and a crop keeps the record of the mesh it was cut from. What is
-left is a bench measurement — **no sherd has been checked against a caliper** — and the
-section picture · **Blocked by:** none · **Effort:** ~half a day left
+(`compare_meshes.py`), and a crop keeps the record of the mesh it was cut from. The
+section picture exists and can show an 8% error (2026-09-05, `section_overlay.py`). What is
+left is a bench measurement — **no sherd has been checked against a caliper** ·
+**Blocked by:** none · **Effort:** one bench sitting
 
 ## Why it matters
 
@@ -127,10 +128,25 @@ the degrade-to-default that ADR 0001 exists to ban.
       conflict, and `--shape-only` still wrote the scale factor into the report — a gate
       that rejects correct work, and a suppression one multiplication from leaking. Both
       fixed and asserted
-- [ ] **One before/after picture**: the same two meshes overlaid, with the millimetre scale
+- [x] **One before/after picture**: the same two meshes overlaid, with the millimetre scale
       bar burnt in, at a view that resolves the wall — the sherd in **section**, not a
       three-quarter view of the whole body, because a scale error is a proportional change
-      and a whole-object view cannot show one
+      and a whole-object view cannot show one.
+      **Done 2026-09-05** (`.scratch/scale-provenance/issues/04`, commit `3ab761e`).
+      `scripts/section_overlay.py` cuts both meshes with **one** plane and measures the wall
+      across the section in millimetres — a cut, not a rendered viewpoint, because a
+      viewpoint is the instrument that has failed four times here. On synthetic geometry an
+      8% error is unmistakable: two 6 mm walls, one of them 6.48 mm, at 7.2 px/mm —
+      `artifacts/section/demo_8pc.png`.
+      **The reading is that the instrument works, not that A02 has been checked.** The real
+      cut (`artifacts/section/A02_sherd_y.png`) reports a wall of 3.64 mm on the OpenMVS
+      mesh, with a thinnest-5% of 1.08 mm and a longest chord of 11.78 mm — a spread that
+      wide is not one wall — and the crop it was taken from leaves four separate lumps, of
+      which only one has a MILo outline beside it. The figure also depends on which mesh is
+      named first (naming `milo` first gives 8.89 mm across one outline), because that mesh
+      supplies the plane and is also the mesh measured; the caption states this on the
+      picture. Nothing here is a claim about either method's accuracy — it is failure mode
+      2, the ruler, made visible. 50 checks; 12 deliberate mutations, all 12 caught
 
 ## Gate
 

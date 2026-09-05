@@ -12,9 +12,10 @@ Prefix **`M`**, permanent. Numbers are never reused. **M6 is next.**
 
 **M3's blocking half is done** (2026-09-04) — `compare_meshes.py` no longer reports
 millimetres it cannot stand behind, so M1's route comparison can now be measured on the
-same ruler, and every capture now states where its millimetres come from. What remains in
-M3 is one bench measurement against a caliper and one section picture, neither of which
-blocks anything.
+same ruler, and every capture now states where its millimetres come from. The section picture is
+built too (2026-09-05): `section_overlay.py` cuts both meshes with one plane and measures
+the wall in millimetres, and it makes an 8% error unmistakable on synthetic geometry. What
+remains in M3 is one bench measurement against a caliper, and it blocks nothing.
 
 **M1 is the one to do next.** Both its first two boxes are cheap and unblocked, and the
 second one — what OpenMVS already achieves on A03 — decides whether lifting MILo's
@@ -24,7 +25,7 @@ extraction ceiling is worth doing *for this material*.
 |---|---|---|---|
 | [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | open — the authors' DTU route is closed, the ceiling may be liftable | none (was M3; lifted 2026-09-04) |
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
-| [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); what is left is a caliper round-trip and a section picture | none |
+| [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); the section picture is built and shows an 8% error; what is left is a caliper round-trip | none |
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
 | [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | open — patch built, probe pair running (job 30090865) | none |
 
