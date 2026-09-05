@@ -19,3 +19,10 @@
 Native tet extractions submitted: job 30123272 (masked probe -> A03_probe_masked_mesh),
 job 30123273 (control probe -> A03_probe_ctrl_mesh). Scoring (arc-mm, noise-mm, eye,
 M5 write-back) runs when both land.
+
+## Comments 2 — stale-cfg crash, resubmitted (2026-09-06)
+
+Jobs 30123272/73 died in seconds: mesh_extract_sdf.py read args.keep_idx directly,
+but the cfg_args copied from the pre-flag probe runs has no such attribute. Same
+config-layer family as the read_config lesson — fixed with getattr defaults.
+Resubmitted as 30125644 (masked) + 30125645 (control).
