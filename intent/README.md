@@ -27,7 +27,7 @@ extraction ceiling is worth doing *for this material*.
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
 | [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); the section picture is built and shows an 8% error; what is left is a caliper round-trip | none |
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
-| [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | open — patch built, probe pair running (job 30090865) | none |
+| [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | retired — answered NO on A03 2026-09-06 (rim holds, rig gone, but 91% density drain → eye-confirmed too coarse) | none |
 
 ## What is established
 
@@ -47,6 +47,7 @@ extraction ceiling is worth doing *for this material*.
 | **`compare_meshes.py` reported a millimetre figure that was not in millimetres** — `frac_within_0.5mm` compared distances against a raw 0.5 in whatever units the mesh held. A broken measurement, not a broken method; it never reached a published number. Fixed and gated 2026-09-03/04. | read from the file, then reproduced: the same sphere pair in metres claimed **100.0%** of its surface within 0.5 mm | `.scratch/scale-provenance/issues/01`, commits `41b96ce`, `7e7bdf8` |
 | A mesh with no scale sidecar is now **refused rather than measured** — exit 2 unknown units, exit 3 units disagree, `--shape-only` for the unit-free half. Proved able to refuse, not only observed to pass. | 20 assertions on synthetic fixtures; verified against A02's real sidecars and against a real derived mesh (`milo_mm_cropped_to_rig.ply`) that has none | ibid. |
 | **Post-training pruning separates steel from clay but cannot carry break-face density** — v1 8,686 kept (128k verts, ~19x sparse), v2 14,670 kept (204k verts, two components webbed across 331/218 mm), kept-Gaussian footprint median 1.76 mm (~9x over the 0.21 mm bar); conservator eye 2026-09-06: too coarse for any reassembly use. Method failure on this material (type 1), not a broken ruler. Arc-loss and wall-noise mm deliberately unmeasured — they cannot re-seat a webbed sherd. | 1 capture (A03), two builds, eye verification | `intent/M4-*`; jobs 30056136, 30086544 |
+| **Masked training excludes the rig but drains density past use** — rim holds with no 0.6–0.9 mm recession, background alpha ~0.001, all ten pieces clay; yet 222,678 → 18,443 Gaussians (~91% drained), 276k vs 2.6M vertices, eye-confirmed much coarser than control. Same exclusion-without-replacement trade as pruning, one stage earlier. DTU ~3% does not transfer to eroded turntable masks. Method failure on this material (type 1). | 1 capture (A03), full A/B at 18k, eye verification | `intent/M5-*`; jobs 30094277/30099987, 30121191, 30125644/45 |
 
 ## Before writing any more extraction code
 

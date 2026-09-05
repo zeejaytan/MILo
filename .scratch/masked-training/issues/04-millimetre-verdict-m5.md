@@ -6,7 +6,7 @@
 
 **Blocked by:** 03 (needs both trained models).
 
-**Status:** claimed (extracting both verdict meshes, then arc/noise scoring)
+**Status:** resolved (extracting both verdict meshes, then arc/noise scoring)
 
 - [ ] Arc agreement deltas in mm of arc per sampled edge, contact faces excluded throughout
 - [ ] Flat-wall noise deltas in mm on the same boxes for both runs
@@ -41,3 +41,12 @@ steel, so this does not rank clay surfaces; stated, not used.
 Held-out masked-PSNR: masked median 23.9 dB (20–25 all views) vs control 18.2
 (10–28, ~1/3 views failed). Six rim-band pairs viewed by agent: rig gone,
 fracture relief intact, no rim recession. Conservator eye + M5 write-back pending.
+
+## Answer — FAIL, eye-confirmed (2026-09-06)
+
+Masked mesh far coarser than control to the conservator eye. Mechanism measured:
+222,678 -> 18,443 Gaussians drained by background loss plus density control with
+no paired replacement; 276k vs 2.6M vertices. Rim holds, rig gone — the masking
+construction works; the density it costs kills the mesh. Verdict and weight in
+intent/M5-can-masked-training-exclude-rig.md. Training-time masking stays closed;
+M1/M2 gates stand.
