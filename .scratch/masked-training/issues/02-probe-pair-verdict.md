@@ -30,3 +30,11 @@ ever runs. Masked-leg alpha to iter 13k: outside 0.0008–0.0037 (far below the 
 tripwire — background draining as designed), inside 0.009–0.017 and rising. The
 number half of the stop rule reads GO; rim renders from the completed masked run
 carry the other half.
+
+## Comments 3 — masked training finished; renders resubmitted (2026-09-06)
+
+Job 30099987 FAILED after training completed (render stage asked for
+iteration_8000 clouds; runs are 18k — fixed). Masked run facts: 18,000/18,000
+iters, final 18,443 Gaussians (background loss + density control drained ~91% of
+the 222k start), band alpha outside 0.0018 / inside 0.0112 at close. Renders-only
+resubmission 30121191 skips both finished trainings.
