@@ -6,7 +6,7 @@
 
 **Blocked by:** 02 (needs the probe go verdict).
 
-**Status:** ready-for-agent
+**Status:** claimed (masked full run resubmitted as job 30099987 with 14h limit; control reused from 30094277; log MILo/logs/milo_probe_30099987.log)
 
 - [ ] Both runs train to completion on the same seed, config, dataset and rasterizer, differing only in the patch flag
 - [ ] Checkpoints and logs retained for both; held-out every-8th-view renders kept for scoring
