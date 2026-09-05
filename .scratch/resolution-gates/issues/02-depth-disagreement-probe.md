@@ -32,3 +32,8 @@ in 04).
 - 2026-09-06: resubmitted with the fix as job 30132793 (same args
   `17062025/A03_sherds 17062025/A03_nomask`). Number lands in
   `output/17062025/A03_nomask/depth_disagreement.json`.
+- 2026-09-06: job 30132793 COMPLETED but its metres-scale figures were a second,
+  deeper script bug (transposed view matrix inverted — clouds never left camera
+  space). Fixed, resubmitted as job 30133070, which COMPLETED with the honest
+  number: median-of-medians **4.1 mm**, worst pair 6.0 mm, metre-scale
+  p90/max tail. M1's first box ticked; see alt-extractors ticket 02.

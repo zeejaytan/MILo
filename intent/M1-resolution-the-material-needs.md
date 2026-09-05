@@ -31,8 +31,12 @@ detail.
 
 ## Done when
 
-- [ ] **Cross-view depth disagreement measured in millimetres** on at least one capture.
-      This is the honest resolution floor; the voxel size is only what we asked for
+- [x] **Cross-view depth disagreement measured in millimetres** on at least one
+      capture (2026-09-06, A03, job 30133070: median-of-medians **4.1 mm** over
+      15 view pairs, worst pair 6.0 mm; p90/max carry a metre-scale tail —
+      floater and rig pixels in the unprojection, not surface noise. One
+      capture, first successful run after two script bugs; reading it against
+      the bar is the gate's job, not this box's)
 - [ ] **What OpenMVS already achieves on A03**, measured the same way, so the two routes
       are compared on the same ruler. **Scale is now established by the tool, not by
       hand**: `compare_meshes.py` refuses a mesh without a sidecar rather than measuring

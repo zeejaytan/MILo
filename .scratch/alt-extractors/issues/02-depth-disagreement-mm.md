@@ -34,3 +34,8 @@
 - 2026-09-06: frame fix committed (`d883607`, pushed), resubmitted as job
   30133070. If this still reports absurd scale, next suspect is `median_depth`
   semantics (z vs ray distance), not the frame.
+- 2026-09-06: job 30133070 COMPLETED with a real number: median-of-medians
+  **4.1 mm** (worst pair 6.0 mm) over 15 pairs; metre-scale tail on p90/max.
+  M1's first box ticked with the date. Verdict against the ~1 mm bar deferred
+  to the gate (resolution-gates 04 / alt-08), which still waits on the OpenMVS
+  baseline.
