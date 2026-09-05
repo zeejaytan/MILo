@@ -24,3 +24,8 @@ in 04).
 - 2026-09-06: script + job reviewed, committed (`8ac54fb`), submitted as job
   30131641 (`A03_sherds` / `A03_nomask`). Boxes stay open until the number lands
   and is read against the ~1 mm bar in 04.
+- 2026-09-06: job 30131641 FAILED in 25 s — singleton-dim broadcast crash at
+  `depth_disagreement.py:66` (render outputs 3D, gt mask 2D). Fixed in
+  `.scratch/alt-extractors` ticket 02 (squeeze to 2D at the seam + loud shape
+  refusal in `unproject`; crash reproduced and fix verified synthetically on
+  the laptop). Resubmitted; see alt-extractors ticket 02 for the new job id.

@@ -60,6 +60,11 @@ def unproject(depth, mask, cam):
     """Sherd-pixel depths -> world points (N,3) tensor on CPU."""
     # Principal point assumed centred: measured exactly centred on A03, and the
     # 6-px mask erosion dwarfs any residual offset. Revisit per capture if reused.
+    if depth.ndim != 2 or mask.ndim != 2 or depth.shape != mask.shape:
+        print(f"[ERROR] unproject needs 2D depth+mask of equal shape, got "
+              f"depth {depth.shape} mask {mask.shape}: refusing rather than "
+              f"scoring a broadcast accident.", file=sys.stderr)
+        sys.exit(2)
     W, H = cam.image_width, cam.image_height
     fx = W / (2 * math.tan(cam.FoVx / 2.))
     fy = H / (2 * math.tan(cam.FoVy / 2.))
@@ -111,9 +116,14 @@ def main(dataset, pipe, args):
     clouds, kept_views = [], []
     for k, cam in enumerate(cams):
         pkg = render(cam, gaussians, pipe, background, dataset.kernel_size)
-        depth = pkg["median_depth"][0].cpu().numpy()
-        rmask = (pkg["mask"][0].cpu().numpy() > 0.5)
-        gmask = (cam.gt_mask.cpu().numpy() > 0.5) if cam.gt_mask is not None else np.ones_like(rmask, bool)
+        # Render outputs may carry singleton dims (e.g. (1,H,W)); the gt mask
+        # comes from a different loader with its own convention. Squeeze all
+        # three to 2D here so a broadcast accident can never reach unproject —
+        # job 30131641 died on exactly that (3D & 2D broadcasts to 3D, and
+        # np.nonzero then returns 3 arrays for 2 names).
+        depth = np.squeeze(pkg["median_depth"][0].cpu().numpy())
+        rmask = (np.squeeze(pkg["mask"][0].cpu().numpy()) > 0.5)
+        gmask = (np.squeeze(cam.gt_mask.cpu().numpy()) > 0.5) if cam.gt_mask is not None else np.ones_like(rmask, bool)
         pts = unproject(depth, rmask & gmask, cam)
         # Release this view's pixels now: the established 15.6 GiB trap is per
         # retained camera, and only intrinsics/extrinsics/size are needed later.

@@ -27,3 +27,12 @@ _Avoid_: pruning, culling, cropping
 **Culling**:
 Deleting vertices from a finished mesh by a rule over views or components.
 _Avoid_: pruning, masking
+
+**Extract**:
+Vague on its own — say which of the three above is meant: masking, pruning, or culling.
+_Avoid_: extract (alone)
+
+**Splat**:
+A set of Gaussians tuned for rendering new views. Looking right is not measuring
+right — a splat is judged on renders, never in millimetres.
+_Avoid_: mesh (for a splat)

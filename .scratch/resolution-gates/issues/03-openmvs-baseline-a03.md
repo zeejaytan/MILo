@@ -29,3 +29,9 @@ break-face close-up renders at a resolving view.
 - 2026-09-06: approved, submitted as job 30131757 (partition auto-bumped to
   gpu-a100: 128G exceeds the short partition). Boxes stay open until numbers +
   renders land and are read against the ~1 mm bar in 04.
+- 2026-09-06: job 30131757 FAILED in 1:50 — compare refused, correctly, but for
+  the wrong stated reason. Node measurement (`.scratch/alt-extractors` ticket
+  01): MILo `mesh_mm.ply` spans ~983 mm, OpenMVS refined spans ~643 mm, boxes
+  barely overlap — different content in different frames, not a units mismatch
+  (both sidecars claim the same factor). Next step is a common-box crop, not a
+  resubmit; parked for user confirm.
