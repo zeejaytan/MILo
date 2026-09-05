@@ -74,8 +74,15 @@ def unproject(depth, mask, cam):
     y = (vs.astype(np.float64) - H / 2.) * d / fy
     ones = np.ones_like(d)
     p_cam = np.stack([x, y, d, ones], axis=1)
-    w2v = np.asarray(cam.world_view_transform.cpu().numpy(), dtype=np.float64)
-    c2w = np.linalg.inv(w2v)
+    # world_view_transform is stored TRANSPOSED for the CUDA rasterizer
+    # (see scene/cameras.py: .transpose(0, 1)). Inverting the stored matrix
+    # gives C^T, not C: job 30132793 measured 1–2.6 m of "disagreement" on a
+    # half-metre tray because every view's cloud never left camera space
+    # (synthetic check: eye (1,2,3), point 5 ahead -> old (0,0,5), fixed
+    # (1,2,8)). Un-transpose before inverting; rigid transform, so no
+    # perspective divide is needed.
+    stored = np.asarray(cam.world_view_transform.cpu().numpy(), dtype=np.float64)
+    c2w = np.linalg.inv(stored).T
     p_world = (c2w @ p_cam.T).T[:, :3]
     ok = np.isfinite(p_world).all(axis=1)
     return torch.from_numpy(p_world[ok]).float()

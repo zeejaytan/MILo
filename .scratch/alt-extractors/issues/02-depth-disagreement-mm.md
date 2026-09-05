@@ -24,3 +24,10 @@
 - 2026-09-06: fix committed (`1ae8a7f`, pushed) and resubmitted as job 30132793
   via pull-then-sbatch with the same args. Next: read
   `depth_disagreement.json` + log against the ~1 mm bar when the job completes.
+- 2026-09-06: job 30132793 COMPLETED but reported 1–2.6 m disagreement on a
+  half-metre tray — a broken ruler (type 2), not a result. Cause found on the
+  laptop: `world_view_transform` is stored transposed for CUDA, and inverting
+  the stored matrix yields C^T, so no view's cloud ever left camera space
+  (synthetic proof in ticket: old (0,0,5), fixed (1,2,8)). Fixed with
+  un-transpose-before-invert plus a comment recording the trap. Resubmitting
+  as a new job after commit+push.
