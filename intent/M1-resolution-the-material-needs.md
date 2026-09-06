@@ -39,6 +39,10 @@ detail.
   ring). An OpenMVS mesh from the mask frame scaled with the MILo factor is
   wrong-scaled — one such file was made and deleted. The valid pair is the
   fixed-frame refined mesh plus the MILo mesh cropped to its box (98.8% kept).
+- Sherd-only outlines on A03 (2026-09-06, job 30158911, 21 held-out views):
+  OpenMVS 42.2% vs MILo 8.6% — direction honest per overlays (OpenMVS green on
+  sherds with overfill fringes; MILo mostly rig steel). Below A02's 66%;
+  flat-noise half still open.
 
 ## Done when
 

@@ -70,6 +70,14 @@
   views), poll watching; numbers + overlays on landing. This answers the
   directional question the (a)/(b) pick above left open; per-sherd mm stays
   struck unless the silhouette disagrees with A02.
+- 30158911 COMPLETED 0:0: sherd-only outlines, OpenMVS 42.2% (worst 26.0%) vs
+  MILo 8.6% (worst 6.0%), 21 views. Overlays (`artifacts/A03_compare/`)
+  confirm the direction is honest this time: OpenMVS green lands on sherds
+  with red overfill fringes; MILo renders mostly rig steel (red) with sherds
+  peeking through. 42% is below A02's 66% — overfill fringes, not pose error.
+  Flat noise (b) still open: A02 `stage5_noisefloor.py` needs A03 footprint
+  judgment calls, not a mechanical rerun — half-day task, named here so it is
+  not mistaken for done.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
