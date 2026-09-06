@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=02:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/vggt_pose_%j.log
 
 # Ticket alt-05: VGGT judged as what it is — a pose source.
@@ -27,9 +27,10 @@
 
 set -euo pipefail
 
-CAPTURE="${1:?usage: sbatch vggt_pose.slurm <capture> [images_dir] [out_name]}"
+CAPTURE="${1:?usage: sbatch vggt_pose.slurm <capture> [images_dir] [out_name] [ba]}"
 IMAGES_DIR="${2:-images}"
 OUT_NAME="${3:-vggt_$(basename "$CAPTURE")_${IMAGES_DIR}}"
+BA_MODE="${4:-}"  # "ba" appends upstream --use_ba (track + bundle-adjust)
 
 VGGT_ROOT=/data/gpfs/projects/punim2657/vggt
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
@@ -75,9 +76,21 @@ export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 eval "$(conda shell.bash hook)"
 conda activate "$ENV_PREFIX"
 
-# Feed-forward only (no --use_ba): the honest pose-source reading. BA is a
-# second ticket if this lands close.
-python -u demo_colmap.py --scene_dir "$SCENE_DIR" 2>&1 | tee "$OUT_DIR/log_vggt.txt"
+# Feed-forward by default; "ba" as 4th arg runs the upstream accuracy path
+# (LightGlue tracks + pycolmap bundle adjustment). BA refines — it is the
+# terminal test here, not a second campaign: if it cannot build from the
+# collapsed init, the pose track retires per M7's gate.
+BA_FLAG=""
+if [[ "$BA_MODE" == "ba" ]]; then
+    BA_FLAG="--use_ba"
+    OUT_DIR="${OUT_DIR}_ba"
+    SCENE_DIR="$OUT_DIR/scene"
+    mkdir -p "$SCENE_DIR/images" "$OUT_DIR"
+    for f in "$DATA_DIR"/"$IMAGES_DIR"/*; do
+        ln -sfn "$f" "$SCENE_DIR/images/$(basename "$f")"
+    done
+fi
+python -u demo_colmap.py --scene_dir "$SCENE_DIR" $BA_FLAG 2>&1 | tee "$OUT_DIR/log_vggt.txt"
 
 [[ -f "$SCENE_DIR/sparse/images.bin" ]] || { echo "VGGT wrote no sparse model" >&2; exit 1; }
 
