@@ -42,6 +42,19 @@
   lookup plus a loud no-masks refusal instead of a traceback. Caveat recorded:
   these are rig-in user masks, so the outline scores rig + sherds for both
   meshes equally; sherd-only silhouette is follow-up if numbers demand it.
+- Resubmitted 2026-09-06 as job 30156362 (both fixes in), poll watching.
+- 30156362 COMPLETED in 1:58 but scored 9.8% vs 0.3% — looked wrong, was
+  wrong: rendering millimetre meshes against unit cameras magnifies ~374x, so
+  almost nothing projected inside the frame (proven: mesh centroid dead ahead
+  of the camera landed at NDC -7.3; sparse points validate the same projection
+  code at 98.8%). No successful full-metric compare has ever run since the
+  scale gate was added — mm meshes pass the gate but break rendering, unit
+  meshes have no valid sidecar. Fixed in `compare_meshes.py`: meshes return to
+  model units at load via each sidecar's measured factor (refuses without
+  one), mm figures use the measured factor instead of the name-mapped 1.0,
+  size-gate comment corrected (content moves extents too), self-test proves
+  the conversion (PASS on laptop). OpenMVS side cropped to the shared box:
+  100% kept, extents ratio 1.06 — inside the gate. Resubmit pending approval.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated

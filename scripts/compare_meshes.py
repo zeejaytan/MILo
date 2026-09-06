@@ -405,6 +405,35 @@ def load_mesh(path: Path) -> trimesh.Trimesh:
     return m
 
 
+def to_model_units(path: Path, mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Bring a mesh into the COLMAP model units the cameras speak.
+
+    Everything downstream -- rendering from the solved cameras, silhouette,
+    and the millimetre conversions that multiply by a measured factor -- works
+    in model units. A mesh arriving in millimetres (what scale_mesh.py writes)
+    rendered against unit cameras comes out ~374x too large, projecting almost
+    nothing inside the frame: job 30156362 scored 9.8% vs 0.3% against
+    photographs both meshes explain, purely for this reason.
+
+    Conversion: coordinates x (mm_per_unit_BY_NAME[units] / measured mm_per_unit).
+    The measured factor is the sidecar's top-level mm_per_unit -- millimetres per
+    MODEL unit from the physical reference, not a multiplier to apply. Without
+    it there is no road back to units, so its absence refuses rather than
+    guessing (ADR-0001).
+    """
+    from scale_sidecar import MM_PER_UNIT_BY_NAME, read_scale
+    sc = read_scale(path)
+    name = str(sc.get("units", "")).strip().lower()
+    factor = sc.get("mm_per_unit", None)
+    if factor is None or not np.isfinite(factor) or factor <= 0:
+        sys.exit(f"{path.name}: its sidecar states {name or 'no units'} but carries "
+                 f"no usable mm_per_unit, so model units are unrecoverable. Re-scale "
+                 f"it with scripts/scale_mesh.py. Refusing.")
+    mesh.vertices = np.asarray(mesh.vertices, np.float64) * (
+        MM_PER_UNIT_BY_NAME[name] / float(factor))
+    return mesh
+
+
 def describe(mesh: trimesh.Trimesh, mm_per_unit=None) -> dict:
     """`mm_per_unit=None` means the units are unknown, so the extents are not called mm."""
     d = {
@@ -688,6 +717,29 @@ def self_test() -> int:
               f"unconverted, the metres pair would have claimed "
               f"{old['frac_within_0.5mm']:.1%} of its surface within 0.5 mm")
 
+        # ---- the units the renderer speaks --------------------------------------
+        # Rendering happens from the solved COLMAP cameras, which are in model
+        # units. A mesh arriving in millimetres must come back to units before
+        # it meets a camera, or it renders ~374x too large and projects almost
+        # nothing inside the frame: job 30156362 scored 9.8% vs 0.3% on masks
+        # both meshes explain, purely for this reason.
+        print("\n-- a millimetre mesh returns to model units before rendering")
+        mm_mesh = _fixture(d, "milo_mmscaled", 50.8, _mm_sidecar())
+        back = to_model_units(mm_mesh, load_mesh(mm_mesh))
+        got = float(np.linalg.norm(np.asarray(back.vertices), axis=1).max())
+        # 1e-4, not 1e-9: the fixture round-trips through float32 PLY. Without
+        # the conversion this reads 50.8, so the check still bites exactly
+        # where it must.
+        check(abs(got - 50.8 / 373.73) < 1e-4,
+              f"50.8 mm at 373.73 mm/unit comes back to {got:.6f} units")
+        bare = _fixture(d, "mvs_nofactor", 50.8,
+                        _mm_sidecar(mm_per_unit=None))
+        try:
+            to_model_units(bare, load_mesh(bare))
+            check(False, "a sidecar with no measured factor refuses")
+        except SystemExit:
+            check(True, "a sidecar with no measured factor refuses")
+
     print("\nself-test:", "PASS" if state["ok"] else "FAIL")
     return 0 if state["ok"] else 1
 
@@ -738,7 +790,16 @@ def main() -> int:
               file=sys.stderr)
         return rc
 
-    mm_per_unit = (decision["mm_per_unit"]["milo"] if decision["metric"] else None)
+    # Millimetres per MODEL unit: the sidecars' measured factor, not the
+    # name-mapped 1.0 for "millimetres". The name map answers "which unit"; the
+    # measured factor answers "how big is this model's unit". Conflating them
+    # multiplies unit distances by 1.0 and labels the result millimetres.
+    mm_per_unit = None
+    if decision["metric"]:
+        sc = decision["sidecars"]["milo"]
+        mm_per_unit = float(sc.get("mm_per_unit", 0.0)) or sys.exit(
+            "the milo sidecar passed the gate but carries no measured mm_per_unit; "
+            "nothing can convert model units to millimetres. Refusing.")
     for line in provenance_lines(decision):
         print(line)
 
@@ -755,7 +816,8 @@ def main() -> int:
         return 1
 
     model = read_model(dataset / "sparse" / "0")
-    meshes = {"milo": load_mesh(args.milo), "openmvs": load_mesh(args.openmvs)}
+    meshes = {"milo": to_model_units(args.milo, load_mesh(args.milo)),
+              "openmvs": to_model_units(args.openmvs, load_mesh(args.openmvs))}
 
     report = {"capture": str(args.capture), "mm_per_unit": mm_per_unit,
               "metric": decision["metric"], "shape_only": decision["shape_only"],
@@ -767,8 +829,12 @@ def main() -> int:
         report["meshes"][tag] = describe(mesh, mm_per_unit)
 
     # Both meshes come from the same COLMAP model, so they share a coordinate frame and
-    # need no alignment. If their sizes disagree they are not in the same units, and
-    # every millimetre below would be meaningless.
+    # need no alignment. If their sizes disagree they are usually not in the same
+    # units -- but different CONTENT also moves extents (one mesh's backdrop is the
+    # other's empty space; job 30131757 refused a same-factor pair at 2.33 on a
+    # metre of surroundings vs a tray crop). When this fires on meshes whose
+    # sidecars agree, crop to the shared box (scripts/crop_mesh.py, A02 method)
+    # rather than resubmitting: the same inputs reproduce the same refusal.
     ext = np.array([meshes["milo"].extents, meshes["openmvs"].extents])
     ratio = float(np.max(ext[0] / np.maximum(ext[1], 1e-9)))
     if not (0.9 < ratio < 1.1):
