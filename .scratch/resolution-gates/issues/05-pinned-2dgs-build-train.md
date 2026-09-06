@@ -33,9 +33,11 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   `sparse/0` COLMAP bins; mask coverage mean 2.28% (`capture.json`); scale sidecar not
   under the dataset dir — locate before any mm claim (known factor 373.733 mm/unit from
   the A03 masked-training work; re-derive, don't inherit).
-- 2026-09-06, correction: the first clone attempt landed on the laptop
-  (`C:\data\...`, missing ssh wrapper) — removed; the Spartan clone above is the real
-  one, verified at both hashes with clean status.
+- 2026-09-06, layout (no mixing): 2DGS lives in its own area
+  `/data/gpfs/projects/punim2657/2dgs/` (`repo/` = pin, `envs/surfel`, `.conda-pkgs`,
+  `output/`+`logs/` to follow) — sibling of `MILo/`, nothing 2DGS inside it. The
+  earlier `MILo/2dgs` clone + `MILo/envs/surfel` partial env + `MILo/.conda-pkgs`
+  were moved/cleared accordingly; env rebuild from scratch at the new prefix.
 - 2026-09-06, gate amended per user: OpenMVS is the ceiling to beat (0.186 mm), not
   a stop-baseline — trial runs to a measured verdict either way; keep means
   match/beat, complementary coverage, or viewing-only (see M6). Retire bar unchanged.
@@ -47,3 +49,6 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   `extract_mesh_bounded(mask_backgrond=True)` zeroes rig depth as shipped. Still to
   verify at train time: masked filenames match `images.bin` basenames exactly (MILo
   kept `.JPG` names over PNG bytes — same join), and the alpha band survives `-r 1`.
+- 2026-09-06, env build attempt 1 FAILED: home-dir package cache hit disk quota on
+  the torch 2.0.0 download (`InvalidArchiveError ... Errno 122`). Retry running with
+  `CONDA_PKGS_DIRS` relocated to `$MILO/.conda-pkgs` on project storage.
