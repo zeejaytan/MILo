@@ -1,18 +1,23 @@
 # M6 — Does 2D Gaussian Splatting get sherds out of the rig at the resolution a break face needs?
 
-**Status:** open · **Blocked by:** [M1](M1-resolution-the-material-needs.md) (the required
-ridge scale and the OpenMVS baseline are still unstated — without them no extractor swap
-can be shown to help or hurt) · **Effort:** roughly 1–2 weeks (pinned build, one-capture
-A/B on existing data, no Slurm campaign)
+**Status:** open · **Blocked by:** the OpenMVS baseline only (requirement ~1 mm
+stated and concurred; the MILo-specific boxes — depth disagreement on MILo's
+Gaussians, MILo renders — do not gate this: a different method needs its own
+depth probe, which is part of its evaluation below, not a prerequisite) ·
+**Effort:** roughly 1–2 weeks (pinned build, one-capture A/B on existing data,
+no Slurm campaign)
 
 **Settled scope, 2026-09-06:** end-to-end swap (2DGS training + its TSDF extraction) on
 the existing `A03_sherds` dataset, compared same-ruler against MILo's DTU route; bar is
 parity-plus (match MILo with voxel size and truncation band stated in mm; the M1 ridge
 requirement becomes the real bar once set); rig removal reuses the existing fusion-time
-sherd masks — pruning and masked training stay retired per M4/M5 and are not relitigated
-under 2DGS without fresh justification. **Settled sequencing, 2026-09-06:** M1's boxes
-run first and the 2DGS build waits for them; laptop prepares the pinned build + Slurm
-scripts, user approves any submission.
+sherd masks — pruning stays retired per M4 and is not relitigated under 2DGS without
+fresh justification. M5 retires masked training on MILo only and does NOT retire
+Rogge-style masked training on 2DGS (arXiv:2501.08174); that masked-2DGS A/B is the live
+branch below. **Sequencing, corrected 2026-09-06:** the "M1 first, 2DGS waits"
+order below was over-strict — only the requirement (done) and the OpenMVS baseline
+transfer to a new method. 2DGS build prep proceeds in parallel; its own
+depth-disagreement probe is part of its evaluation, not a prerequisite.
 
 ## Why it matters
 
@@ -67,7 +72,8 @@ and they gate this question either way.
 ## Source
 
 User proposal 2026-09-06 (`hbb1/2d-gaussian-splatting`, official 2DGS implementation);
-[M1](M1-resolution-the-material-needs.md),
+Rogge-style object-centric masked 2DGS (arXiv:2501.08174 — M5 does not retire this branch,
+amended 2026-09-06 per user OK); [M1](M1-resolution-the-material-needs.md),
 [M4](M4-can-rig-gaussians-be-pruned-after-training.md),
 [M5](M5-can-masked-training-exclude-rig.md); MILo `AGENTS.md` domain notes (0.21 mm
 photo support, block-cliff arithmetic, mask-content split).

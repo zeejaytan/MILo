@@ -1,19 +1,23 @@
 # M7 — Can TopoSurfel or VGGT + InstantSplat++ get sherds out of the rig at the resolution a break face needs?
 
-**Status:** open · **Blocked by:** [M1](M1-resolution-the-material-needs.md) (the required
-ridge scale is now stated at ~1 mm, but the OpenMVS baseline and the cross-view depth
-disagreement are still unmeasured — without them no extractor swap can be shown to help
-or hurt) · **Effort:** roughly 2–4 days for the VGGT pose track, 1–2 weeks for a pinned
-TopoSurfel build plus one-capture A/B (no Slurm campaign before M1's boxes run)
+**Status:** open · **Blocked by:** the OpenMVS baseline only (requirement ~1 mm
+stated; MILo-specific boxes do not gate a different method — each candidate carries
+its own depth probe as part of its evaluation) · **Effort:** roughly 2–4 days for the VGGT pose track, 1–2 weeks for a pinned
+TopoSurfel build plus one-capture A/B, 2–3 days for a pinned SAGA filter plus fusion reuse
 
-**Settled scope, 2026-09-06 (grilling rounds 1–2, accepted; user change):** TopoSurfel is judged on
+**Settled scope, 2026-09-06 (grilling rounds 1–2, accepted; user change; amended 2026-09-06
+per user OK):** TopoSurfel is judged on
 **masking** (fusion-time sherd outlines — the only route that worked on A03); VGGT is
 judged as a **pose source** first, with **`phai-lab/InstantSplatPP` (InstantSplat++) as
 its named downstream viewable-splat route** (VGGT prior → splat optimisation → free-view
-rendering, per upstream `scripts/run_all_prior_model.bash`). A viewable splat is for
+rendering, per upstream `scripts/run_all_prior_model.bash`). **SAGA (`Jumpat/SegAnyGAussians`,
+AAAI'25) is judged as a post-hoc filter first:** freeze full-scene MILo Gaussians, distil
+SAM masks to per-Gaussian features, filter to sherd subset at full density, then reuse the
+live fusion-time masked-depth path (`mesh_extract_dtu.py:133-135`, `integration.py:54-59`).
+A viewable splat is for
 looking, not measuring — it does not clear the mesh bar below until a mesh route with
 voxel/band in mm plus scale anchoring is named. The bar is the M7 bar as written (steel
-cm² left, fraction within M1 ~1 mm on the same ruler, ridge-resolving renders). Both
+cm² left, fraction within M1 ~1 mm on the same ruler, ridge-resolving renders). All
 tracks wait for M1's boxes. Pinned builds, full resolution, no Slurm without approval.
 "Extract" alone is vague — `CONTEXT.md` now says to name masking, pruning, or culling;
 a splat is not a mesh.
@@ -33,8 +37,18 @@ to opposite decisions.
 
 ## Opinion before acting (workspace rule — researched, then stated)
 
-Worth doing in general; **not yet shown worth doing for this**, and the two candidates
+Worth doing in general; **not yet shown worth doing for this**, and the three candidates
 are not the same kind of thing.
+
+- **SAGA** (`Jumpat/SegAnyGAussians`, AAAI'25, arXiv:2312.00860) is the closest fit for
+  the stated condition — sherd out with no quality loss. **Post-hoc:** freeze the full
+  MILo scene, distil SAM masks to per-Gaussian affinity features, retrieve the sherd
+  subset by point/scribble/mask query in ms. Pure filter — geometry untouched, object at
+  full density — then feed the survivors to the live masked-depth TSDF or GOF tetrahedra
+  path. Unlike M4 vote-pruning (19x sparse, 1.76 mm skin) and M5 masked training (91%
+  drained), exclusion is paired with retention by construction. Needs pinned commit,
+  full-resolution `A03_sherds` masks, and the same mm bar; masks must be consistent
+  across the 143 dense views or the ID splits.
 
 - **TopoSurfel** (SIGGRAPH Asia 2026, `Fan-Treasure/TopoSurfel`, arXiv:2608.20687) is the
   closer fit: Gaussian surfels co-evolved with a proxy mesh to suppress floaters and fill
@@ -81,12 +95,18 @@ are not the same kind of thing.
 
 Neither candidate meets the user's condition — sherd out of the rig with no quality
 loss — without extra work that is currently unscoped (a mask path for TopoSurfel, a
-mesh route with scale anchoring behind VGGT + InstantSplat++). Measure M1's boxes first; they are
-cheap and they gate both tracks either way. The independent small-object literature
-search is still owed before building — web search was unavailable in this session.
+mesh route with scale anchoring behind VGGT + InstantSplat++, a pinned SAGA filter wired
+to the live fusion path). Measure M1's boxes first; they are
+cheap and they gate all tracks either way. Small-object literature search now partly done
+2026-09-06 (SAGA, Gaussian Grouping, Feature3DGS, object-centric 2DGS, GOF surveyed from
+primary sources); A03-scale demonstration still owed before building.
 
 ## Done when
 
+- [ ] SAGA commit pinned in this file before any job is submitted, trained feature head
+  on frozen full-scene `A03_sherds` Gaussians at full capture resolution, sherd subset
+  retrieved by mask query, mesh extracted via the live fusion-time masked-depth path
+  with voxel size and truncation band stated in **millimetres**
 - [ ] TopoSurfel **and** its PGSR init pinned by commit hash in this file before any job
       is submitted — an unpinned build is unrepeatable. Trained on the existing
       `A03_sherds` dataset at full capture resolution (`-r 1` equivalent — no silent
@@ -113,7 +133,10 @@ search is still owed before building — web search was unavailable in this sess
 ## Gate / stop condition
 
 - If OpenMVS already meets the M1 requirement: **stop** — record it and do not swap,
-  whatever either candidate's merits elsewhere.
+  whatever any candidate's merits elsewhere.
+- If SAGA filtering leaves steel webbed or drops clay density the way M4/M5 did: retire
+  NO at one capture with eye verification (type-1 method failure on this material); do
+  not fund a second post-hoc architecture to re-learn it.
 - If TopoSurfel needs a mask patch (fusion-time zeroing or masked init): that is new
   extraction code — amend this question with the patch stated, do not build around it
   silently. If its extraction hits the 32,768-block cliff at the required voxel, this
@@ -131,7 +154,9 @@ search is still owed before building — web search was unavailable in this sess
 ## Source
 
 User proposal 2026-09-06 (TopoSurfel for accuracy, VGGT for speed, condition: clean
-sherd-from-rig separation without quality loss); TopoSurfel README + paper
+sherd-from-rig separation without quality loss; amended 2026-09-06 per user OK to add
+SAGA post-hoc filter track); SAGA paper (arXiv:2312.00860) + `Jumpat/SegAnyGAussians`
+README (freeze + distil + millisecond retrieval; geometry untouched); TopoSurfel README + paper
 (arXiv:2608.20687) + `arguments/__init__.py` at HEAD (no mask flag); VGGT README +
 paper (arXiv:2503.11651: cameras/depth/point-maps in seconds, COLMAP export,
 downstream splatting); InstantSplat++ README (upstream VGGT-prior path,
