@@ -10,7 +10,8 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
 
 **Status:** claimed (2026-09-06 — M6 trial start; build-prep only, no sbatch without explicit approval)
 
-- [ ] Commit pinned in M6's file before the first job; build from that commit only
+- [x] Commit pinned in M6's file before the first job; build from that commit only
+  (2026-09-06: `f3e3b9f` + rasterizer `e0ed020`; Spartan clone verified, clean)
 - [ ] Training reuses `A03_sherds` (existing fusion-time masks — no new masking, no
       relitigation of retired M4/M5)
 - [ ] Voxel size and truncation band reported in **mm**; block count checked against the
@@ -49,6 +50,19 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   `extract_mesh_bounded(mask_backgrond=True)` zeroes rig depth as shipped. Still to
   verify at train time: masked filenames match `images.bin` basenames exactly (MILo
   kept `.JPG` names over PNG bytes — same join), and the alpha band survives `-r 1`.
-- 2026-09-06, env build attempt 1 FAILED: home-dir package cache hit disk quota on
-  the torch 2.0.0 download (`InvalidArchiveError ... Errno 122`). Retry running with
-  `CONDA_PKGS_DIRS` relocated to `$MILO/.conda-pkgs` on project storage.
+- 2026-09-06, build-prep COMPLETE (no sbatch): extensions compiled inplace against
+  the shared env (`TORCH_CUDA_ARCH_LIST=8.0` was needed — login nodes have no GPU
+  for torch's auto-detect) and import clean (`EXT_OK`) via `PYTHONPATH`, env
+  untouched. Filename check: 164/164 solve names present in `images_masked`, all
+  RGBA 3200×2133. Remaining: GPU smoke (torch sees card — job pre-flight) and the
+  train+extract job itself, which needs explicit approval.
+- 2026-09-06, env decision per user: REUSE the MILo env
+  (`MILo/envs/milo`: py3.9, torch 2.3.1+cu118, o3d 0.19.0) — no separate `surfel`
+  env, no `conda env create` (attempts 1–2 failed: home quota, then a corrupt
+  torch tarball plus a cuda-cupti/nvtx LICENSE clobber; both cleaned up).
+  Deviations from 2DGS's pinned `environment.yml` (py3.8/torch2.0.0/o3d0.18.0)
+  recorded here; code stays separate: the two CUDA extensions
+  (`diff-surfel-rasterization`, `simple-knn`) build inplace inside `2dgs/repo/`
+  and are exposed via `PYTHONPATH` in 2DGS job scripts only — nothing installed
+  into the shared env (both repos import `simple_knn`, so an env-level install
+  would mix them). `lpips`/`mediapy` not on the train/mesh path — skipped.
