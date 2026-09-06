@@ -1,0 +1,94 @@
+#!/bin/bash
+#SBATCH --job-name=saga-train
+#SBATCH --account=punim2657
+#SBATCH --partition=gpu-a100
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G
+#SBATCH --time=04:00:00
+#SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/saga_train_%j.log
+
+# Ticket alt-09: SAGA post-hoc filter, stage 1 — distil features.
+#
+# Freezes the full-scene MILo Gaussians (A03_nomask, 222,678 — geometry
+# untouched by construction) and trains only the 32-dim contrastive head
+# against OUR adapter-verified sherd masks (not SAGA's SAM extraction).
+# Query + fusion ride in a second job so the renders can be looked at first.
+#
+# Pins: Jumpat/SegAnyGAussians@v2@2d4c5d7 (cloned to punim2657/saga),
+# envs/saga (torch 2.3.1+cu118, rasterizers + pytorch3d 0.7.6 compiled).
+#
+# Usage:
+#   ./scripts/remote/pull_and_sbatch.sh slurm/saga_train.slurm
+
+set -euo pipefail
+
+SAGA_ROOT=/data/gpfs/projects/punim2657/saga
+MILO_ROOT=/data/gpfs/projects/punim2657/MILo
+REPO_DIR=$MILO_ROOT/repo
+ENV_PREFIX=$MILO_ROOT/envs/saga
+CAPTURE=17062025/A03_sherds
+DATA_DIR=$MILO_ROOT/data/$CAPTURE
+FROZEN=$MILO_ROOT/output/17062025/A03_nomask/point_cloud/iteration_18000/point_cloud.ply
+SRC_DIR=$MILO_ROOT/saga_data/A03
+MODEL_DIR=$MILO_ROOT/output/saga_A03
+
+echo "=== SAGA feature training started $(date) on $(hostname) ==="
+nvidia-smi | head -8 || true
+
+[[ -f "$FROZEN" ]] || { echo "No frozen Gaussians at $FROZEN" >&2; exit 1; }
+[[ -d "$DATA_DIR/images_masked" ]] || { echo "No masked set" >&2; exit 1; }
+[[ -d "$ENV_PREFIX" ]] || { echo "No env at $ENV_PREFIX" >&2; exit 1; }
+cd "$SAGA_ROOT" && git rev-parse HEAD
+
+module purge
+module load GCC/11.3.0 OpenMPI/4.1.4
+module load CUDA/11.8.0
+module load Miniforge3/24.7.1-2
+export CUDA_HOME="${EBROOTCUDA:?}"
+export LD_LIBRARY_PATH="$CUDA_HOME/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}"
+export PYTHONNOUSERSITE=1
+export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
+
+eval "$(conda shell.bash hook)"
+conda activate "$ENV_PREFIX"
+
+# ---- stage 0: source layout SAGA expects, our masks in its format ----
+mkdir -p "$SRC_DIR" "$MODEL_DIR/point_cloud/iteration_18000"
+[[ -e "$SRC_DIR/images" ]] || ln -s "$DATA_DIR/images" "$SRC_DIR/images"
+[[ -d "$SRC_DIR/sparse/0" ]] || { mkdir -p "$SRC_DIR/sparse"; cp -r "$DATA_DIR/sparse/0" "$SRC_DIR/sparse/0"; }
+[[ -f "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply" ]] || \
+    cp "$FROZEN" "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply"
+mkdir -p "$SRC_DIR/sam_masks"
+python - <<'PY' 2>&1 | tail -2
+import os
+import torch
+from PIL import Image
+import numpy as np
+src = "/data/gpfs/projects/punim2657/MILo/data/17062025/A03_sherds/images_masked"
+dst = "/data/gpfs/projects/punim2657/MILo/saga_data/A03/sam_masks"
+n = 0
+for f in sorted(os.listdir(src)):
+    img = Image.open(os.path.join(src, f))
+    alpha = np.asarray(img)[..., 3] > 128
+    assert alpha.any(), f
+    stem = f.split(".")[0]
+    torch.save(torch.from_numpy(alpha).unsqueeze(0), os.path.join(dst, stem + ".pt"))
+    n += 1
+print(f"converted {n} masks")
+PY
+[[ -f "$SRC_DIR/sam_masks/A31_1100.pt" ]] || { echo "mask conversion failed" >&2; exit 1; }
+
+# ---- stage 1: per-mask 3D scales on the frozen scene ----
+python -u get_scale.py -s "$SRC_DIR" -m "$MODEL_DIR" --image_root "$SRC_DIR" 2>&1 | tail -3
+[[ -f "$SRC_DIR/mask_scales/A31_1100.pt" ]] || { echo "get_scale wrote nothing" >&2; exit 1; }
+
+# ---- stage 2: contrastive head only; scene stays frozen ----
+python -u train_contrastive_feature.py -s "$SRC_DIR" -m "$MODEL_DIR" \
+    --iterations 10000 2>&1 | tee "$MODEL_DIR/log_train_feature.txt"
+
+echo "=== files ==="
+find "$MODEL_DIR" -name '*.pth' -newermt '-1 day' | head
+echo "=== finished $(date) ==="
+echo "Next (separate job after looking): headless mask-prompt query -> keep idx -> filtered ply -> DTU fusion."
