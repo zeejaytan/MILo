@@ -19,6 +19,24 @@ order below was over-strict — only the requirement (done) and the OpenMVS base
 transfer to a new method. 2DGS build prep proceeds in parallel; its own
 depth-disagreement probe is part of its evaluation, not a prerequisite.
 
+**Pinned build, 2026-09-06:** `hbb1/2d-gaussian-splatting@f3e3b9f`,
+rasterizer `hbb1/diff-surfel-rasterization@e0ed020` (both HEAD at pin date; no job
+submitted on this pin yet). Vanilla training at this commit reads **no mask**
+(`train.py`: full-frame L1+SSIM; the `gt_alpha_mask *= photo` line in
+`scene/cameras.py` is commented out) — the rig trains, and leaves at fusion via the
+shipped `mask_backgrond` depth-zeroing (`utils/mesh_utils.py`), the same construction
+as MILo's DTU path. The Rogge masked-training fork (`MarcelRogge/object-centric-2dgs`,
+background loss weight 0.5) is the separate live branch.
+
+**Small-object sweep, 2026-09-06 (partly done, at-scale demo still missing):**
+adjacent only — ISPRS 2026 tests MILo/GS variants on complex detailed objects (MILo
+promising on detail, plain splatting noisy as geometry); ObjSplat digitises cultural
+artefacts on a motorised turntable in minutes (surfel-based, robotic views, not our
+capture); single-object 2DGS with YOLO+SAM probability masks reaches ~1/10 the
+Gaussians at comparable quality (arXiv:2603.14316); masked/object-centric 2DGS method
+plus code (arXiv:2501.08174). Nothing at the 0.2 mm ridge scale on sherd-like clay —
+build-prep proceeds, the verdict still needs the trial's own depth check.
+
 ## Why it matters
 
 This decides between three different next moves: tile MILo's extraction past the block
@@ -34,14 +52,19 @@ reconstruction (2D oriented surfels with depth-distortion and normal-consistency
 regularization, SIGGRAPH 2024, `hbb1/2d-gaussian-splatting` README). But on this
 material every established failure sits somewhere a representation swap does not touch:
 the mesh comes out through **Open3D TSDF fusion in both routes** (2DGS README:
-"TSDF fusion for extracting mesh is based on Open3D"), so the measured 32,768-block
-cliff binds 2DGS too until tiled; the rig fills the masks (644 cm² steel against 61 cm²
+"TSDF fusion for extracting mesh is based on Open3D") — but through a **different
+Open3D class**: 2DGS's bounded path integrates into `ScalableTSDFVolume`
+(`utils/mesh_utils.py:extract_mesh_bounded`), not the `VoxelBlockGrid` whose
+`extract_triangle_mesh` scratch overflows at 32,768 blocks, and its unbounded path is a
+custom contracted-TSDF plus marching-cubes (`extract_mesh_unbounded`). Whether an
+equivalent ceiling binds either is **unmeasured** (source audit 2026-09-06 at the pinned
+commit) — do not read a 2DGS extraction failure as the known cliff without checking; the rig fills the masks (644 cm² steel against 61 cm²
 clay per view on A03) upstream of any extractor; and masked training drained 91% of
 density on MILo ([M5](M5-can-masked-training-exclude-rig.md)) — a 2DGS swap needs its own
-masked-training A/B, it cannot inherit an exemption. Web search for independent
-small-object experience was attempted and unavailable in this session; that half of the
-research is still owed before building. Measure M1's three boxes first — they are cheap
-and they gate this question either way.
+masked-training A/B, it cannot inherit an exemption. Small-object literature stood
+partly done 2026-09-06 (see pin note above); M1's requirement and OpenMVS baseline have
+landed since, and per the 2026-09-06 verdict they gate this trial's verdict, not its
+build-prep.
 
 ## Done when
 
