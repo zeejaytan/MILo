@@ -57,6 +57,14 @@
   100% kept, extents ratio 1.06 — inside the gate. Resubmit pending approval.
 - Approved and resubmitted 2026-09-06 as job 30157052 (boxed pair +
   harmonization fix), poll watching; final State / ExitCode to follow here.
+- 30157052 COMPLETED 0:0 but the numbers invert reality: MILo 85.5% vs OpenMVS
+  21.4% against rig-in masks. The overlays show why — MILo's native mesh keeps
+  the whole rig (green on rig = agreement with rig pixels), OpenMVS is
+  sherds-only (blue everywhere the rig stands). It is a rig-presence test, not
+  a sherd-quality test: type-2 ruler failure, caught by looking. The honest
+  rerun is sherd-only masks (alpha extracted from `A03_sherds/images_masked`,
+  21 held-out views, `masks_sherd_png/`) via an alternate capture json.
+  Slurm job takes optional capture path as 5th arg now.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
