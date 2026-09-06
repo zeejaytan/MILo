@@ -48,10 +48,15 @@ detail.
       floater and rig pixels in the unprojection, not surface noise. One
       capture, first successful run after two script bugs; reading it against
       the bar is the gate's job, not this box's)
-- [ ] **What OpenMVS already achieves on A03**, measured the same way, so the two routes
-      are compared on the same ruler. **Scale is now established by the tool, not by
-      hand**: `compare_meshes.py` refuses a mesh without a sidecar rather than measuring
-      it, so this box can no longer be ticked against an unscaled mesh — see
+- [ ] **What OpenMVS achieves on A03**: silhouette agreement on held-out views
+      (shape-only, valid now the fixed frame is shared), flat noise in its own
+      frame via the A02 noisefloor pattern, break-face renders. Struck
+      2026-09-06: the full cross-mesh millimetre replication — A02 settled the
+      cross-method question decisively, and the 4.1 mm floor closed MILo's side.
+      It returns only if the silhouette disagrees with A02. **Scale is now
+      established by the tool, not by hand**: `compare_meshes.py` refuses a mesh
+      without a sidecar rather than measuring it, so this box can no longer be
+      ticked against an unscaled mesh — see
       [M3](M3-is-the-mesh-at-true-scale.md)
 - [x] A stated requirement in millimetres: **~1 mm break-face relief** (grains
       ~0.7–1.2 mm from 2026-09-06 photo measurement; conservator concurred 2026-09-06).

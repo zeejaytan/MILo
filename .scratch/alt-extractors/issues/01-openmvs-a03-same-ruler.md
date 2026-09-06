@@ -14,6 +14,17 @@
 
 ## Comments
 
+- 2026-09-06 (scope downgrade, conservator-confirmed): the full cross-mesh
+  millimetre replication is struck. A02 already settled OpenMVS-vs-MILo
+  decisively on same-rig-class material (flat noise 0.186 vs 0.485 mm), with
+  the caveat that one A02 sherd lost its edge silently in an average — and the
+  4.1 mm depth floor closed the MILo side of M1 on its own. What the gate still
+  needs from A03 is directional only (does OpenMVS clear ~1 mm here), answered
+  by: (a) shape-only silhouette compare on the shared fixed frame (staged),
+  (b) flat noise via the A02 `stage5_noisefloor.py` pattern in the mesh's own
+  frame, (c) break-face renders. Per-sherd mm replication returns only if (a)
+  disagrees with A02.
+
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
   reason misleads. Measured on the node: MILo `mesh_mm.ply` spans ~983 mm,
