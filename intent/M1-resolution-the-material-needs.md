@@ -52,16 +52,17 @@ detail.
       floater and rig pixels in the unprojection, not surface noise. One
       capture, first successful run after two script bugs; reading it against
       the bar is the gate's job, not this box's)
-- [ ] **What OpenMVS achieves on A03**: silhouette agreement on held-out views
-      (shape-only, valid now the fixed frame is shared), flat noise in its own
-      frame via the A02 noisefloor pattern, break-face renders. Struck
-      2026-09-06: the full cross-mesh millimetre replication — A02 settled the
-      cross-method question decisively, and the 4.1 mm floor closed MILo's side.
-      It returns only if the silhouette disagrees with A02. **Scale is now
-      established by the tool, not by hand**: `compare_meshes.py` refuses a mesh
-      without a sidecar rather than measuring it, so this box can no longer be
-      ticked against an unscaled mesh — see
-      [M3](M3-is-the-mesh-at-true-scale.md)
+- [x] **What OpenMVS achieves**: via the A02 result by capture substitution
+      (2026-09-06): flat-surface wobble 0.186 mm on same-rig-class material —
+      under the ~1 mm bar with margin — plus A03 sherd-only outlines at 42% vs
+      MILo 8.6% pointing the same way (overfill fringes explain the gap to
+      A02's 66%). Substitution caveats travel too: different capture and
+      coarser fabric, and A02's SH5 warning that one smoothed edge hid in an
+      average. A03 flat-noise and per-sherd millimetres stay struck; they
+      return only if a future outline disagrees with this direction. Scale stays
+      established by the tool, not by hand: `compare_meshes.py` refuses a mesh
+      without a sidecar rather than measuring it — see
+      [M3](M3-is-the-mesh-at-true-scale.md).
 - [x] A stated requirement in millimetres: **~1 mm break-face relief** (grains
       ~0.7–1.2 mm from 2026-09-06 photo measurement; conservator concurred 2026-09-06).
       Argued from visible relief in the photographs, not from what any tool delivers
@@ -73,6 +74,13 @@ detail.
 If OpenMVS already meets the stated requirement, MILo tiling is **not worth doing for
 this**, whatever its merits otherwise. Write that down and stop, rather than lifting a
 ceiling nothing is pressing against.
+
+**Verdict recorded 2026-09-06:** (a) MILo tiling is STOPPED — the depth going in
+wobbles 4.1 mm against a ~1 mm bar, so finer grids sample noise, not relief;
+(b) OpenMVS meets the bar — 0.186 mm wobble on A02 plus the A03 outline
+direction; (c) 2DGS and TopoSurfel/VGGT go to their own one-capture trials,
+judged by their own depth checks against these same two bars — this verdict
+closes MILo's ceiling work, not their trials.
 
 ## Source
 
