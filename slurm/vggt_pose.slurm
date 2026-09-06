@@ -17,7 +17,8 @@
 # measurement.env — an unscaled result is refused, never measured.
 #
 # Usage:
-#   ./scripts/remote/pull_and_sbatch.sh slurm/vggt_pose.slurm 17062025/A03_sherds
+#   ./scripts/remote/pull_and_sbatch.sh slurm/vggt_pose.slurm 17062025/A03_sherds images
+#   ./scripts/remote/pull_and_sbatch.sh slurm/vggt_pose.slurm 17062025/A03_sherds images_masked
 #
 # Pins: code facebookresearch/vggt@a288dd0, checkpoint facebook/VGGT-1B (open;
 # Commercial is application-gated). Checkpoints and caches live on the project
@@ -26,8 +27,9 @@
 
 set -euo pipefail
 
-CAPTURE="${1:?usage: sbatch vggt_pose.slurm <capture> [out_name]}"
-OUT_NAME="${2:-vggt_$(basename "$CAPTURE")}"
+CAPTURE="${1:?usage: sbatch vggt_pose.slurm <capture> [images_dir] [out_name]}"
+IMAGES_DIR="${2:-images}"
+OUT_NAME="${3:-vggt_$(basename "$CAPTURE")_${IMAGES_DIR}}"
 
 VGGT_ROOT=/data/gpfs/projects/punim2657/vggt
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
@@ -40,7 +42,7 @@ SCENE_DIR=$OUT_DIR/scene
 echo "=== VGGT pose on $CAPTURE started $(date) on $(hostname) ==="
 nvidia-smi | head -8 || true
 
-[[ -d "$DATA_DIR/images" ]] || { echo "No image set at $DATA_DIR/images" >&2; exit 1; }
+[[ -d "$DATA_DIR/$IMAGES_DIR" ]] || { echo "No image set at $DATA_DIR/$IMAGES_DIR" >&2; exit 1; }
 [[ -f "$DATA_DIR/sparse/0/images.bin" ]] || { echo "No COLMAP solve at $DATA_DIR/sparse/0" >&2; exit 1; }
 [[ -d "$ENV_PREFIX" ]] || { echo "No env at $ENV_PREFIX -- build it on the login node first" >&2; exit 1; }
 export HF_HOME=/data/gpfs/projects/punim2657/MILo/vggt_cache/hf
@@ -52,12 +54,14 @@ ls -la "$CACHED_CKPT"
 cd "$VGGT_ROOT" && git rev-parse HEAD
 
 mkdir -p "$SCENE_DIR/images" "$OUT_DIR"
-# Unmasked originals: VGGT carries no mask, and the COLMAP solve it is scored
-# against was built from these views. Masking here would change the question.
-for f in "$DATA_DIR"/images/*; do
+# Which views VGGT sees is the trial variable (ticket 05): "images" for the
+# unmasked room (world frame — static backdrop dominates and the cameras
+# correctly go static), "images_masked" for sherd-on-white via the loader's
+# RGBA blend (object frame — the only reading comparable to COLMAP's ring).
+for f in "$DATA_DIR"/"$IMAGES_DIR"/*; do
     ln -sfn "$f" "$SCENE_DIR/images/$(basename "$f")"
 done
-echo "staged $(ls "$SCENE_DIR/images" | wc -l) views"
+echo "staged $(ls "$SCENE_DIR/images" | wc -l) views from $IMAGES_DIR"
 
 module purge
 module load GCC/11.3.0 OpenMPI/4.1.4
