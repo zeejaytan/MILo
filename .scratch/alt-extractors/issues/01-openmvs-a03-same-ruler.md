@@ -24,6 +24,11 @@
   (b) flat noise via the A02 `stage5_noisefloor.py` pattern in the mesh's own
   frame, (c) break-face renders. Per-sherd mm replication returns only if (a)
   disagrees with A02.
+- 2026-09-06: downgrade committed; shape-only compare submitted as job 30154980
+  (fixed-frame OpenMVS mm + boxed MILo mm). Laptop-side poll running
+  (background shell; `slurm_poll.sh` itself uses bare `ssh`, which hangs from
+  WSL here — same squeue/sacct loop over Windows ssh instead). Final State /
+  ExitCode to be recorded here on completion.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
@@ -34,6 +39,24 @@
   claim the same mm factor. Next step is a common-box crop before comparing,
   NOT a blind resubmit — resubmitting the same job reproduces the same refusal.
   Parked for user confirm since it changes the comparison basis.
+- 2026-09-06: user pointed at `docs/notes/A02_MESH_METHOD_COMPARISON.md`
+  (COMPLETE 2026-08-18, A02, 7 sherds, 4 methods). What it settles:
+  (a) OpenMVS flat-surface noise **0.186 mm** vs MILo 0.485 mm — the other
+  route already under the ~1 mm bar on noise, same verdict direction as the
+  fresh A03 4.1 mm depth floor; (b) the crop problem is SOLVED precedent, not
+  a guess — A02 hit the identical "MILo mesh is the whole room" issue
+  (their measurement #6) and fixed it with shared sherd boxes measured
+  identically for all methods; the stage scripts survive locally under
+  `artifacts/A02_metric/verification/scripts/`. What it does NOT settle:
+  M1's box as written says A03, not A02 (one tree, different capture); and
+  the SH5 caveat cuts against a clean "OpenMVS clears the bar" — OpenMVS
+  smoothed one fracture edge out of existence and no method recovered it
+  (capture problem, cleared of smoothing-knob blame in job 29892523), so the
+  note's own next step is "check break edges per sherd". Proposed path:
+  replicate the A02 shared-box method on A03's 10 sherds, edge-check-first
+  rather than ranking-first. Awaiting user pick: (a) tick M1's second box via
+  A02 with a capture-substitution amendment, or (b) run the A03 shared-box
+  rerun.
 - 2026-09-06 (parallel session): root cause is deeper than content. `dense_fixed`
   vs `dense_masked` are DIFFERENT reconstructions, not one frame: pairwise camera
   distances across 164 shared views give unit-ratio spread 0.29–1.11, and a
