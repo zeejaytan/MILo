@@ -19,7 +19,7 @@ set -euo pipefail
 # Needs a GPU: the silhouette comparison and the raking-light renders both go through
 # nvdiffrast.
 
-CAPTURE="${1:?usage: sbatch milo_compare.slurm <capture> [openmvs-mesh]}"
+CAPTURE="${1:?usage: sbatch milo_compare.slurm <capture> [openmvs-mesh] [milo-mesh] [extra-compare-flags]}"
 OPENMVS_MESH="${2:-}"
 
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
@@ -57,9 +57,13 @@ if [[ -z "$OPENMVS_MESH" || ! -f "$OPENMVS_MESH" ]]; then
     exit 1
 fi
 
-# Prefer a millimetre-scaled MILo mesh if apply_scale.py made one.
-MILO_MESH=""
+# Prefer a millimetre-scaled MILo mesh if apply_scale.py made one. The default is
+# the whole mesh, sprawl included; pass a cropped mesh (e.g. mesh_mm_boxed.ply)
+# as the third argument when the comparison should score shared content.
+MILO_MESH="${3:-}"
+EXTRA_FLAGS="${4:-}"
 for cand in "$OUT_DIR/mesh_mm.ply" "$OUT_DIR/mesh.ply"; do
+    [[ -n "$MILO_MESH" ]] && break
     [[ -f "$cand" ]] && { MILO_MESH="$cand"; break; }
 done
 if [[ -z "$MILO_MESH" ]]; then
@@ -84,7 +88,8 @@ python scripts/compare_meshes.py \
     --capture "$DATA_DIR/capture.json" \
     --milo    "$MILO_MESH" \
     --openmvs "$OPENMVS_MESH" \
-    --out     "$OUT_DIR/compare"
+    --out     "$OUT_DIR/compare" \
+    $EXTRA_FLAGS
 
 echo
 echo "=== comparison for $CAPTURE finished $(date) ==="

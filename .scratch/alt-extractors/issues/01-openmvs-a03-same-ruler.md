@@ -23,3 +23,15 @@
   claim the same mm factor. Next step is a common-box crop before comparing,
   NOT a blind resubmit — resubmitting the same job reproduces the same refusal.
   Parked for user confirm since it changes the comparison basis.
+- 2026-09-06 (parallel session): root cause is deeper than content. `dense_fixed`
+  vs `dense_masked` are DIFFERENT reconstructions, not one frame: pairwise camera
+  distances across 164 shared views give unit-ratio spread 0.29–1.11, and a
+  best-fit similarity leaves 2.5 m median residual on a 1.4 m ring. The
+  mask-frame OpenMVS mesh scaled with the MILo factor was wrong-scaled and has
+  been deleted (file + sidecar). Redone correctly: `dense_fixed`
+  `scene_refined_mm.ply` + sidecar (same reconstruction as the MILo training
+  data, factor valid), MILo mesh cropped to its box keeps 98.8% of faces
+  (`mesh_mm_boxed.ply`, sidecar carried) — same frame confirmed by behaviour.
+  Remaining extents ratio ~1.25 is backdrop content, not units; the gate's
+  premise (shared frame ⇒ sizes must agree) does not cover it. Next: shape-only
+  silhouette compare (shared frame now valid), mm figures per-sherd à la A02.

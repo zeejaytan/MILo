@@ -33,6 +33,12 @@ detail.
   spans ~1 m of surroundings, OpenMVS a tray crop — same factor, different
   content), and the same-ruler baseline now proceeds under
   `alt-extractors/01` via a common-box crop, not a blind resubmit.
+- Load-bearing for all A03 cross-route work (2026-09-06): `dense_fixed` and
+  `dense_masked` are different reconstructions, not one frame (camera-pair unit
+  ratios spread 0.29–1.11; similarity fit leaves 2.5 m residual on a 1.4 m
+  ring). An OpenMVS mesh from the mask frame scaled with the MILo factor is
+  wrong-scaled — one such file was made and deleted. The valid pair is the
+  fixed-frame refined mesh plus the MILo mesh cropped to its box (98.8% kept).
 
 ## Done when
 
