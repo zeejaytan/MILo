@@ -112,14 +112,8 @@ primary sources); A03-scale demonstration still owed before building.
       `A03_sherds` dataset at full capture resolution (`-r 1` equivalent — no silent
       downsample), mesh extracted with voxel size and truncation band stated in
       **millimetres**
-- [ ] VGGT checkpoint pinned (upstream `VGGT-1B` or `-Commercial`) with
-      InstantSplat++ commit pinned alongside it as the named downstream viewable-splat
-      route (`scripts/run_all_prior_model.bash` path, prior-model type stated).
-      Cameras compared against the COLMAP solve on the same capture; splat judged on
-      ridge-resolving renders only — an unscaled splat is never measured in mm. Any
-      mesh claim behind this track needs voxel and band in **mm** plus scale anchoring
-      per [M3](M3-is-the-mesh-at-true-scale.md) named separately — without that, the
-      track stays viewing-only by design
+- [x] VGGT pose track RETIRED NO 2026-09-06 (ticket 05): checkpoint `facebook/VGGT-1B` open (Commercial application-gated), code `facebookresearch/vggt@a288dd0`. Feed-forward collapsed in both input modes on A03 (unmasked: median rot 92°, trans 1385 mm; masked sherd-on-white: 111°, 1072 mm; AUC@10° 0.0 both; rings plots eye-verified) and `--use_ba` refused (`No reconstruction can be built with BA`, too few inliers). Type-1 on this material, one capture. Pose-source role not earned; mesher reading was already closed by the 518px cap
+- [x] InstantSplat++ viewable-splat RETIRED pose-dependent 2026-09-06 (ticket 06 `wontfix`): its VGGT prior is known-garbage on A03, so no honest splat test exists behind this track. An unposed splat would be a new ticket with voxel/band in mm + scale anchoring, not this one
 - [ ] Cross-view depth disagreement in **millimetres** for each candidate versus MILo's
       DTU route on the same capture, on the same ruler (scale sidecars)
 - [ ] Same-ruler comparison against OpenMVS on A03 — fraction of sherd surface within
