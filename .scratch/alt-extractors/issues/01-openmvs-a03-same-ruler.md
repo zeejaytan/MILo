@@ -65,6 +65,11 @@
   rerun is sherd-only masks (alpha extracted from `A03_sherds/images_masked`,
   21 held-out views, `masks_sherd_png/`) via an alternate capture json.
   Slurm job takes optional capture path as 5th arg now.
+- Sherd-only rerun submitted 2026-09-06 as job 30158911 (same boxed pair,
+  `capture_sherds.json` with masks from `images_masked` alpha, 21 held-out
+  views), poll watching; numbers + overlays on landing. This answers the
+  directional question the (a)/(b) pick above left open; per-sherd mm stays
+  struck unless the silhouette disagrees with A02.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
