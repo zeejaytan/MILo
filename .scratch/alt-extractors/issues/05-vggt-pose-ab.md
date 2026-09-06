@@ -17,3 +17,4 @@
 ## Comments
 
 - 2026-09-06 (trail start, both-in-order track 1/3): M1 boxes land (A02 0.186 mm flat wobble; A03 depth floor 4.1 mm; requirement ~1 mm), so this unblocks. Metrics: Sim(3)/Umeyama scale anchor then relative rotation (°), relative translation (mm), reprojection residual (px), registration rate (n/143), AUC@3/5/10° — mean, not best-of-N. No Slurm without approval.
+- 2026-09-06 (approved): env `envs/vggt` built on login node (torch 2.3.1+cu118, pycolmap 3.10.0, trimesh); VGGT-1B model.pt (4.5 GB) pre-cached to torch hub (compute nodes offline). Feed-forward only, no BA; unmasked `images/` (COLMAP's own views — masking would change the question). Submitted as job 30167538 (`slurm/vggt_pose.slurm 17062025/A03_sherds`), laptop poll running; final State/ExitCode to follow here.
