@@ -61,6 +61,13 @@ mkdir -p "$SRC_DIR" "$MODEL_DIR/point_cloud/iteration_18000"
 [[ -f "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply" ]] || \
     cp "$FROZEN" "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply"
 mkdir -p "$SRC_DIR/sam_masks"
+# SAGA's arg loader eval()s a config file from a previous step and only
+# catches TypeError — a fresh model dir (we skip scene training: the MILo
+# scene is already trained and frozen) crashes with FileNotFoundError. Seed
+# both configs with the loader's own empty-default string, so the merge is
+# cmdline-only. No values invented: every real setting comes from flags below.
+[[ -f "$MODEL_DIR/cfg_args" ]] || printf 'Namespace()' > "$MODEL_DIR/cfg_args"
+[[ -f "$MODEL_DIR/feature_cfg_args" ]] || printf 'Namespace()' > "$MODEL_DIR/feature_cfg_args"
 python - <<'PY' 2>&1 | tail -2
 import os
 import torch
