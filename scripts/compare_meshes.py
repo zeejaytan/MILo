@@ -196,7 +196,9 @@ class Renderer:
         mask = (rast[..., 3:4] > 0).float()
         depth = v_clip[..., 2:3] / v_clip[..., 3:4]
         depth_img, _ = dr.interpolate(depth, rast, f)
-        normal_img, _ = dr.interpolate(n[None], rast, f)
+        # n[None] is a strided view, and nvdiffrast's interpolate_fwd_da rejects
+        # non-contiguous inputs (job 30154980). The added dim costs one copy.
+        normal_img, _ = dr.interpolate(n[None].contiguous(), rast, f)
 
         def to_np(x, c):
             a = x[0, :h, :w, :c].detach().cpu().numpy()

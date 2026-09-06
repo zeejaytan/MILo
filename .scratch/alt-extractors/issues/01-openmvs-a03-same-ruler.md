@@ -29,6 +29,10 @@
   (background shell; `slurm_poll.sh` itself uses bare `ssh`, which hangs from
   WSL here — same squeue/sacct loop over Windows ssh instead). Final State /
   ExitCode to be recorded here on completion.
+- 30154980 FAILED in 2:00 (sacct State=FAILED ExitCode=1:0): nvdiffrast
+  `interpolate` rejects the strided view `n[None]` in `compare_meshes.py`
+  `Renderer.render` — one-line `.contiguous()` fix committed, resubmit pending
+  approval.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated
