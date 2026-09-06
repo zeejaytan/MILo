@@ -55,6 +55,8 @@
   size-gate comment corrected (content moves extents too), self-test proves
   the conversion (PASS on laptop). OpenMVS side cropped to the shared box:
   100% kept, extents ratio 1.06 — inside the gate. Resubmit pending approval.
+- Approved and resubmitted 2026-09-06 as job 30157052 (boxed pair +
+  harmonization fix), poll watching; final State / ExitCode to follow here.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated

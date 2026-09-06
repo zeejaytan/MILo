@@ -62,6 +62,7 @@ fi
 # as the third argument when the comparison should score shared content.
 MILO_MESH="${3:-}"
 EXTRA_FLAGS="${4:-}"
+CAPTURE_JSON="${5:-$DATA_DIR/capture.json}"
 for cand in "$OUT_DIR/mesh_mm.ply" "$OUT_DIR/mesh.ply"; do
     [[ -n "$MILO_MESH" ]] && break
     [[ -f "$cand" ]] && { MILO_MESH="$cand"; break; }
@@ -85,7 +86,7 @@ cd "$REPO_DIR"
 # Neither is a reconstruction failure. Scale the mesh (scripts/scale_mesh.py), or, if only
 # the shape matters, add --shape-only below -- outline agreement does not depend on units.
 python scripts/compare_meshes.py \
-    --capture "$DATA_DIR/capture.json" \
+    --capture "$CAPTURE_JSON" \
     --milo    "$MILO_MESH" \
     --openmvs "$OPENMVS_MESH" \
     --out     "$OUT_DIR/compare" \
