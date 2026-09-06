@@ -93,6 +93,12 @@ for name in ("cfg_args", "feature_cfg_args"):
         print("kept", path)
 PY
 python - <<'PY' 2>&1 | tail -2
+# Mask stack per view: [sherd, background]. The two-stack is load-bearing,
+# twice over: (1) get_scale.py `.squeeze()`s the stack and a single mask
+# collapses [1,H,W] -> [H,W], so mask[0] indexed a ROW (crashed 30169966 —
+# upstream never sees this, SAM always returns N>1); (2) the contrastive loss
+# pulls same-mask pixels together AND pushes different masks apart, so one
+# mask alone is pull-only, degenerate. Sherd-vs-background is our filter.
 import os
 import torch
 from PIL import Image
@@ -102,12 +108,13 @@ dst = "/data/gpfs/projects/punim2657/MILo/saga_data/A03/sam_masks"
 n = 0
 for f in sorted(os.listdir(src)):
     img = Image.open(os.path.join(src, f))
-    alpha = np.asarray(img)[..., 3] > 128
-    assert alpha.any(), f
+    sherd = np.asarray(img)[..., 3] > 128
+    assert sherd.any() and (~sherd).any(), f
+    stack = torch.stack([torch.from_numpy(sherd), torch.from_numpy(~sherd)])
     stem = f.split(".")[0]
-    torch.save(torch.from_numpy(alpha).unsqueeze(0), os.path.join(dst, stem + ".pt"))
+    torch.save(stack, os.path.join(dst, stem + ".pt"))
     n += 1
-print(f"converted {n} masks")
+print(f"converted {n} two-stack masks")
 PY
 [[ -f "$SRC_DIR/sam_masks/A31_1100.pt" ]] || { echo "mask conversion failed" >&2; exit 1; }
 
