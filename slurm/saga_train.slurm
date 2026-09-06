@@ -61,13 +61,37 @@ mkdir -p "$SRC_DIR" "$MODEL_DIR/point_cloud/iteration_18000"
 [[ -f "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply" ]] || \
     cp "$FROZEN" "$MODEL_DIR/point_cloud/iteration_18000/scene_point_cloud.ply"
 mkdir -p "$SRC_DIR/sam_masks"
-# SAGA's arg loader eval()s a config file from a previous step and only
-# catches TypeError — a fresh model dir (we skip scene training: the MILo
-# scene is already trained and frozen) crashes with FileNotFoundError. Seed
-# both configs with the loader's own empty-default string, so the merge is
-# cmdline-only. No values invented: every real setting comes from flags below.
-[[ -f "$MODEL_DIR/cfg_args" ]] || printf 'Namespace()' > "$MODEL_DIR/cfg_args"
-[[ -f "$MODEL_DIR/feature_cfg_args" ]] || printf 'Namespace()' > "$MODEL_DIR/feature_cfg_args"
+# SAGA's arg loader merges a previous step's config file with the flags, and a
+# fresh model dir (we skip scene training: the MILo scene is already trained
+# and frozen) has none. Seed both configs from SAGA's OWN param classes, so
+# every default is upstream's, not ours — only paths/iterations are job-set.
+# (An earlier empty-string seed broke extraction the other way: keys the
+# loader expects were missing entirely.)
+python - "$MODEL_DIR" "$SRC_DIR" <<'PY'
+import os
+import sys
+sys.path.insert(0, "/data/gpfs/projects/punim2657/saga")
+from argparse import ArgumentParser, Namespace
+from arguments import ModelParams, PipelineParams, OptimizationParams
+model_dir, src_dir = sys.argv[1], sys.argv[2]
+p = ArgumentParser()
+groups = (ModelParams(p), PipelineParams(p), OptimizationParams(p))
+d = {}
+for g in groups:
+    for k, v in vars(g).items():
+        d[k[1:] if k.startswith("_") else k] = v
+d.update({"source_path": src_dir, "model_path": model_dir,
+          "images": "images", "target": "contrastive_feature",
+          "iterations": 10000, "image_root": src_dir})
+for name in ("cfg_args", "feature_cfg_args"):
+    path = os.path.join(model_dir, name)
+    cur = open(path).read().strip() if os.path.exists(path) else ""
+    if not cur.startswith("Namespace(") or cur == "Namespace()":
+        open(path, "w").write(str(Namespace(**d)))
+        print("seeded", path)
+    else:
+        print("kept", path)
+PY
 python - <<'PY' 2>&1 | tail -2
 import os
 import torch
