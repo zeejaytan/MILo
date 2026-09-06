@@ -49,13 +49,23 @@ are not the same kind of thing.
   DTU, Tanks and Temples, Mip-NeRF 360 and synthetic scenes, none of them at 0.2 mm
   fracture-ridge scale. So the accuracy claim does not transfer until the mask path and
   the millimetre figures are demonstrated on A03.
+  **Audit verdict, 2026-09-06 (ticket 04, HEAD `1525ce3`): NO-BUILD as a masked
+  extractor without new code** — rig enters via the required `mesh_init.ply` at
+  three points (surfel init, proxy-mesh box, surface prior); the only
+  training-time mask consumer is one-sided GT compositing, the removed-fork
+  construction; `cam.mask` is populated and never read. Reopening needs a
+  scoped mask patch amended here first; ticket 07 stays closed-unbuilt.
 - **VGGT** (CVPR 2025 Best Paper, `facebookresearch/vggt`, arXiv:2503.11651) is a
   **different category**: a feed-forward transformer that infers cameras, depth maps and
   point maps from views in seconds and exports COLMAP `sparse/` for a downstream
   splatting/meshing step. Its speed claim is about that inference, not about a finished
   break-face mesh. It predicts everything in frame including the rig, carries no mask,
   and its scale is ambiguous until anchored — so "extract the sherd cleanly" as shipped
-  is not something it does at all. Its honest role here is **fast poses** (a possible
+  is not something it does at all. **Measured cap, 2026-09-06 (ticket 03): VGGT
+  resizes every input to 518×518** (ISPRS Ann. 2026 DTU analysis) — ≈1.3 mm/px at
+  our object against 0.21 mm/px photographed, so its maps cannot resolve ~1 mm
+  relief regardless of later filtering (confidence threshold 2.0 recommended
+  start; uncertainty aleatoric only). Its honest role here is **fast poses** (a possible
   COLMAP replacement), not a break-face mesher, and it should be judged as one.
 - **InstantSplat++** (`phai-lab/InstantSplatPP`, extension of `NVlabs/InstantSplat`,
   arXiv:2403.20309) is the named downstream of the VGGT track: sparse-view SfM-free

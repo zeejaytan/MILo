@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Audit reads the shipped arguments and extraction path at the pinned commit and states where a mask would enter (masked PGSR init, fusion-time depth zeroing, or neither exists)
 - [x] Either the mask route is written down precisely enough to build, or the track is declared a no-build with the reason — "assume it works" is not an outcome
