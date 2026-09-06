@@ -20,8 +20,9 @@
 #   ./scripts/remote/pull_and_sbatch.sh slurm/vggt_pose.slurm 17062025/A03_sherds
 #
 # Pins: code facebookresearch/vggt@a288dd0, checkpoint facebook/VGGT-1B (open;
-# Commercial is application-gated). The checkpoint is pre-downloaded to the
-# torch hub cache on the login node — compute nodes have no outbound internet.
+# Commercial is application-gated). Checkpoints and caches live on the project
+# disk, not HOME (HOME quota is nearly full and compute nodes have no outbound
+# internet): HF_HOME and TORCH_HOME below must match the login-node download.
 
 set -euo pipefail
 
@@ -42,7 +43,9 @@ nvidia-smi | head -8 || true
 [[ -d "$DATA_DIR/images" ]] || { echo "No image set at $DATA_DIR/images" >&2; exit 1; }
 [[ -f "$DATA_DIR/sparse/0/images.bin" ]] || { echo "No COLMAP solve at $DATA_DIR/sparse/0" >&2; exit 1; }
 [[ -d "$ENV_PREFIX" ]] || { echo "No env at $ENV_PREFIX -- build it on the login node first" >&2; exit 1; }
-CACHED_CKPT="$HOME/.cache/torch/hub/checkpoints/model.pt"
+export HF_HOME=/data/gpfs/projects/punim2657/MILo/vggt_cache/hf
+export TORCH_HOME=/data/gpfs/projects/punim2657/MILo/vggt_cache/torch
+CACHED_CKPT="$TORCH_HOME/hub/checkpoints/model.pt"
 [[ -f "$CACHED_CKPT" ]] || { echo "No cached checkpoint at $CACHED_CKPT -- download on the login node first" >&2; exit 1; }
 ls -la "$CACHED_CKPT"
 [[ -f "$VGGT_ROOT/demo_colmap.py" ]] || { echo "No VGGT code at $VGGT_ROOT" >&2; exit 1; }
