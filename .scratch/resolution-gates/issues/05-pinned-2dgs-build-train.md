@@ -55,8 +55,10 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   for torch's auto-detect) and import clean (`EXT_OK`) via `PYTHONPATH`, env
   untouched. Filename check: 164/164 solve names present in `images_masked`, all
   RGBA 3200×2133. Remaining: GPU smoke (torch sees card — job pre-flight) and the
-  train+extract job itself, which needs explicit approval.
-- 2026-09-06, job script ready (NOT submitted): `2dgs/slurm/2dgs_train.slurm` —
+  train+extract job itself (standing submit approval granted same day — see next).
+- 2026-09-06, STANDING APPROVAL per user: Slurm submits on this trial need no
+  per-job permission question. Submitted as job 30167145 (laptop poll running,
+  30-min interval); final State/ExitCode to be recorded here on completion.
   1×A100/8cpu/128G/12h; `train.py -i images_masked -r 1 --eval` (30k iters,
   vanilla unmasked) then bounded extract voxel 0.001u (0.374 mm) / band 0.005u
   (1.87 mm), `--num_cluster 50`; GPU pre-flight refuses without a card;
