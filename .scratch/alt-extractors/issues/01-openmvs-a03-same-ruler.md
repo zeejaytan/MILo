@@ -33,6 +33,15 @@
   `interpolate` rejects the strided view `n[None]` in `compare_meshes.py`
   `Renderer.render` — one-line `.contiguous()` fix committed, resubmit pending
   approval.
+- Resubmitted 2026-09-06 as job 30155899 (same inputs + fix), laptop poll
+  running; final State / ExitCode to follow here.
+- 30155899 FAILED in 1:58 (State=FAILED ExitCode=1:0), further along: renders
+  ran, report written, then crashed reading out empty silhouette means. Cause:
+  masks on disk are `<name>.JPG.png` but compare looked for `<stem>.png` — all
+  21 held-out masks missed, zero rows, None means. Fixed with a both-names
+  lookup plus a loud no-masks refusal instead of a traceback. Caveat recorded:
+  these are rig-in user masks, so the outline scores rig + sherds for both
+  meshes equally; sherd-only silhouette is follow-up if numbers demand it.
 
 - 2026-09-06: started while user away. Found the M1-gate compare job 30131757
   (submitted 2026-09-06) FAILED in 1:50 — refusal was correct, but the stated

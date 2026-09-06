@@ -222,8 +222,17 @@ def silhouette_agreement(renderer, mesh, model, masks_dir, held_out, out_dir, ta
         image = by_name.get(name)
         if image is None:
             continue
-        mask_path = masks_dir / (Path(name).stem + ".png")
-        if not mask_path.exists():
+        # Mask filename convention: this repo writes <name>.JPG.png (full photo
+        # name plus .png); older sets used <stem>.png. Try both -- job 30155899
+        # silently scored zero views on the wrong guess, which then crashed the
+        # read-out on None means instead of saying no masks were found.
+        mask_path = None
+        for cand in (masks_dir / (Path(name).stem + ".png"),
+                     masks_dir / (name + ".png")):
+            if cand.exists():
+                mask_path = cand
+                break
+        if mask_path is None:
             continue
         gt = np.asarray(PILImage.open(mask_path).convert("L")) > 127
         h, w = gt.shape
@@ -818,7 +827,13 @@ def main() -> int:
         print("\nNo distance in millimetres is reported: --shape-only was asked for, so "
               "the\nonly measure run here was the one that does not depend on units.")
 
-    best = max(("milo", "openmvs"), key=lambda t: report["silhouette"][t]["iou_mean"] or 0)
+    means = {t: report["silhouette"][t]["iou_mean"] for t in meshes}
+    if all(m is None for m in means.values()):
+        print("\nNo outline agreement computed: no held-out view had both a camera "
+              "and a mask. Nothing above scores either method -- find the missing "
+              "masks or cameras before rerunning.", file=sys.stderr)
+        return 1
+    best = max(("milo", "openmvs"), key=lambda t: means[t] or 0)
     worst_iou = min(report["silhouette"][t]["iou_mean"] or 0 for t in meshes)
     if worst_iou < SUSPECT_IOU:
         print(f"\nWARNING: the best outline agreement is only "
