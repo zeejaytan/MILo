@@ -9,7 +9,14 @@ disagreement in **millimetres**: the honest resolution floor M1's first box need
 **Blocked by:** None (can start immediately; reading the number against the bar happens
 in 04).
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Comments (appended)
+
+- 2026-09-06: answered by the parallel session's resubmits (jobs 30132793,
+  30133070) after two script bugs (singleton-dim mask, transposed
+  world_view_transform). Result in M1 box 1: 4.1 mm median-of-medians. This
+  ticket's probe script was the vehicle; the number stands regardless.
 
 - [ ] New script reuses the existing dataset readers (no new data path); reviewable on
       the laptop before any job is submitted

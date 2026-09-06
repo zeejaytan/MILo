@@ -8,7 +8,15 @@ break-face close-up renders at a resolving view.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved — superseded, not executed: the same baseline now proceeds
+under `alt-extractors/01`, which carries the live diagnosis. My scaled meshes +
+sidecars (same 373.733 factor) are its inputs; the failure analysis (content
+mismatch, crop plan) is recorded there.
+
+## Comments (appended)
+
+- 2026-09-06: compare job 30131757 refused correctly (size gate). Do not resubmit
+  blindly — see `alt-extractors/01`.
 
 - [ ] OpenMVS mesh and MILo mesh compared on the same ruler (scale sidecars checked,
       units agree before measuring — never compare before checking)

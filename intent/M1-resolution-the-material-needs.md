@@ -28,6 +28,11 @@ detail.
   requirement is ~1 mm relief. See `docs/notes/2026-09-06-breakface-ridge-scale.md`.
 - The 32,768-block cliff is **per extraction call**, so per-sherd tiling should reach about
   **0.45 mm** — better, still not 0.21 mm.
+- Ticket-level (2026-09-06): `resolution-gates/02` is answered by job 30133070 (see
+  box 1); `resolution-gates/03`'s compare refused on a content mismatch (MILo mesh
+  spans ~1 m of surroundings, OpenMVS a tray crop — same factor, different
+  content), and the same-ruler baseline now proceeds under
+  `alt-extractors/01` via a common-box crop, not a blind resubmit.
 
 ## Done when
 
