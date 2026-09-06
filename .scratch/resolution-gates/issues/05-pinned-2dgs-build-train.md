@@ -56,6 +56,12 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   untouched. Filename check: 164/164 solve names present in `images_masked`, all
   RGBA 3200×2133. Remaining: GPU smoke (torch sees card — job pre-flight) and the
   train+extract job itself, which needs explicit approval.
+- 2026-09-06, job script ready (NOT submitted): `2dgs/slurm/2dgs_train.slurm` —
+  1×A100/8cpu/128G/12h; `train.py -i images_masked -r 1 --eval` (30k iters,
+  vanilla unmasked) then bounded extract voxel 0.001u (0.374 mm) / band 0.005u
+  (1.87 mm), `--num_cluster 50`; GPU pre-flight refuses without a card;
+  refuses to overwrite a finished mesh. `sbatch --test-only` estimates start
+  2026-09-14 (queue ~8 days). Awaiting explicit submit approval.
 - 2026-09-06, env decision per user: REUSE the MILo env
   (`MILo/envs/milo`: py3.9, torch 2.3.1+cu118, o3d 0.19.0) — no separate `surfel`
   env, no `conda env create` (attempts 1–2 failed: home quota, then a corrupt
