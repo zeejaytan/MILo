@@ -83,12 +83,25 @@ build-prep.
 - [ ] Rig check: `mask_content.py` steel-vs-clay split for the inputs actually used, and
       remaining steel surface area in the extracted mesh, stated in cm²
 
-## Gate / stop condition
+## Gate / stop condition (amended 2026-09-06 per user: OpenMVS is the ceiling, not a stop-baseline)
 
-- If OpenMVS already meets the M1 requirement: **stop** — record it and do not swap,
-  whatever 2DGS's merits elsewhere.
-- If 2DGS hits the 32,768-block cliff at the required voxel: this question becomes the
-  tiling question — amend, do not build around it.
+- OpenMVS (0.186 mm wobble on A02 + the A03 outline direction) is the **ceiling to
+  beat**, not a bar that stops this trial. The trial runs to a measured verdict
+  whatever OpenMVS meets — a different method with its own failure modes is worth
+  measuring, and two independent routes agreeing is evidence neither gives alone.
+- "Earns its keep" means one of three measured outcomes: (a) it matches or beats
+  OpenMVS on sherd surface within the ~1 mm requirement with ridge-resolving renders
+  — mesh of record; (b) it clears ~1 mm with **complementary coverage** OpenMVS
+  misses (different honest holes, clamp-shadowed faces) — combined record; (c)
+  viewing-only — fast high-quality novel views for inspection, judged on renders,
+  never in millimetres.
+- Retire as a mesh route if its depth-disagreement floor sits far above ~1 mm with
+  nothing complementary (one capture, eye verification) — record which of the three
+  it is (method failed / ruler broken / reference wrong), do not fund a second seed.
+- If 2DGS hits an extraction ceiling at the required voxel (whichever Open3D class —
+  the 32,768-block cliff as measured binds `VoxelBlockGrid`, not 2DGS's
+  `ScalableTSDFVolume`): this question becomes the tiling question — amend, do not
+  build around it.
 - If masked 2DGS training drains density the way M5 did: retire NO at the same weight
   (one capture, eye verification), do not fund a second architecture to re-learn it.
 
