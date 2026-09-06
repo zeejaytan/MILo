@@ -11,3 +11,7 @@
 - [ ] Builds only if 04 stated a mask route and 01–02 left a bar worth chasing; otherwise this ticket closes unbuilt citing the gate
 - [ ] Trained and extracted at full capture resolution on the existing sherd-only dataset, voxel size and truncation band stated in mm, block counts and free-memory figures printed before any extraction
 - [ ] Same-ruler scoring vs MILo's DTU route and OpenMVS (fraction within M1 requirement), break-face close-ups resolving ~0.2 mm ridges, remaining steel in cm² — no box ticks on whole-tray views
+
+## Comments
+
+- 2026-09-06 (trail start): stays closed-unbuilt per 04 audit (HEAD `1525ce3` — NO-BUILD without new code: rig enters via required `mesh_init.ply` at three points; only mask consumer is one-sided GT compositing; `cam.mask` never read). Reopening needs a scoped mask patch amended into M7 first. No build, no Slurm.

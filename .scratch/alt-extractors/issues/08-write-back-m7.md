@@ -4,10 +4,14 @@
 
 **Answers:** M7
 
-**Blocked by:** 05 (VGGT pose A/B), 06 (viewable splat), 07 (TopoSurfel A/B).
+**Blocked by:** 05 (VGGT pose A/B), 06 (viewable splat), 07 (TopoSurfel A/B), 09 (SAGA filter-fuse).
 
 **Status:** ready-for-agent
 
 - [ ] M7's Done-when boxes ticked with result plus date, or the question amended/retired in place — including "uninformative" results, which are real answers
 - [ ] M1's boxes ticked from 01–02 with the same dates; every verdict names which of the three it is (method failed, measurement broken, reference wrong)
 - [ ] Geometry boxes tick only behind renders at views resolving the scale tested; the gate script passes with no ticket left unwired
+
+## Comments
+
+- 2026-09-06 (trail start): 09 added after M7 amendment — 08 now waits on it too.
