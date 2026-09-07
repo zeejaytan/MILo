@@ -20,6 +20,12 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-07, shared reference built: `scripts/color_components.py` paints top-20
+  components + legend PNG. OpenMVS side: 16 components — O01 is rig (326 cm²),
+  O02–O11 are the ten sherds (18–100 cm²), O12+ specks. 2DGS side S01–S20 all
+  large (25–254 cm², no sherd-scale separation — sherd+steel webbing suspected).
+  Files in `2dgs/output/A03_sherds/numbered/`, pulled to `artifacts/2dgs-a03/`.
+
 - 2026-09-07, conservator eye (CloudCompare, boxed mm mesh): some sherds read
   OK-ish, some never formed as sherds at all. First completeness failure of the
   trial — recorded before any number. Component inventory same day: 50
