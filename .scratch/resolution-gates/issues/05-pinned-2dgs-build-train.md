@@ -68,6 +68,18 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
 - 2026-09-07, extraction resubmitted as job 30185588 (`2dgs/slurm/2dgs_extract.slurm`,
   render-only: same voxel 0.001u (0.374 mm) / band 0.005u (1.87 mm),
   `--num_cluster 50`); laptop poll running. Estimated start Sep 9 midday.
+- 2026-09-07, split per user suggestion: GPU render and CPU fusion are separate
+  jobs — `2dgs_render.slurm` (short A100, 4h, `scripts/render_maps.py` saves
+  rgb+depth+mask+camera per view) then `2dgs_fuse.slurm` (CPU-only sapphire,
+  `scripts/fuse_maps.py`, same voxel/band); new trial code under `2dgs/`,
+  upstream untouched. Smoke test: fuse math verified against Open3D directly
+  (plane integrates AND meshes, 6241 verts); two empty-mesh trials traced to
+  degenerate synthetic projection matrices (zero third row), not the script —
+  conversion formula is character-identical to upstream and real solves carry
+  genuine matrices, so remaining risk reads off real data. Submitted render
+  30200711 (short, est start today ~19:49) + fuse 30200717 (`afterok` dep);
+  monolith 30185588 kept as fallback — its no-overwrite guard trips once split
+  output exists. Polls running on both split jobs.
 - 2026-09-07, partition check: `gpu-h100` is real (16 nodes; my earlier "doesn't
   exist" was a truncated `sinfo` read — corrected). Not worth switching: its queue
   estimates Sep 14 vs Sep 9 on our A100 job, and our extensions are sm_80-only, so
