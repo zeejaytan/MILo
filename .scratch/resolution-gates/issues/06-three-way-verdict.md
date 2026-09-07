@@ -20,6 +20,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-07, conservator eye (CloudCompare, boxed mm mesh): some sherds read
+  OK-ish, some never formed as sherds at all. First completeness failure of the
+  trial — recorded before any number. Component inventory same day: 50
+  components (post-filter cap), largest 415/353/343 cm² down through sherd-scale
+  40–90 cm² pieces spread ±250 mm — size alone cannot separate clay from rig
+  steel; cause (mask gaps vs clamp occlusion vs depth noise) goes to the depth
+  probe + mask audit, not to this count.
+
 - 2026-09-07, verdict work: 2DGS mesh scaled to mm (`fuse_post_mm.ply`
   ×373.73332518281325 + sidecar; same sparse frame as MILo so the plate factor
   transfers — reasoning recorded in the sidecar). Submitted render rerun 30207590
