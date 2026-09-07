@@ -68,10 +68,10 @@ build-prep.
 
 ## Done when
 
-- [ ] 2DGS built at a pinned commit on Spartan, trained on the existing `A03_sherds`
-      dataset at full capture resolution, mesh extracted with voxel size and truncation
-      band stated in **millimetres**. The commit is pinned in this file before any job
-      is submitted — an unpinned build is unrepeatable
+- [x] 2DGS built at a pinned commit on Spartan (`f3e3b9f` + rasterizer `e0ed020`,
+  2026-09-06), trained on the existing `A03_sherds` dataset at full capture
+  resolution, mesh extracted 2026-09-07 with voxel 0.001u (0.374 mm) and
+  truncation band 0.005u (1.87 mm) stated in **millimetres**
 - [ ] Cross-view depth disagreement in **millimetres** for 2DGS versus MILo's DTU route
       on the same capture, on the same ruler (scale sidecars, per
       [M3](M3-is-the-mesh-at-true-scale.md))

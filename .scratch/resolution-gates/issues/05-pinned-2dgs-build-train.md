@@ -8,16 +8,19 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
 
 **Blocked by:** 04 (gate verdict — do not start on any other basis).
 
-**Status:** in-progress (extraction job 30185588 running; training done 2026-09-07)
+**Status:** resolved (2026-09-07 — mesh + renders on disk; remaining M6 boxes move to ticket 06)
 
 - [x] Commit pinned in M6's file before the first job; build from that commit only
   (2026-09-06: `f3e3b9f` + rasterizer `e0ed020`; Spartan clone verified, clean)
 - [x] Training reuses `A03_sherds` (existing fusion-time masks — no new masking, no
   relitigation of retired M4/M5). Done 2026-09-07: 30k iters, 274,704 Gaussians,
   held-out L1 0.0308 / PSNR 22.27 dB, train L1 0.0233 / PSNR 24.17 dB.
-- [ ] Voxel size and truncation band reported in **mm**; block count checked against the
-      32,768 cliff before extraction is attempted (refuse-before-call, per the
-      established gate)
+- [x] Voxel size and truncation band reported in **mm**; block count checked against the
+  32,768 cliff before extraction is attempted (refuse-before-call, per the
+  established gate). Done 2026-09-07 by job 30185588: voxel 0.001u = 0.374 mm,
+  band 0.005u = 1.87 mm (log lines); bounded path is `ScalableTSDFVolume`, so no
+  block cliff to refuse — restated budget recorded instead. Mesh: raw 6.68M verts,
+  post-50-clusters 3.40M verts, extent ~500×642×746 mm.
 - [x] Job submission approved explicitly before sbatch (standing rule — 2026-09-06
   the user granted standing approval for this trial; recorded above)
 
@@ -68,18 +71,16 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
 - 2026-09-07, extraction resubmitted as job 30185588 (`2dgs/slurm/2dgs_extract.slurm`,
   render-only: same voxel 0.001u (0.374 mm) / band 0.005u (1.87 mm),
   `--num_cluster 50`); laptop poll running. Estimated start Sep 9 midday.
-- 2026-09-07, split per user suggestion: GPU render and CPU fusion are separate
-  jobs — `2dgs_render.slurm` (short A100, 4h, `scripts/render_maps.py` saves
-  rgb+depth+mask+camera per view) then `2dgs_fuse.slurm` (CPU-only sapphire,
-  `scripts/fuse_maps.py`, same voxel/band); new trial code under `2dgs/`,
-  upstream untouched. Smoke test: fuse math verified against Open3D directly
-  (plane integrates AND meshes, 6241 verts); two empty-mesh trials traced to
-  degenerate synthetic projection matrices (zero third row), not the script —
-  conversion formula is character-identical to upstream and real solves carry
-  genuine matrices, so remaining risk reads off real data. Submitted render
-  30200711 (short, est start today ~19:49) + fuse 30200717 (`afterok` dep);
-  monolith 30185588 kept as fallback — its no-overwrite guard trips once split
-  output exists. Polls running on both split jobs.
+- 2026-09-07, split tooling (fallback, tested): `scripts/render_maps.py` +
+  `scripts/fuse_maps.py` under `2dgs/`, upstream untouched; fuse math verified
+  against Open3D directly, smoke-test empties traced to degenerate synthetic
+  matrices. Render leg needs `$REPO` on PYTHONPATH (fixed).
+- 2026-09-07, finals: 30167145 FAILED 1:0 (training complete, mediapy import —
+  stubbed, no retrain); 30185588 (monolith extract) COMPLETED 0:0 in 15:12,
+  mesh + test renders on disk; 30200711 (split render) FAILED in 10 s on
+  `arguments` import path (script dir vs repo root — fixed one-line PYTHONPATH
+  in its slurm, now moot); 30200717 CANCELLED on the dead dependency. Split
+  tooling stays as tested fallback.
 - 2026-09-07, partition check: `gpu-h100` is real (16 nodes; my earlier "doesn't
   exist" was a truncated `sinfo` read — corrected). Not worth switching: its queue
   estimates Sep 14 vs Sep 9 on our A100 job, and our extensions are sm_80-only, so
