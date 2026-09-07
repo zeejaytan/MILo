@@ -5,7 +5,10 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=128G
+# 64G, not 128G: asking 128G silently reroutes the job to gpu-a100
+# (verified 2026-09-07 by bisection — short keeps jobs only below that).
+# Feature training is VRAM-bound (GPU); host RAM just holds batches.
+#SBATCH --mem=64G
 #SBATCH --time=02:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/saga_train_%j.log
 
