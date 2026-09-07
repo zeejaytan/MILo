@@ -36,6 +36,11 @@ def main():
     ap.add_argument("--thresholds", default="0.5,0.6,0.75")
     args = ap.parse_args()
 
+    # SAGA's loader reads sys.argv behind our back (get_combined_args parses
+    # it inside). Hide our own flags first or argparse dies on them (exit 2)
+    # — the saved feature cfg already carries every SAGA-side value.
+    sys.argv = sys.argv[:1]
+
     sys.path.insert(0, args.saga_root)
     from argparse import ArgumentParser, Namespace  # noqa
     from arguments import ModelParams, PipelineParams, OptimizationParams, get_combined_args  # noqa
