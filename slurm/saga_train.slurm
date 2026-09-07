@@ -123,8 +123,13 @@ python -u get_scale.py -s "$SRC_DIR" -m "$MODEL_DIR" --image_root "$SRC_DIR" 2>&
 [[ -f "$SRC_DIR/mask_scales/A31_1100.pt" ]] || { echo "get_scale wrote nothing" >&2; exit 1; }
 
 # ---- stage 2: contrastive head only; scene stays frozen ----
+# Ray count follows upstream's own recipe (training_scripts/train_spin.sh:
+# --iterations 10000 --feature_lr 0.0025 --num_sampled_rays 1000 on ~1MP
+# views), scaled 8x for our 6.8MP full-res views: at 2.3% sherd coverage,
+# 1000 rays land ~23 on clay per view/iter — too thin to learn from.
+# 8000 rays land ~180 on clay; VRAM cost is per-ray, not per-pixel.
 python -u train_contrastive_feature.py -s "$SRC_DIR" -m "$MODEL_DIR" \
-    --iterations 10000 2>&1 | tee "$MODEL_DIR/log_train_feature.txt"
+    --iterations 10000 --feature_lr 0.0025 --num_sampled_rays 8000 2>&1 | tee "$MODEL_DIR/log_train_feature.txt"
 
 echo "=== files ==="
 find "$MODEL_DIR" -name '*.pth' -newermt '-1 day' | head
