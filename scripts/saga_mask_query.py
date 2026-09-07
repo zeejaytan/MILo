@@ -37,9 +37,11 @@ def main():
     args = ap.parse_args()
 
     # SAGA's loader reads sys.argv behind our back (get_combined_args parses
-    # it inside). Hide our own flags first or argparse dies on them (exit 2)
-    # — the saved feature cfg already carries every SAGA-side value.
-    sys.argv = sys.argv[:1]
+    # it inside). Rebuild argv with only SAGA-known flags carrying our paths —
+    # a bare argv leaves model_path empty and the config lookup fails.
+    # The saved feature cfg already carries every other SAGA-side value.
+    sys.argv = [sys.argv[0], "-s", args.src, "-m", args.model,
+                "--target", "contrastive_feature", "--image_root", args.src]
 
     sys.path.insert(0, args.saga_root)
     from argparse import ArgumentParser, Namespace  # noqa
