@@ -19,6 +19,14 @@ order below was over-strict — only the requirement (done) and the OpenMVS base
 transfer to a new method. 2DGS build prep proceeds in parallel; its own
 depth-disagreement probe is part of its evaluation, not a prerequisite.
 
+**Masked branch scoped 2026-09-07 (tickets 07–08):** the Rogge repo ships NO code
+(README recipe @`bdbabdc` only) — this is a hand-port into our pin, not a drop-in.
+07 ports the two losses (masked photometric + background λ=0.5, alphas already
+returned, masks from the RGBA band — no rasterizer change) and probes at ~7k
+iters with a GO/NO-GO; occlusion pruning (CUDA edits + rebuild) is deferred to
+08 only if the probe survives. M5's rim-erosion and density-drain warnings travel
+with the branch.
+
 **Pinned build, 2026-09-06:** `hbb1/2d-gaussian-splatting@f3e3b9f`,
 rasterizer `hbb1/diff-surfel-rasterization@e0ed020` (both HEAD at pin date; no job
 submitted on this pin yet). Vanilla training at this commit reads **no mask**
