@@ -7,11 +7,23 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 **Blocked by:** 05 (2DGS mesh); reads the M1 boxes (01–03) as its bar and baseline.
 
-**Status:** ready-for-agent
+**Status:** claimed (2026-09-07 — verdict work started; renders before numbers)
 
 - [ ] Same-ruler comparison of all three meshes (fraction of sherd surface within the
       requirement in **mm**); the average across runs is reported, never best-of-N alone
-- [ ] Break-face close-up renders, 2DGS vs MILo, at a view resolving ~0.2 mm ridges —
+- [ ] Cross-view depth disagreement in **mm** for 2DGS on the same ruler (M6 box;
+      port `scripts/depth_disagreement.py` to 2DGS `surf_depth` — GPU job)
+- [ ] Break-face close-up renders, 2DGS versus MILo, at a view that resolves ~0.2 mm ridges —
       the render exists before any geometry box is ticked
 - [ ] Rig check: remaining steel surface area in each extracted mesh, stated in cm²
 - [ ] M6's boxes ticked with the date, or M6 amended/retired in place with the reason
+
+## Comments
+
+- 2026-09-07, verdict work: 2DGS mesh scaled to mm (`fuse_post_mm.ply`
+  ×373.73332518281325 + sidecar; same sparse frame as MILo so the plate factor
+  transfers — reasoning recorded in the sidecar). Submitted render rerun 30207590
+  (short, fixed PYTHONPATH) and compare 30207591 (2DGS-vs-OpenMVS `dense_fixed`
+  refined, short 2h, roles: 2DGS as --milo). Second compare (2DGS-vs-MILo-boxed)
+  follows after outputs are moved aside — the script hardcodes one out dir, so
+  no parallel runs. Polls running on both.
