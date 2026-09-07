@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=saga-train
 #SBATCH --account=punim2657
-#SBATCH --partition=gpu-a100
+#SBATCH --partition=gpu-a100-short
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G
-#SBATCH --time=04:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/saga_train_%j.log
 
 # Ticket alt-09: SAGA post-hoc filter, stage 1 — distil features.
