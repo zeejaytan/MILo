@@ -20,6 +20,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-07, baseline control per user (parameters must prove out unmasked
+  first): render leg 30207590 COMPLETED in 6 min — 143 train maps + test PNGs,
+  radius 3.552u matches the monolith's 3.55. Same maps feed both fusions, so
+  masked-vs-unmasked is a pure ablation, no retrain. Submitted masked
+  re-fuse 30208817 (guard will refuse — monolith output exists, identical
+  params) and unmasked baseline 30208818 (`--ignore-mask`, new flag in
+  `scripts/fuse_maps.py`), both CPU-only. Polls running.
+
 - 2026-09-07, shared reference built: `scripts/color_components.py` paints top-20
   components + legend PNG. OpenMVS side: 16 components — O01 is rig (326 cm²),
   O02–O11 are the ten sherds (18–100 cm²), O12+ specks. 2DGS side S01–S20 all
