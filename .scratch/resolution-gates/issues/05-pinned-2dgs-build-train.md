@@ -66,12 +66,12 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   on `PYTHONPATH` for 2DGS jobs only — shared env untouched, real video would
   fail loudly rather than silently. No retrain needed.
 - 2026-09-07, extraction resubmitted as job 30185588 (`2dgs/slurm/2dgs_extract.slurm`,
-  render-only: same voxel 0.001u/band 0.005u, `--num_cluster 50`); laptop poll running.
-  1×A100/8cpu/128G/12h; `train.py -i images_masked -r 1 --eval` (30k iters,
-  vanilla unmasked) then bounded extract voxel 0.001u (0.374 mm) / band 0.005u
-  (1.87 mm), `--num_cluster 50`; GPU pre-flight refuses without a card;
-  refuses to overwrite a finished mesh. `sbatch --test-only` estimates start
-  2026-09-14 (queue ~8 days). Awaiting explicit submit approval.
+  render-only: same voxel 0.001u (0.374 mm) / band 0.005u (1.87 mm),
+  `--num_cluster 50`); laptop poll running. Estimated start Sep 9 midday.
+- 2026-09-07, partition check: `gpu-h100` is real (16 nodes; my earlier "doesn't
+  exist" was a truncated `sinfo` read — corrected). Not worth switching: its queue
+  estimates Sep 14 vs Sep 9 on our A100 job, and our extensions are sm_80-only, so
+  H100 would need a rebuild (`TORCH_CUDA_ARCH_LIST="8.0;9.0"`). Staying put.
 - 2026-09-06, env decision per user: REUSE the MILo env
   (`MILo/envs/milo`: py3.9, torch 2.3.1+cu118, o3d 0.19.0) — no separate `surfel`
   env, no `conda env create` (attempts 1–2 failed: home quota, then a corrupt
