@@ -8,16 +8,18 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
 
 **Blocked by:** 04 (gate verdict — do not start on any other basis).
 
-**Status:** claimed (2026-09-06 — M6 trial start; build-prep only, no sbatch without explicit approval)
+**Status:** in-progress (extraction job 30185588 running; training done 2026-09-07)
 
 - [x] Commit pinned in M6's file before the first job; build from that commit only
   (2026-09-06: `f3e3b9f` + rasterizer `e0ed020`; Spartan clone verified, clean)
-- [ ] Training reuses `A03_sherds` (existing fusion-time masks — no new masking, no
-      relitigation of retired M4/M5)
+- [x] Training reuses `A03_sherds` (existing fusion-time masks — no new masking, no
+  relitigation of retired M4/M5). Done 2026-09-07: 30k iters, 274,704 Gaussians,
+  held-out L1 0.0308 / PSNR 22.27 dB, train L1 0.0233 / PSNR 24.17 dB.
 - [ ] Voxel size and truncation band reported in **mm**; block count checked against the
       32,768 cliff before extraction is attempted (refuse-before-call, per the
       established gate)
-- [ ] Job submission approved explicitly before sbatch (standing rule)
+- [x] Job submission approved explicitly before sbatch (standing rule — 2026-09-06
+  the user granted standing approval for this trial; recorded above)
 
 ## Comments
 
@@ -56,9 +58,15 @@ and truncation band stated in **millimetres**. This ticket exists only if 04 say
   untouched. Filename check: 164/164 solve names present in `images_masked`, all
   RGBA 3200×2133. Remaining: GPU smoke (torch sees card — job pre-flight) and the
   train+extract job itself (standing submit approval granted same day — see next).
-- 2026-09-06, STANDING APPROVAL per user: Slurm submits on this trial need no
-  per-job permission question. Submitted as job 30167145 (laptop poll running,
-  30-min interval); final State/ExitCode to be recorded here on completion.
+- 2026-09-07, job 30167145 final: FAILED ExitCode 1:0 after 2:07 — training had
+  COMPLETED (see box above); only the extraction step died, on
+  `import mediapy` at the top of `utils/render_utils.py` (a video helper our
+  path never calls; my 2026-09-06 "not on the train/mesh path" note was wrong —
+  it is on render.py's import path). Fix: `2dgs/stubs/mediapy.py`, a loud stub
+  on `PYTHONPATH` for 2DGS jobs only — shared env untouched, real video would
+  fail loudly rather than silently. No retrain needed.
+- 2026-09-07, extraction resubmitted as job 30185588 (`2dgs/slurm/2dgs_extract.slurm`,
+  render-only: same voxel 0.001u/band 0.005u, `--num_cluster 50`); laptop poll running.
   1×A100/8cpu/128G/12h; `train.py -i images_masked -r 1 --eval` (30k iters,
   vanilla unmasked) then bounded extract voxel 0.001u (0.374 mm) / band 0.005u
   (1.87 mm), `--num_cluster 50`; GPU pre-flight refuses without a card;
