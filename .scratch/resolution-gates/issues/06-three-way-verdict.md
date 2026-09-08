@@ -20,6 +20,21 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-08, same-ruler verdict numbers (login-node CPU raycast, mm):
+  2DGS-boxed→OpenMVS-refined: 13.2% within 1 mm, median 49 mm — most 2DGS
+  surface lies nowhere near a real surface. Reverse: 42.9% within 1 mm,
+  median 2.2 mm — under half the reference surface has 2DGS nearby. Against
+  the ~1 mm bar and 0.186 mm ceiling, keep-options (a) and (b) fail as a mesh
+  route; formal retire waits on the owed close-ups + depth probe + O-number
+  read-in. Formal `compare_meshes.py` refused (size gate 2.31× — content, not
+  units: 2DGS spans ~2× the tray in two axes).
+- 2026-09-08, jobs: masked re-fuse guard-refused as designed; nomask baseline
+  OOM'd at 128G (134 GB RSS on view 1 — unmasked fusion at 0.374 mm is itself
+  unaffordable, same disease as MILo's rig-in grid); retried 30233740 at 512G
+  sapphire, poll running. Render maps (30207590) carry the `mask` band —
+  loader audit hole closed: masks reach fusion, so surviving steel is fused
+  THROUGH outlines (streaks/sheets), not around them.
+
 - 2026-09-07, baseline control per user (parameters must prove out unmasked
   first): render leg 30207590 COMPLETED in 6 min — 143 train maps + test PNGs,
   radius 3.552u matches the monolith's 3.55. Same maps feed both fusions, so
