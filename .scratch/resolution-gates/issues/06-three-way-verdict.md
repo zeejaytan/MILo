@@ -20,6 +20,15 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, common-setup masked result: 1.92M verts in 328,925 fragments,
+  largest ~4k tris — at 2.6 mm cubes nothing coheres (predicted: cubes 2.6× the
+  ~1 mm bar). Negative control only; fine-voxel choice stands vindicated.
+- 2026-09-09, unmasked OOM root cause corrected: NOT view-1 blowup — steady
+  ~1.5 GB/view accumulation over ~90 views to the 134 GB cap (log buffering hid
+  progress). Depths verified sane (no inf/nan). Full-room fusion simply costs
+  hundreds of GB; masked fits because 2.3% of pixels fuse. Baseline properly
+  attempted on idle 3 TB nodes: job 30260854 (1 TB, bigmem), poll running.
+
 - 2026-09-09, common-setup pass per user (match upstream practice): depth-median
   maps (`--depth_ratio 1`, DTU recipe) + auto cubes (cutoff/1024 ≈ 0.0069u ≈
   2.6 mm) + band 5×, via `--tag dr1` maps and auto-voxel support added to the
