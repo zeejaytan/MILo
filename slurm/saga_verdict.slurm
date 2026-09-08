@@ -5,11 +5,10 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-# 128G, which the scheduler silently routes to gpu-a100 (bisected 2026-09-07;
-# the house compare script asks exactly this and lands there too — job
-# 30158911). The compare peaked at 67G here against 24G on the ticket-01
-# baseline, so short's headroom does not hold it. Queues with the rest.
-#SBATCH --mem=128G
+# 64G on short: the 21-view instrument peaked at 24G on the same pair class
+# (job 30158911). The 164-view render is what OOMed past 128G — dropped, not
+# funded.
+#SBATCH --mem=64G
 #SBATCH --time=02:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/saga_verdict_%j.log
 
@@ -30,6 +29,11 @@ MILO_ROOT=/data/gpfs/projects/punim2657/MILo
 REPO_DIR=$MILO_ROOT/repo
 ENV_PREFIX=$MILO_ROOT/envs/milo
 DATA_DIR=$MILO_ROOT/data/17062025/A03_sherds
+# Scoring views come from the sherd-only 21-view held-out capture: the full
+# 164-view render OOMs past 128G (131G measured), while this instrument
+# completed at 24G on the same pair class (job 30158911) — and held-out
+# views are the honest instrument anyway. Same ruler (mesh sidecars).
+SCORE_CAPTURE=$MILO_ROOT/data/17062025/A03/capture_sherds.json
 SAGA_MESH=$MILO_ROOT/output/saga_A03_filt_01/mesh_saga_filt_t0.1_mm.ply
 OPENMVS_MESH=/data/gpfs/projects/punim2657/Rabati2025/17062025/A03/work_colmap_openmvs/dense_fixed/scene_refined_mm.ply
 OUT_DIR=$MILO_ROOT/output/saga_verdict
@@ -83,7 +87,7 @@ python -u scripts/render_mesh.py \
 
 echo "--- same-ruler compare, SAGA primary vs OpenMVS ---"
 python -u scripts/compare_meshes.py \
-    --capture "$DATA_DIR/capture.json" --milo "$SAGA_MESH" --openmvs "$OPENMVS_MESH" \
+    --capture "$SCORE_CAPTURE" --milo "$SAGA_MESH" --openmvs "$OPENMVS_MESH" \
     --out "$OUT_DIR/compare_01" 2>&1 | tee "$OUT_DIR/log_compare_01.txt"
 
 echo "=== finished $(date) ==="
