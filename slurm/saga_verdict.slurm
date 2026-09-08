@@ -5,7 +5,11 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+# 128G, which the scheduler silently routes to gpu-a100 (bisected 2026-09-07;
+# the house compare script asks exactly this and lands there too — job
+# 30158911). The compare peaked at 67G here against 24G on the ticket-01
+# baseline, so short's headroom does not hold it. Queues with the rest.
+#SBATCH --mem=128G
 #SBATCH --time=02:00:00
 #SBATCH --output=/data/gpfs/projects/punim2657/MILo/logs/saga_verdict_%j.log
 
