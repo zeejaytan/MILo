@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, baseline closed WITHOUT a mesh, and that is the answer: unmasked
+  fusion at 0.374 mm died of OOM at 128 GB (134 GB RSS) AND at 512 GB (535 GB
+  RSS, 8 min in, job 30233740). The parameters are proven by the masked run
+  (15 min, mesh on disk); unmasked at this voxel is unaffordable, same disease
+  as MILo's rig-in grid. No 1 TB retry — a control mesh nobody will use is not
+  worth terabytes. Verdict reads off the masked mesh.
+
 - 2026-09-08, same-ruler verdict numbers (login-node CPU raycast, mm):
   2DGS-boxed→OpenMVS-refined: 13.2% within 1 mm, median 49 mm — most 2DGS
   surface lies nowhere near a real surface. Reverse: 42.9% within 1 mm,
