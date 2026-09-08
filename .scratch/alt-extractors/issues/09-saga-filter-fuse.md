@@ -9,6 +9,7 @@
 **Status:** resolved
 
 **Verdict, 2026-09-08 — EARNS (type: method works on this material, one capture):** post-hoc SAGA filtering separates all ten sherds from clamps/rods/jaws at full density (24,292 kept, footprint 1.35 mm — no M4 webbing, no M5 drain), mesh at true scale via the live masked-depth path, zero steel, outlines 73.7% vs 42.2% OpenMVS / 8.6% unfiltered MILo, surface 67.2% within 1 mm of OpenMVS (median 0.53 mm; p90 is OpenMVS's own base-plate content). Owed before mesh-of-record: speck-component filter, ridge-resolving close-ups, second capture.
+- Conservator eye, 2026-09-09 (`artifacts/saga_A03/mesh_saga_filt_t0.1_mm.ply` pulled local): BEST OF THE GAUSSIAN-SPLAT METHODS SO FAR (confirms the ranking vs M4/M5/MILo-DTU), but three qualifications: (a) still coarse with a rugged surface — consistent with the measured 1.35 mm kept footprint and 4.1 mm depth floor against 0.21 mm photos; (b) clamp-contact faces carry residue in places — the in-mask steel the filter kept; (c) other clamp contacts are holes — unobserved faces, as scoped (never photographed, must stay open, not filled). So: earns the filter role, not the mesh-of-record; residue vs hole at each clamp contact is now the per-sherd question, and the M2 masking question stays open.
 
 **Pinned (2026-09-06 — code audited at pin, laptop clone):** `Jumpat/SegAnyGAussians@v2@2d4c5d7` (verified HEAD on clone; full SHA `2d4c5d77c857c956d747e4775d3d72c4ec5dfe16`). Cloning to `/data/gpfs/projects/punim2657/saga/` + env `envs/saga` build running on login node (background 2026-09-06).
 

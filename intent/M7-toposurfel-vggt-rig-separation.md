@@ -112,7 +112,10 @@ primary sources); A03-scale demonstration still owed before building.
   0.822 mm, band ±6.58 mm; outlines 73.7% (OpenMVS 42.2%, unfiltered MILo 8.6%,
   21 sherd-only held-out views); surface 67.2% within 1 mm of OpenMVS, median
   0.53 mm (p90 is OpenMVS's base-plate content); zero steel; one capture —
-  speck filter, ridge close-ups and a second capture owed before mesh-of-record
+  speck filter, ridge close-ups and a second capture owed before mesh-of-record.
+  Conservator eye 2026-09-09: best Gaussian-splat mesh so far, but coarse/rugged
+  (1.35 mm footprint, 4.1 mm depth floor), clamp residue in places, clamp holes
+  elsewhere (unobserved, stay open) — earns the filter role, not the record
 - [ ] TopoSurfel **and** its PGSR init pinned by commit hash in this file before any job
       is submitted — an unpinned build is unrepeatable. Trained on the existing
       `A03_sherds` dataset at full capture resolution (`-r 1` equivalent — no silent
