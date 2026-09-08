@@ -20,6 +20,18 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, env-issue research (primary sources only): Open3D#4824 (VBG CUDA
+  illegal-access with free VRAM, open since 2022), #6712 (0.18/0.19 TSDF
+  segfault from an OpenMP race — workaround `OMP_NUM_THREADS=1`), #2107
+  (`ScalableTSDFVolume.integrate` filling 256 GB+swap; "wrong poses activate
+  new blocks in unobserved space", also fixed by downgrade). gs2mesh
+  prescribes py3.8+o3d0.17 (their pipeline, Ubuntu confounded). NO smoking gun
+  for our exact call — version story suggestive, not proven; stated as such.
+  Installability confirmed: conda-forge has py3.8; PyPI has o3d 0.17.0 cp38/39
+  Linux wheels. Free test first: 5-view probe with OMP single-threaded
+  (30269160). If it still blows, build the fusion env; if it fits, versions
+  were never the story and volume stands.
+
 - 2026-09-09, memory verdict (user vindicated): unmasked fusion died at 1 TB
   (1046 GB RSS, job 30260854) — no legitimate grid costs that; and masked
   MEDIAN-depth fusion died at 134 GB where masked MEAN-depth fit (30260891).
