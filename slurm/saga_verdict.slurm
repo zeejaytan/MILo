@@ -52,10 +52,13 @@ mkdir -p "$OUT_DIR"
 cd "$REPO_DIR"
 
 # Sidecar: same ruler as every other A03 millimetre (measurement.env factor),
-# stated not smuggled. Compare refuses meshes without one.
+# stated not smuggled. Compare refuses meshes without one — and wants the
+# scale_mesh.py name form (<stem>.scale.json, suffix REPLACED, not appended;
+# the appended form cost job 30234537 its comparison).
 python - "$SAGA_MESH" <<'PY'
 import json, sys, datetime
-mesh = sys.argv[1]
+from pathlib import Path
+mesh = Path(sys.argv[1])
 env = dict(l.strip().split("=", 1) for l in open(
     "/data/gpfs/projects/punim2657/Rabati2025/17062025/A03/"
     "work_colmap_openmvs/measurement.env") if "=" in l)
@@ -66,7 +69,7 @@ sidecar = {"units": "millimetres", "mm_per_unit": f,
            "scaled_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
            "source": "blue base top face 190x130 mm (same measurement.env as OpenMVS sidecar)",
            "caveat": "same ~1% precision caveat as the OpenMVS sidecar it is compared against"}
-open(mesh + ".scale.json", "w").write(json.dumps(sidecar, indent=2))
+open(mesh.with_suffix(".scale.json"), "w").write(json.dumps(sidecar, indent=2))
 print(f"sidecar: {f:.4f} mm/unit")
 PY
 
