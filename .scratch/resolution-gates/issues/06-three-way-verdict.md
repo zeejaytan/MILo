@@ -20,6 +20,17 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, baseline closed WITHOUT a mesh, and that is the answer: unmasked
+  fusion died of OOM at 128 GB AND at 512 GB (this time at MILo's own 0.75 mm
+  voxels, job 30259250, dead on view 1 at ~60 GB/view). Mechanism, with numbers:
+  an unmasked view is mostly empty room out to the 7.1u truncation, and the
+  grid must cover that whole frustum volume at 0.374 mm cubes; masked views
+  cover 2.3% of pixels, so the same code fits easily. Upstream never fuses
+  unmasked rooms either (DTU eval is masked; large scenes go unbounded), and
+  the issue tracker shows others OOMing on fewer pixels than ours. MILo's room
+  mesh came from tet-meshing, which never allocates volumes. Parameters stand
+  proven by the masked run; no further baseline spends.
+
 - 2026-09-09, correction (user challenge upheld on the fact): MILo DID mesh the
   whole room unmasked — `A03_nomask/mesh_learnable_sdf.ply` (111 MB). But by
   tet-meshing, which has no voxel grid and never pays volume×voxel. Nobody has
