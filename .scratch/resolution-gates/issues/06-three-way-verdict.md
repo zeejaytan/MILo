@@ -20,6 +20,16 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, workaround+forum sweep: 2DGS#189 (large-set OOM/segfault; one fix
+  was Numpy<2 — N/A, ours is 1.26.4; another was CPU cap), #212 (bounded=small
+  scenes, unbounded=big is community norm), #82 (author: CPU TSDF <2 min for
+  m360 when installed right; OMP thread cap suggested), #97/#40 (GPU-side OOMs,
+  N/A). NVIDIA fVDB room-scale guidance: voxels coarser than the noise floor
+  (0.01–0.03 m), truncation 3–4× voxel, min_weight≥3, prune_opacity 0.1 —
+  independent support that sub-noise voxels carve per-splat bubbles. Non-TSDF
+  routes (GOF/SOF marching-tets) dodge grids entirely but don't take 2DGS
+  surfels — out of M6 scope, noted for MILo-family. OMP probe running.
+
 - 2026-09-09, env-issue research (primary sources only): Open3D#4824 (VBG CUDA
   illegal-access with free VRAM, open since 2022), #6712 (0.18/0.19 TSDF
   segfault from an OpenMP race — workaround `OMP_NUM_THREADS=1`), #2107
