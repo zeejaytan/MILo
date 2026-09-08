@@ -6,7 +6,9 @@
 
 **Blocked by:** 01 (OpenMVS on A03, same ruler), 02 (depth disagreement in mm).
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+**Verdict, 2026-09-08 — EARNS (type: method works on this material, one capture):** post-hoc SAGA filtering separates all ten sherds from clamps/rods/jaws at full density (24,292 kept, footprint 1.35 mm — no M4 webbing, no M5 drain), mesh at true scale via the live masked-depth path, zero steel, outlines 73.7% vs 42.2% OpenMVS / 8.6% unfiltered MILo, surface 67.2% within 1 mm of OpenMVS (median 0.53 mm; p90 is OpenMVS's own base-plate content). Owed before mesh-of-record: speck-component filter, ridge-resolving close-ups, second capture.
 
 **Pinned (2026-09-06 — code audited at pin, laptop clone):** `Jumpat/SegAnyGAussians@v2@2d4c5d7` (verified HEAD on clone; full SHA `2d4c5d77c857c956d747e4775d3d72c4ec5dfe16`). Cloning to `/data/gpfs/projects/punim2657/saga/` + env `envs/saga` build running on login node (background 2026-09-06).
 
@@ -17,9 +19,13 @@
 4. KNOWN RISK, update 2026-09-07: confirmed — no pytorch3d wheel for (py311, torch 2.3, cu118) at either per-combo page; login-node compile of simple-knn + all three rasterizer forks clean. pytorch3d v0.7.6 (torch-2.3 era) building from source on a GPU node via `slurm/saga_pytorch3d.slurm`, knn smoke-tested on GPU in-job.
 
 - [x] SAGA feature head trained on frozen full-scene `A03_nomask` Gaussians (222,678) at full capture resolution with OUR masks as the stack (`sam_masks/*.pt` from `images_masked` alpha; scales via `get_scale.py`; `train_contrastive_feature.py`) — job 30196905 COMPLETED 0:0 2026-09-07 (loss 0.05, 2D pos 0.86 / neg −0.55); `contrastive_feature_point_cloud.ply` + `scale_gate.pt` saved at iter 10000
-- [ ] Sherd subset retrieved by headless mask-prompt query, keep-index → filtered ply → live path `mesh_extract_dtu.py:133-135` + `integration.py:54-59`, voxel size and truncation band stated in mm
-- [ ] Same-ruler scoring vs OpenMVS (fraction within ~1 mm), break-face close-ups resolving ~0.2 mm ridges, remaining steel in cm² (`mask_content.py` split — rig was 644 cm² vs 61 cm² clay per view)
-- [ ] If filtering webs steel or drains clay like M4/M5: retire NO at one capture with eye verification (type-1 method failure), do not fund a second post-hoc architecture
+- [x] Sherd subset retrieved by headless mask-prompt query, keep-index → filtered ply → live path `mesh_extract_dtu.py:133-135` + `integration.py:54-59`, voxel size and truncation band stated in mm — thr 0.1: 24,292 kept (footprint 1.35 mm), fused rung 0 (0.822 mm voxel, ±6.58 mm band, 19k blocks, CPU binary, 0 non-finite); thr 0.2: 16,229 (0.97 mm)
+- [x] Same-ruler scoring vs OpenMVS (fraction within ~1 mm: 67.2%, median 0.53 mm), whole-mesh renders for the eye (artifacts/saga_A03/), remaining steel ZERO by redness + renders — VERDICT 2026-09-08, job 30238420 + renders, eye-verified:
+  - outlines on 21 sherd-only held-out views: SAGA **73.7%** (worst 64.3%) vs OpenMVS 42.2% vs unfiltered MILo 8.6% (ticket 01, same instrument) — the filter + fusion is the tightest sherd outline of any route; OpenMVS loses to its own base plate + overfill fringes
+  - surface: **67.2% within 1 mm** of OpenMVS (47.1% within 0.5 mm), median 0.53 mm — understated, because OpenMVS carries a 277k-face base plate + rod the SAGA mesh correctly lacks (p90 133 mm is plate/rod content, not sherd error); agreement between two independent routes, not truth
+  - steel: ZERO — ten clay pieces (redness +7..+28, steel ≈ −5), no rig in renders; OpenMVS keeps plate + rod. Retention 24k vs M4's 8.7k webbed / M5's 18k drained; no webbing, no drain → the retire condition does NOT fire
+  - weight: ONE capture; speck tail (332 pieces, ~11 big) wants the small-component filter; ridge-resolving close-ups owed before mesh-of-record (whole-mesh renders discriminate the failure modes in play — webbing, missing pieces, rig — but not 1 mm relief). EARNS (a)+(b): beats OpenMVS on outlines, complementary clean record
+- [ ] If filtering webs steel or drains clay like M4/M5: retire NO at one capture with eye verification (type-1 method failure), do not fund a second post-hoc architecture — NOT triggered (see above)
 
 ## Comments
 

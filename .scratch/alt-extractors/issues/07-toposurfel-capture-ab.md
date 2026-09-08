@@ -6,7 +6,9 @@
 
 **Blocked by:** 01 (OpenMVS on A03, same ruler), 02 (depth disagreement in mm), 04 (mask-path audit).
 
-**Status:** ready-for-agent
+**Status:** wontfix
+
+**Reason, 2026-09-08:** closed-unbuilt per the ticket-04 audit (HEAD `1525ce3` — NO-BUILD as a masked extractor without new code; rig enters via required `mesh_init.ply`, only one-sided mask consumer, `cam.mask` never read). Reopening needs a scoped mask patch amended into M7 first. No GPU spent here by design.
 
 - [ ] Builds only if 04 stated a mask route and 01–02 left a bar worth chasing; otherwise this ticket closes unbuilt citing the gate
 - [ ] Trained and extracted at full capture resolution on the existing sherd-only dataset, voxel size and truncation band stated in mm, block counts and free-memory figures printed before any extraction

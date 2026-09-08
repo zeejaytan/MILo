@@ -29,7 +29,7 @@ extraction ceiling is worth doing *for this material*.
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
 | [M5](M5-can-masked-training-exclude-rig.md) | Can both-sides-plus-alpha training exclude the rig without eating the rim? | retired — answered NO on A03 2026-09-06 (rim holds, rig gone, but 91% density drain → eye-confirmed too coarse) | none |
 | [M6](M6-does-2dgs-reach-break-face-resolution.md) | Does 2D Gaussian Splatting get sherds out of the rig at the resolution a break face needs? | open — blocked on the M1 requirement and OpenMVS baseline | [M1](M1-resolution-the-material-needs.md) |
-| [M7](M7-toposurfel-vggt-rig-separation.md) | Can TopoSurfel or VGGT + InstantSplat++ get sherds out of the rig at the resolution a break face needs? | open — blocked on M1's baseline and depth-disagreement boxes | [M1](M1-resolution-the-material-needs.md) |
+| [M7](M7-toposurfel-vggt-rig-separation.md) | Can TopoSurfel or VGGT + InstantSplat++ get sherds out of the rig at the resolution a break face needs? | answered 2026-09-08 — TopoSurfel NO-BUILD (no mask path), VGGT NO (poses collapse both modes, BA refuses), SAGA EARNS on one capture (outlines 73.7%, zero steel, full density); close-ups + 2nd capture owed | [M1](M1-resolution-the-material-needs.md) |
 
 ## What is established
 
