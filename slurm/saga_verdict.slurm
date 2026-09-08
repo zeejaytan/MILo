@@ -18,7 +18,9 @@
 # the OpenMVS fixed-frame refined mesh, plus whole-mesh renders for the eye.
 # Render/compare need the card (nvdiffrast); nothing else here does.
 # Steel evidence is the mesh_report redness column (fired clay reads +7..+28,
-# steel ~-5) plus the eye on these renders — the M4/M5 precedent.
+# steel ~-5) plus the eye on these renders — the M4/M5 precedent. Wall
+# thickness skipped: trimesh ray-casting without embree balloons past 64G
+# (deterministic 67G OOM twice); it is not an M7 box.
 #
 # Usage:
 #   ./scripts/remote/pull_and_sbatch.sh slurm/saga_verdict.slurm
@@ -88,6 +90,7 @@ python -u scripts/render_mesh.py \
 echo "--- same-ruler compare, SAGA primary vs OpenMVS ---"
 python -u scripts/compare_meshes.py \
     --capture "$SCORE_CAPTURE" --milo "$SAGA_MESH" --openmvs "$OPENMVS_MESH" \
+    --skip-thickness \
     --out "$OUT_DIR/compare_01" 2>&1 | tee "$OUT_DIR/log_compare_01.txt"
 
 echo "=== finished $(date) ==="
