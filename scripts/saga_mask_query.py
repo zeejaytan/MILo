@@ -33,7 +33,8 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--feature_iter", type=int, default=10000)
-    ap.add_argument("--thresholds", default="0.5,0.6,0.75")
+    ap.add_argument("--thresholds", default="0.0,0.1,0.2,0.5,0.6,0.75")
+    ap.add_argument("--overlay_thrs", default="0.0,0.1,0.2,0.6")
     args = ap.parse_args()
 
     # SAGA's loader reads sys.argv behind our back (get_combined_args parses
@@ -137,7 +138,9 @@ def main():
         print(f"thr {thr:g}: kept {len(keep)} "
               f"({100 * len(keep) / len(sims_np):.1f}%)", flush=True)
 
-    # Overlays on three spread views for the eye (rendered sim > primary).
+    # Overlays for the eye at each overlay threshold (rendered sim > thr).
+    # Which thresholds separate sherd from rig is read off these pictures,
+    # not off the training numbers: the 3D point sims live far lower.
     import glob as _glob
     import matplotlib
     matplotlib.use("Agg")
@@ -148,7 +151,7 @@ def main():
         assert hits, stem  # SAGA's image_name is the stem; resolve extension
         return np.asarray(Image.open(hits[0]).convert("RGB"))
 
-    primary = 0.6
+    overlay_thrs = [float(t) for t in args.overlay_thrs.split(",")]
     for idx in (0, len(spread) // 2, -1):
         view = spread[idx]
         view.feature_height, view.feature_width = (view.image_height,
@@ -165,17 +168,20 @@ def main():
         stem = view.image_name.split(".")[0]
         photo = _photo(stem)
         if photo.shape[:2] != sm.shape:
-            photo = np.asarray(Image.open(
+            from PIL import Image as _I
+            photo = np.asarray(_I.open(
                 _glob.glob(os.path.join(args.src, "images", stem + ".*"))[0]
                 ).convert("RGB").resize((sm.shape[1], sm.shape[0])))
-        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        n = len(overlay_thrs)
+        fig, ax = plt.subplots(1, 2 + n, figsize=(5 * (2 + n), 5))
         ax[0].imshow(photo)
         ax[0].set_title(view.image_name)
         ax[1].imshow(sm, vmin=-1, vmax=1, cmap="coolwarm")
         ax[1].set_title("similarity")
-        ax[2].imshow(photo)
-        ax[2].imshow(sm > primary, alpha=0.45, cmap="Greens")
-        ax[2].set_title(f"keep>{primary:g}")
+        for j, thr in enumerate(overlay_thrs):
+            ax[2 + j].imshow(photo)
+            ax[2 + j].imshow(sm > thr, alpha=0.45, cmap="Greens")
+            ax[2 + j].set_title(f"keep>{thr:g}")
         for a in ax:
             a.axis("off")
         fig.savefig(os.path.join(args.out, f"overlay_{idx}.png"), dpi=70)
