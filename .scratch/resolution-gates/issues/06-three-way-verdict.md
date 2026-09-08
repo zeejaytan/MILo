@@ -20,6 +20,10 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, fair-recipe run (user challenge): our verdict fused mean-depth maps;
+  upstream's recipe uses median. Fine voxels (0.001u) + median maps (dr1) =
+  job 30260891 — the apples-to-apples run owed before any retire. Poll running.
+
 - 2026-09-09, common-setup masked result: 1.92M verts in 328,925 fragments,
   largest ~4k tris — at 2.6 mm cubes nothing coheres (predicted: cubes 2.6× the
   ~1 mm bar). Negative control only; fine-voxel choice stands vindicated.
