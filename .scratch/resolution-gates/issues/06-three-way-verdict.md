@@ -20,6 +20,15 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, common-setup pass per user (match upstream practice): depth-median
+  maps (`--depth_ratio 1`, DTU recipe) + auto cubes (cutoff/1024 ≈ 0.0069u ≈
+  2.6 mm) + band 5×, via `--tag dr1` maps and auto-voxel support added to the
+  trial scripts (depth mode recorded in `_meta`). At 2.6 mm the unmasked
+  baseline should fit (~330× fewer cubes), so masked + unmasked fuse from the
+  same maps: render 30259403 (short GPU), fuse 30259404 masked /
+  30259405 unmasked (`afterok` chain, CPU). `num_cluster` stays 50 (DTU's 1
+  assumes a single object; deviation recorded). Polls running.
+
 - 2026-09-09, baseline closed WITHOUT a mesh, and that is the answer: unmasked
   fusion died of OOM at 128 GB AND at 512 GB (this time at MILo's own 0.75 mm
   voxels, job 30259250, dead on view 1 at ~60 GB/view). Mechanism, with numbers:
