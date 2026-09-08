@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, memory burden-of-proof (user: 1 TB is ridiculous vs MILo — and
+  my 1.5 GB/view was crude division off a dying log): 5-view unmasked probe
+  30261001 with peak-RSS print (`/usr/bin/time -v`), verdict voxel. ≤~10 GB
+  → steady-growth story, bigmem stands. Tens of GB → version pathology
+  (community reports TSDF kills on py3.9, ours is py3.9+o3d0.19), fix is env
+  not memory, bigmem gets cancelled. Poll running.
+
 - 2026-09-09, fair-recipe run (user challenge): our verdict fused mean-depth maps;
   upstream's recipe uses median. Fine voxels (0.001u) + median maps (dr1) =
   job 30260891 — the apples-to-apples run owed before any retire. Poll running.
