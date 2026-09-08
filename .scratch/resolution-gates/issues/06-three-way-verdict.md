@@ -20,6 +20,16 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, correction (user challenge upheld on the fact): MILo DID mesh the
+  whole room unmasked — `A03_nomask/mesh_learnable_sdf.ply` (111 MB). But by
+  tet-meshing, which has no voxel grid and never pays volume×voxel. Nobody has
+  TSDF-fused this room at 0.374 mm voxels; MILo's own TSDF ran at 0.75 mm
+  (8× cheaper) and masked, and still hit 22 GiB reserved with the rig in.
+  Fair test of the challenge: unmasked 2DGS baseline at MILo's voxel
+  (0.002u/0.75 mm, job 30259250) — same pipeline, comparable density. If it
+  fits 128G, the OOM was voxel scale, not a broken pipeline; if it dies too,
+  something else is wrong and I say so.
+
 - 2026-09-09, baseline closed WITHOUT a mesh, and that is the answer: unmasked
   fusion at 0.374 mm died of OOM at 128 GB (134 GB RSS) AND at 512 GB (535 GB
   RSS, 8 min in, job 30233740). The parameters are proven by the masked run
