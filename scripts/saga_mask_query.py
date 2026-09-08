@@ -138,9 +138,16 @@ def main():
               f"({100 * len(keep) / len(sims_np):.1f}%)", flush=True)
 
     # Overlays on three spread views for the eye (rendered sim > primary).
+    import glob as _glob
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
+    def _photo(stem):
+        hits = _glob.glob(os.path.join(args.src, "images", stem + ".*"))
+        assert hits, stem  # SAGA's image_name is the stem; resolve extension
+        return np.asarray(Image.open(hits[0]).convert("RGB"))
+
     primary = 0.6
     for idx in (0, len(spread) // 2, -1):
         view = spread[idx]
@@ -155,12 +162,12 @@ def main():
             feat = torch.nn.functional.normalize(feat, dim=-1, p=2)
             sm = torch.einsum(
                 "C,HWC->HW", query_feature.cuda(), feat).cpu().numpy()
-        photo = np.asarray(Image.open(
-            os.path.join(args.src, "images", view.image_name)).convert("RGB"))
+        stem = view.image_name.split(".")[0]
+        photo = _photo(stem)
         if photo.shape[:2] != sm.shape:
             photo = np.asarray(Image.open(
-                os.path.join(args.src, "images", view.image_name)).convert(
-                "RGB").resize((sm.shape[1], sm.shape[0])))
+                _glob.glob(os.path.join(args.src, "images", stem + ".*"))[0]
+                ).convert("RGB").resize((sm.shape[1], sm.shape[0])))
         fig, ax = plt.subplots(1, 3, figsize=(15, 5))
         ax[0].imshow(photo)
         ax[0].set_title(view.image_name)
