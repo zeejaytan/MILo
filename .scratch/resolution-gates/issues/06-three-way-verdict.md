@@ -20,6 +20,15 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, memory verdict (user vindicated): unmasked fusion died at 1 TB
+  (1046 GB RSS, job 30260854) — no legitimate grid costs that; and masked
+  MEDIAN-depth fusion died at 134 GB where masked MEAN-depth fit (30260891).
+  Pattern: only one configuration ever fused (masked + mean + 0.374 mm).
+  Prime suspect is version pathology (community: TSDF kills on py3.9, ours is
+  py3.9+o3d0.19; theirs works on py3.8+o3d0.17) — not volume, not settings.
+  Probe resubmitted with _DONE fixed (30269072) for the per-view number; then
+  the call is new-fusion-env vs close-the-lines, user's call.
+
 - 2026-09-09, memory burden-of-proof (user: 1 TB is ridiculous vs MILo — and
   my 1.5 GB/view was crude division off a dying log): 5-view unmasked probe
   30261001 with peak-RSS print (`/usr/bin/time -v`), verdict voxel. ≤~10 GB
