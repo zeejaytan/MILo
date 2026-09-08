@@ -79,7 +79,7 @@ python -u scripts/render_mesh.py \
 
 echo "--- same-ruler compare, SAGA primary vs OpenMVS ---"
 python -u scripts/compare_meshes.py \
-    --capture "$DATA_DIR" --milo "$SAGA_MESH" --openmvs "$OPENMVS_MESH" \
+    --capture "$DATA_DIR/capture.json" --milo "$SAGA_MESH" --openmvs "$OPENMVS_MESH" \
     --out "$OUT_DIR/compare_01" 2>&1 | tee "$OUT_DIR/log_compare_01.txt"
 
 echo "=== finished $(date) ==="
