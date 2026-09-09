@@ -8,18 +8,29 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 **Blocked by:** 05 (baseline mesh + maps); reads M5's verdict as its risk register.
 
-**Status:** ready-for-agent
+**Status:** claimed (2026-09-09 — port done, probe running)
 
-- [ ] Recipe ported per `MarcelRogge/object-centric-2dgs@bdbabdc` (README-only repo,
-      base 2DGS `19eb5f1` Aug-2024; ours `f3e3b9f` — recipe is version-agnostic
-      Python): masked photometric loss (`gt*mask`, `render*mask`), background loss
-      `mean(alpha*(1-mask))` at λ=0.5 using the already-returned `rend_alpha`
-      (no rasterizer change), masks from the existing RGBA alpha band. Port lives
-      outside upstream files (trial patch dir + flag), commit recorded in M6
+- [x] Recipe ported per `MarcelRogge/object-centric-2dgs@bdbabdc` (README-only repo,
+  base 2DGS `19eb5f1` Aug-2024; ours `f3e3b9f` — recipe is version-agnostic
+  Python): masked photometric loss (`gt*mask`, `render*mask`), background loss
+  `mean(alpha*(1-mask))` at λ=0.5 using the already-returned `rend_alpha`
+  (no rasterizer change), masks from the existing RGBA alpha band. Port lives
+  outside upstream files (trial patch dir + flag), commit recorded in M6
 - [ ] Probe train (~7k iters, same `A03_sherds`, `-r 1`): Gaussian-count trajectory
-      vs control (274,704 @30k), alpha-outside-mask numbers, rim renders at a
-      resolving view — GO/NO-GO for 08 with the reason named
+  vs control (274,704 @30k), alpha-outside-mask numbers, rim renders at a
+  resolving view — GO/NO-GO for 08 with the reason named
 - [ ] NO-GO stops here: retire the branch at probe weight, do not fund 08
+
+## Comments
+
+- 2026-09-09, port committed in the trial clone (`rogge port`: +33/-4,
+  `train.py` + `arguments/__init__.py`, never pushed — clone is untracked
+  working area): `--lambda_bg` (default 0.0 = upstream behavior) gates the
+  whole pair, never bg alone (paper Fig.8). Occlusion pruning NOT ported.
+  Probe 30287835 (short GPU, `--lambda_bg 0.5`, `--iterations 7000`, separate
+  `output/A03_probe_masked`), poll running. Baseline line dropped per user:
+  unmasked bounded fusion is off published practice (died 128G/512G/1TB +
+  trunc4); verdict reads off masked meshes.
 
 ## Comments
 
