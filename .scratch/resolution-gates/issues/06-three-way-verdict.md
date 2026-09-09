@@ -20,6 +20,11 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, fuse018 ready (o3d 0.18.0 + numpy pinned 1.26.4 — also dodges the
+  Numpy<2 segfault report) and 5-view probe submitted there (30280601, CPU,
+  peak-RSS print). Same maps, same voxel, only the library changed: fits →
+  versions were the story; blows → allocator exonerated, volume stands final.
+
 - 2026-09-09, 0.18 fusion env per user (author's own pin, not forum lore):
   `2dgs/envs/fuse018` (py3.9 + open3d==0.18.0 + CPU torch), separate area,
   shared env untouched. Build running; 5-view probe reruns there first, then
