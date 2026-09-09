@@ -20,6 +20,20 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, 0.18 fusion env per user (author's own pin, not forum lore):
+  `2dgs/envs/fuse018` (py3.9 + open3d==0.18.0 + CPU torch), separate area,
+  shared env untouched. Build running; 5-view probe reruns there first, then
+  the dead fusions only if the probe fits.
+
+- 2026-09-09, extraction-route options beyond Open3D TSDF (user question):
+  (a) 2DGS unbounded mode (same repo, contraction+marching-cubes, GPU-heavy,
+  experimental); (b) per-sherd tiled fusion (M1 route 3 — same math, 10×
+  smaller volumes, honest holes; needs per-sherd mask split); (c) VDBFusion
+  backend (M1 route 5 — no Open3D allocator, needs depth→scan glue);
+  (d) tet/Poisson routes (GOF needs 3D Gaussians not surfels; Poisson fills
+  the 131 holes — both out of scope). M1's stop applies to (b) too: tiling
+  past the ~1 mm depth floor samples noise, not relief.
+
 - 2026-09-09, version check (user: is the pin latest / fixed upstream?): 2DGS
   pin `f3e3b9f` is still HEAD today. Open3D 0.19.0 (Jan 2025) is the latest
   RELEASE on PyPI — nothing newer to upgrade to; dev exists but unreleased,
