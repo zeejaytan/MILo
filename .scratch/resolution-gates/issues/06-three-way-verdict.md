@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, versions exonerated: 0.18.0 blows identically (267 GB, 5 views).
+  Revised mechanism: floater-filled background depths (274k Gaussians through
+  room air) make the grid fill frustum VOLUME, not surfaces — consistent with
+  masked fitting (coherent sherd depths), median dying (noisier), and the
+  50 GB/view rate. Remedy under test: clip the room with depth_trunc 4.0
+  (30287517, 5 views); cameras sit ~3.7u out, so sherds+rig survive the clip.
+
 - 2026-09-09, fuse018 ready (o3d 0.18.0 + numpy pinned 1.26.4 — also dodges the
   Numpy<2 segfault report) and 5-view probe submitted there (30280601, CPU,
   peak-RSS print). Same maps, same voxel, only the library changed: fits →
