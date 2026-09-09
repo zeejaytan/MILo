@@ -112,6 +112,10 @@ build-prep.
   build around it.
 - If masked 2DGS training drains density the way M5 did: retire NO at the same weight
   (one capture, eye verification), do not fund a second architecture to re-learn it.
+  **Retired 2026-09-10 (ticket 07): NO — 94% drained by 7k iters (78,227→4,620),
+  bg 0.00195, held-out PSNR 11.6 dB vs 21.2 control. Same trade as M4/M5 with
+  nothing paired to the exclusion. Eye renders pending; numbers alone retire it.
+  This is a method-on-material failure (type 1), same-ruler numbers.**
 
 ## Source
 

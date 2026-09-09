@@ -8,7 +8,7 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 **Blocked by:** 05 (baseline mesh + maps); reads M5's verdict as its risk register.
 
-**Status:** claimed (2026-09-09 — port done, probe running)
+**Status:** resolved NO-GO (2026-09-10 — retire branch, do not fund 08)
 
 - [x] Recipe ported per `MarcelRogge/object-centric-2dgs@bdbabdc` (README-only repo,
   base 2DGS `19eb5f1` Aug-2024; ours `f3e3b9f` — recipe is version-agnostic
@@ -16,10 +16,11 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
   `mean(alpha*(1-mask))` at λ=0.5 using the already-returned `rend_alpha`
   (no rasterizer change), masks from the existing RGBA alpha band. Port lives
   outside upstream files (trial patch dir + flag), commit recorded in M6
-- [ ] Probe train (~7k iters, same `A03_sherds`, `-r 1`): Gaussian-count trajectory
-  vs control (274,704 @30k), alpha-outside-mask numbers, rim renders at a
-  resolving view — GO/NO-GO for 08 with the reason named
-- [ ] NO-GO stops here: retire the branch at probe weight, do not fund 08
+- [x] Probe train (~7k iters, same `A03_sherds`, `-r 1`): 78,227 → 4,620
+  Gaussians (94% drained — worse than M5's 91%), bg 0.00195 (rig gone),
+  held-out PSNR 11.6 dB vs control 21.2 at same iters (renders collapsed).
+  Renders for eye verification rendering (job 30346695); numbers alone retire it
+- [x] NO-GO stops here: retire the branch at probe weight, do not fund 08
 
 ## Comments
 
