@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, version check (user: is the pin latest / fixed upstream?): 2DGS
+  pin `f3e3b9f` is still HEAD today. Open3D 0.19.0 (Jan 2025) is the latest
+  RELEASE on PyPI — nothing newer to upgrade to; dev exists but unreleased,
+  and the legacy TSDF class source is unchanged 0.19→latest docs. So "fixed
+  upstream" is not an option that exists; remaining moves are OMP-probe
+  result, 0.17 fusion env, or accept masked-only.
+
 - 2026-09-09, OMP probe dead (30269160): OOM at 267 GB on FIVE views,
   single-threaded. ~50 GB/view against ~1 GB estimated from surface area —
   two orders over, threading ruled out. Version pathology now the lead
