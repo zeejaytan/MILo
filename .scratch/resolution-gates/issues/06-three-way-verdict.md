@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, OMP probe dead (30269160): OOM at 267 GB on FIVE views,
+  single-threaded. ~50 GB/view against ~1 GB estimated from surface area —
+  two orders over, threading ruled out. Version pathology now the lead
+  hypothesis by elimination (volume arithmetic says single-digit GB).
+  Next: fusion-only env (py3.8 + o3d0.17 + CPU torch, all confirmed
+  installable) — awaiting user go since it revisits the env-reuse decision.
+
 - 2026-09-09, workaround+forum sweep: 2DGS#189 (large-set OOM/segfault; one fix
   was Numpy<2 — N/A, ours is 1.26.4; another was CPU cap), #212 (bounded=small
   scenes, unbounded=big is community norm), #82 (author: CPU TSDF <2 min for
