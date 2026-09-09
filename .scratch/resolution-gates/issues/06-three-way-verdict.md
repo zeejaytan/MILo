@@ -20,6 +20,9 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-09, fuse018 + package cache removed per user (8.8 GB freed); served
+  its purpose (versions exonerated). Shared env untouched throughout.
+
 - 2026-09-09, versions exonerated: 0.18.0 blows identically (267 GB, 5 views).
   Revised mechanism: floater-filled background depths (274k Gaussians through
   room air) make the grid fill frustum VOLUME, not surfaces — consistent with
