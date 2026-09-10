@@ -19,7 +19,9 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 - [x] Probe train (~7k iters, same `A03_sherds`, `-r 1`): 78,227 → 4,620
   Gaussians (94% drained — worse than M5's 91%), bg 0.00195 (rig gone),
   held-out PSNR 11.6 dB vs control 21.2 at same iters (renders collapsed).
-  Renders for eye verification rendering (job 30346695); numbers alone retire it
+  Eye verification 2026-09-10 (`artifacts/2dgs-a03/probe_A31_1100.png`):
+  frame black, zero steel, sherds reduced to translucent smears — masking
+  works, clay destroyed. Agent eye; conservator confirm pending.
 - [x] NO-GO stops here: retire the branch at probe weight, do not fund 08
 
 ## Comments
