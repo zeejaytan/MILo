@@ -35,8 +35,6 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
   unmasked bounded fusion is off published practice (died 128G/512G/1TB +
   trunc4); verdict reads off masked meshes.
 
-## Comments
-
 - 2026-09-07, audit: the Rogge repo ships NO code (README recipe only), so this
   is a hand-port, not a drop-in. Occlusion pruning needs CUDA rasterizer edits
   plus rebuild — deferred to 08 ONLY if the probe survives on losses alone
