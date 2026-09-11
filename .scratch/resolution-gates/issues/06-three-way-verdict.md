@@ -24,6 +24,15 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, region split answers the chrome challenge (user: splatting
+  handles shine, chrome was fine in MILo — conceded for renders, 22.3 dB).
+  On CLAY pixels only (rig already masked out): deep interior median
+  0.22–0.31 mm, p90 1.4–10.7 mm, 17–29% beyond 1 mm; rim band median
+  0.35–1.54 mm, p90 20–56 mm, 32–57% beyond. Mechanism refined, verdict
+  unchanged: rims drive the failure, not the rig — eroded outlines,
+  occlusion edges and floaters disagree by tens of mm where the matcher
+  reads. Interior mostly agrees sub-voxel, which is why some sherds formed.
+
 - 2026-09-11, why-common-failed, measured (user: redo the dig): 2DGS's own
   depths disagree across adjacent views by median 0.28–0.66 mm, p90 11–36 mm,
   25–44% of pixels beyond 1 mm. DTU-style scenes agree to sub-voxel; ours
