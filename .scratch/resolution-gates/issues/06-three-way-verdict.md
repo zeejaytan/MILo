@@ -20,6 +20,12 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, deconfounding the common-setup failure (user: why did common
+  fail?): two variables changed at once (median depth AND 0.0069u cubes), so
+  neither can be blamed yet. Cross run 30419585: proven mean maps × coarse
+  auto cubes, masked, CPU. Garbage → cube size is the cause; clean →
+  median mode is the cause. Poll running.
+
 - 2026-09-11, common mesh is NOT viewable (user found empty view): extent
   3.2M mm, median vertex 3.5 m off-box, 0.0% inside the shared box — not a
   coarse sherd mesh but a failed fusion (median-depth maps + coarse grid →
