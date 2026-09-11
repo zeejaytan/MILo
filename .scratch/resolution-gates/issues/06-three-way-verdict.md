@@ -24,6 +24,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, cutoff correction (expert steer, recorded verbatim in effect):
+  cameras orbit ~3.77u, tray ~1.6u wide, far side to 4.81u; per-view max tray
+  depth mean 4.31, 163/164 views hold content past 4.0 — so a 4.0 cutoff
+  carves far-side sherds in nearly every view (destructive, worse than a gap).
+  4.0 run cancelled before writing; redone at 5.0 (job 30426315: keeps all
+  tray, thinnest margin 0.2u ≈ 75 mm, excludes room; auto cubes follow at
+  0.0049u ≈ 1.83 mm). Adopt 5.0 for standard extractions going forward.
+
 - 2026-09-11, runaway depths found: 68/143 views carry depths past the 7.1
   cutoff, worst 1332u (500 m — floaters miles out). Decisive test 30426220:
   coarse cubes + cutoff tightened to 4.0. Sane → far depths poisoned the grid
