@@ -24,14 +24,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
-- 2026-09-11, region split answers the chrome challenge (user: splatting
-  handles shine, chrome was fine in MILo — conceded for renders, 22.3 dB).
-  On CLAY pixels only (rig already masked out): deep interior median
-  0.22–0.31 mm, p90 1.4–10.7 mm, 17–29% beyond 1 mm; rim band median
-  0.35–1.54 mm, p90 20–56 mm, 32–57% beyond. Mechanism refined, verdict
-  unchanged: rims drive the failure, not the rig — eroded outlines,
-  occlusion edges and floaters disagree by tens of mm where the matcher
-  reads. Interior mostly agrees sub-voxel, which is why some sherds formed.
+- 2026-09-11, correction (user: we used erode0): A03_sherds outlines are NOT
+  eroded — `capture.json` names `A03_erode0`, adapter does no erode/dilate.
+  The 6 px erosion belongs to the older MILo training masks (M5 era), not
+  this data. So the rim band measured is the drawn edge itself, and its
+  20–56 mm tails come from occlusion boundaries and floaters, not from
+  chewed clay. Mechanism stands, attribution fixed. Numbers kept: deep clay
+  median 0.22–0.31 mm (17–29% beyond 1 mm); rim band median 0.35–1.54 mm
+  (32–57% beyond), p90 20–56 mm.
 
 - 2026-09-11, why-common-failed, measured (user: redo the dig): 2DGS's own
   depths disagree across adjacent views by median 0.28–0.66 mm, p90 11–36 mm,
