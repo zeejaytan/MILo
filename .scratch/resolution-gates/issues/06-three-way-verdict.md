@@ -24,6 +24,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, growth curve closes the coarse autopsy (max|coord| by views:
+  1→84u, 10→169u, 40→684u, 143→6351u): smooth superlinear growth, no
+  threshold — far-depth pixels accumulate subvolumes view after view, and
+  marching cubes confettis across all of it. Same disease mildly in the fine
+  mesh (its steel sheets); coarse just lets it run to kilometres. Coarse line
+  CLOSED: no setting rescues fusing 500-metre pixels. Fix would be a max-depth
+  gate at fusion — noted, unbuilt, verdict doesn't need it.
+
 - 2026-09-11, single view ALSO overshoots (5.9M verts, 116u long axis vs
   ~15u scene — deterministic error from view 1, not just accumulation),
   but stays room-ish while 143 views reach km: error present immediately,
