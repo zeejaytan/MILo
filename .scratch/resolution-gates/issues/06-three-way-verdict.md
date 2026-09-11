@@ -24,6 +24,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, runaway depths found: 68/143 views carry depths past the 7.1
+  cutoff, worst 1332u (500 m — floaters miles out). Decisive test 30426220:
+  coarse cubes + cutoff tightened to 4.0. Sane → far depths poisoned the grid
+  (cutoff unenforced/leaky); garbage → something else places far geometry.
+  Poll running. (A duplicated mis-submit 30426217 was caught by reading the
+  file and cancelled before running.)
+
 - 2026-09-11, km-garbage autopsy (user: it doesn't make sense — it doesn't):
   depths clean (143/143, no inf/nan), cameras verified (centers exact),
   code identical to working run except (voxel, band). Mesh shape: 73% of
