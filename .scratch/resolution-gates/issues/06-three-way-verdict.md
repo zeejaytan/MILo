@@ -20,6 +20,19 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, calibration break found digging the common failure (user: why did
+  common fail?): 2DGS's own camera conversion (`to_cam_open3d`) recovers
+  fx=6689/fy=6292/cx=1734/cy=-2857 from our solve vs COLMAP's
+  6829.8/6829.4/1600/1066.5 — reprojection off by thousands of px median.
+  Formula verified correct on synthetic input; dataset inputs verified
+  correct; saved matrices exactly as computed — so the math mis-handles
+  turntable-scale translations. Training cameras (FoV-only, centered —
+  truly centered here) were fine; only FUSION cameras broke. Fix:
+  `--sparse` in trial `fuse_maps.py` builds intrinsics straight from
+  cameras.bin. All fused meshes to date are suspect; verdict numbers under
+  review (type-2, broken construction — method NOT yet failed). Re-fuse with
+  correct cameras: job 30424870 (fine voxels, masked). Poll running.
+
 - 2026-09-11, deconfounded (job 30419585): mean maps × coarse auto cubes =
   kilometre-scale garbage too. Cause is the auto (voxel, band) pair
   (0.0069u/0.0347u), NOT median mode — dr1 maps exonerated. Wide band +
