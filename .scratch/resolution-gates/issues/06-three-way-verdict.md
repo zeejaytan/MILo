@@ -20,6 +20,14 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, common mesh is NOT viewable (user found empty view): extent
+  3.2M mm, median vertex 3.5 m off-box, 0.0% inside the shared box — not a
+  coarse sherd mesh but a failed fusion (median-depth maps + coarse grid →
+  spurious giant sheets; dr1 maps themselves verified sane and near-identical
+  to mean maps, same cameras). Local copies removed to avoid confusion.
+  Median-depth line now dead at both voxels (fine=OOM, coarse=garbage);
+  mean-depth masked mesh stands alone as the only correct fusion.
+
 - 2026-09-09, fuse018 + package cache removed per user (8.8 GB freed); served
   its purpose (versions exonerated). Shared env untouched throughout.
 
