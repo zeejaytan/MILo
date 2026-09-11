@@ -20,6 +20,16 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, calibration alarm RETRACTED as inconclusive (full retraction):
+  correct-K re-fusion (job 30424870, `--sparse` intrinsics) gives 8.4% within
+  1 mm, median 71 mm, extent identical to 0.1 mm — the cameras were NOT the
+  differentiator. My thousands-of-px reprojection check applied the projection
+  row-vs-column backwards (3DGS uses row vectors); the "recovered" numbers it
+  condemned were never what fusion used. Verdict reinstated as method failure
+  (type 1), now with two intrinsics constructions agreeing. Lesson logged:
+  the controlled experiment (change K, re-fuse, re-measure) was decisive;
+  the pixel arithmetic was not — run the experiment first next time.
+
 - 2026-09-11, calibration break found digging the common failure (user: why did
   common fail?): 2DGS's own camera conversion (`to_cam_open3d`) recovers
   fx=6689/fy=6292/cx=1734/cy=-2857 from our solve vs COLMAP's

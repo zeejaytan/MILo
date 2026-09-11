@@ -87,7 +87,9 @@ build-prep.
       the M1 requirement (in **mm**); reuses M1's second box, not a second ruler
 - [ ] Break-face close-up renders, 2DGS versus MILo, at a view that resolves ~0.2 mm
       ridges — a whole-sherd view looks fine at every resolution and has misled here
-      repeatedly
+      repeatedly. 2026-09-10: staged for eye check instead of static renders —
+      `.scratch/visual-qa` ticket 07 (A03 OpenMVS vs 2DGS previews, one frame,
+      pin-annotatable); verdict still open.
 - [ ] Rig check: `mask_content.py` steel-vs-clay split for the inputs actually used, and
       remaining steel surface area in the extracted mesh, stated in cm²
 
@@ -116,6 +118,9 @@ build-prep.
   bg 0.00195, held-out PSNR 11.6 dB vs 21.2 control. Same trade as M4/M5 with
   nothing paired to the exclusion. Eye renders pending; numbers alone retire it.
   This is a method-on-material failure (type 1), same-ruler numbers.**
+- 2026-09-11: a calibration scare (fusion intrinsics) was raised and then
+  retracted the same day — correct-K re-fusion changed the verdict numbers by
+  noise only (8.4% vs 13% within 1 mm). Type-1 verdict stands, doubly grounded.
 
 ## Source
 
