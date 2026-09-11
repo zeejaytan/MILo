@@ -24,6 +24,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, single view ALSO overshoots (5.9M verts, 116u long axis vs
+  ~15u scene — deterministic error from view 1, not just accumulation),
+  but stays room-ish while 143 views reach km: error present immediately,
+  amplified by accumulation. Bracketing it: 10-view (30444268) and 40-view
+  (30444269) coarse fusions. Sharp break = count-triggered corruption on top
+  (file upstream with repro); smooth growth = pure accumulation. Polls running.
+
 - 2026-09-11, trunc5 dead too (job COMPLETED 3:11, 4.18M verts spanning
   8567u, 0% in box): far depths were NOT the poison — cutoff enforced or
   not, coarse fusion hallucinates at kilometre scale. Remaining test:
