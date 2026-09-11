@@ -24,6 +24,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, trunc5 dead too (job COMPLETED 3:11, 4.18M verts spanning
+  8567u, 0% in box): far depths were NOT the poison — cutoff enforced or
+  not, coarse fusion hallucinates at kilometre scale. Remaining test:
+  single-view coarse fuse 30437717 (deterministic single-view bug vs
+  multi-view accumulation). Coarse line ends here either way; fine masked
+  mesh and its numbers untouched throughout.
+
 - 2026-09-11, cutoff correction (expert steer, recorded verbatim in effect):
   cameras orbit ~3.77u, tray ~1.6u wide, far side to 4.81u; per-view max tray
   depth mean 4.31, 163/164 views hold content past 4.0 — so a 4.0 cutoff
