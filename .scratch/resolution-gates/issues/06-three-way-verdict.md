@@ -24,6 +24,17 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, km-garbage autopsy (user: it doesn't make sense — it doesn't):
+  depths clean (143/143, no inf/nan), cameras verified (centers exact),
+  code identical to working run except (voxel, band). Mesh shape: 73% of
+  verts in a diffuse cloud (std 686/170/150u) around the scene, 27% in a
+  40u patch — confetti across the universe, not sheets. No legitimate
+  mechanism derives that from ≤15u depths: standing hypothesis is
+  extraction-time corruption at 360k subvolumes (documented bug family),
+  unproven. Decisive test: 5-view coarse fuse 30426175 — sane at small
+  scale implicates scale-triggered corruption; crazy implicates a
+  deterministic bug. Poll running.
+
 - 2026-09-11, correction (user: we used erode0): A03_sherds outlines are NOT
   eroded — `capture.json` names `A03_erode0`, adapter does no erode/dilate.
   The 6 px erosion belongs to the older MILo training masks (M5 era), not
