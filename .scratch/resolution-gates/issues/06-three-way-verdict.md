@@ -20,6 +20,13 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 ## Comments
 
+- 2026-09-11, deconfounded (job 30419585): mean maps × coarse auto cubes =
+  kilometre-scale garbage too. Cause is the auto (voxel, band) pair
+  (0.0069u/0.0347u), NOT median mode — dr1 maps exonerated. Wide band +
+  noisy turntable depths lets marching cubes interpolate giant sheets;
+  fine cubes constrain the field. Common-setup line fully dead; mean-fine
+  masked mesh stands alone.
+
 - 2026-09-11, deconfounding the common-setup failure (user: why did common
   fail?): two variables changed at once (median depth AND 0.0069u cubes), so
   neither can be blamed yet. Cross run 30419585: proven mean maps × coarse
