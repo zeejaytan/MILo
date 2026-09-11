@@ -11,14 +11,28 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 - [ ] Same-ruler comparison of all three meshes (fraction of sherd surface within the
       requirement in **mm**); the average across runs is reported, never best-of-N alone
-- [ ] Cross-view depth disagreement in **mm** for 2DGS on the same ruler (M6 box;
-      port `scripts/depth_disagreement.py` to 2DGS `surf_depth` — GPU job)
+- [x] Cross-view depth disagreement in **mm** for 2DGS on the same ruler (M6 box;
+  measured from saved maps with `scripts/depth_disagree_maps2.py`, COLMAP
+  cameras throughout, self-pair control 0.00 mm): adjacent views median
+  0.28–0.66 mm, p90 11–36 mm, 25–44% of pixels disagree by >1 mm (n≈140k
+  each, 3 pairs). Against 0.374 mm cubes half the pixels outvote the voxel;
+  against 2.6 mm cubes the field washes out — the common-setup mechanism.
 - [ ] Break-face close-up renders, 2DGS versus MILo, at a view that resolves ~0.2 mm ridges —
       the render exists before any geometry box is ticked
 - [ ] Rig check: remaining steel surface area in each extracted mesh, stated in cm²
 - [ ] M6's boxes ticked with the date, or M6 amended/retired in place with the reason
 
 ## Comments
+
+- 2026-09-11, why-common-failed, measured (user: redo the dig): 2DGS's own
+  depths disagree across adjacent views by median 0.28–0.66 mm, p90 11–36 mm,
+  25–44% of pixels beyond 1 mm. DTU-style scenes agree to sub-voxel; ours
+  outvotes the 0.374 mm cube on half the pixels and washes the 2.6 mm cube
+  out entirely (360k confetti components). Others don't fail because their
+  depths agree; ours don't (chrome rig, floaters, eroded rims). The km EXTENT
+  specifically (vertices 100× past any depth) smells like extraction-time
+  corruption at 360k subvolumes — same library family as the known bugs —
+  stated as suspicion, not finding.
 
 - 2026-09-11, calibration alarm RETRACTED as inconclusive (full retraction):
   correct-K re-fusion (job 30424870, `--sparse` intrinsics) gives 8.4% within
