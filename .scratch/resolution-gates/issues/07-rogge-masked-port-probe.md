@@ -30,6 +30,11 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
   PSNR 11.59 vs 11.57, bg 0.00193 — margin changes nothing; same collapse,
   same trade. Renders rendering (30483899) for the residue eye check. The
   margin-vs-residue question is answered on numbers; residue viewing to follow.
+- 2026-09-12, eye on dilated renders (`artifacts/2dgs-a03/dprobe_A31_1100.png`):
+  identical ghosts — black frame, no steel fins anywhere, sherds translucent
+  smears. Margin bought neither rims nor residue; there is nothing here to
+  tolerate or reject. Dilated branch dead with the parent. No further masked
+  variants without fresh justification.
 
 - 2026-09-12, dilated probe per user decision (margin vs residue question is
   theirs to judge): dataset `A03_dilated` built (164 views, coverage 2.7% vs
