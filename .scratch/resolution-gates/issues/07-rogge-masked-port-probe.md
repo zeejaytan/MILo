@@ -26,6 +26,11 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 ## Comments
 
+- 2026-09-12, dilated probe verdict: 78,227 → 5,781 (92.6% drained vs 94%),
+  PSNR 11.59 vs 11.57, bg 0.00193 — margin changes nothing; same collapse,
+  same trade. Renders rendering (30483899) for the residue eye check. The
+  margin-vs-residue question is answered on numbers; residue viewing to follow.
+
 - 2026-09-12, dilated probe per user decision (margin vs residue question is
   theirs to judge): dataset `A03_dilated` built (164 views, coverage 2.7% vs
   2.28%; overlays eye-checked, margin small, jaws at grips as expected).
