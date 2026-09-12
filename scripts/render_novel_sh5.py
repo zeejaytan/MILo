@@ -63,15 +63,16 @@ def main():
     gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians, load_iteration=-1, shuffle=False)
     bg = torch.tensor([0, 0, 0], dtype=torch.float32, device="cuda")
-    by_name = {c.image_name: c for c in scene.getTrainCameras()}
-    missing = [b for b in BASE if b not in by_name]
+    by_name = {Path(c.image_name).stem: c for c in scene.getTrainCameras()}
+    BASE_STEMS = [Path(b).stem for b in BASE]
+    missing = [b for b in BASE_STEMS if b not in by_name]
     assert not missing, f"base views not in train set: {missing}"
 
     spec = []
     with torch.no_grad():
         for i, name in enumerate(BASE):
-            t = by_name[name]
-            nxt = by_name[BASE[(i + 1) % len(BASE)]]
+            t = by_name[Path(name).stem]
+            nxt = by_name[Path(BASE[(i + 1) % len(BASE)]).stem]
             R0 = t.R if isinstance(t.R, np.ndarray) else t.R.detach().cpu().numpy()
             T0 = t.T if isinstance(t.T, np.ndarray) else t.T.detach().cpu().numpy()
             R1 = nxt.R if isinstance(nxt.R, np.ndarray) else nxt.R.detach().cpu().numpy()
