@@ -26,6 +26,13 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 ## Comments
 
+- 2026-09-12, transfer boundary (user: why doesn't the paper's claim hold
+  here?): it holds in its domain (textured single objects, sporadic mask
+  error, benchmark averages) and fails at ours (plain clay with no regrowth
+  gradients, systematic occlusion-boundary outlines, per-sherd completeness
+  + 1 mm bar). Paper's own ablations chart the trade; we live past its
+  tested corner. Finding, not accusation.
+
 - 2026-09-09, port committed in the trial clone (`rogge port`: +33/-4,
   `train.py` + `arguments/__init__.py`, never pushed — clone is untracked
   working area): `--lambda_bg` (default 0.0 = upstream behavior) gates the
