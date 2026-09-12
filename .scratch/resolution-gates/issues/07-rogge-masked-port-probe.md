@@ -26,6 +26,11 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 ## Comments
 
+- 2026-09-13, discriminating probe per user go (cliff analogy falsified by
+  margin-independence): background weight 0.1 vs 0.5, job 30485175 (short
+  GPU, same data/flags otherwise). Drain scales with weight → background
+  pressure is the vector. Unchanged → reset/cull ratchet dominates. Poll running.
+
 - 2026-09-12, dilated probe verdict: 78,227 → 5,781 (92.6% drained vs 94%),
   PSNR 11.59 vs 11.57, bg 0.00193 — margin changes nothing; same collapse,
   same trade. Renders rendering (30483899) for the residue eye check. The
