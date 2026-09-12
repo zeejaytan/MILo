@@ -26,6 +26,12 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
 
 ## Comments
 
+- 2026-09-12, dilated probe per user decision (margin vs residue question is
+  theirs to judge): dataset `A03_dilated` built (164 views, coverage 2.7% vs
+  2.28%; overlays eye-checked, margin small, jaws at grips as expected).
+  Probe 30467156 (short GPU, same 7k/λ0.5). Residue verdict lands with its
+  renders. Poll running.
+
 - 2026-09-12, transfer boundary (user: why doesn't the paper's claim hold
   here?): it holds in its domain (textured single objects, sporadic mask
   error, benchmark averages) and fails at ours (plain clay with no regrowth
