@@ -6,7 +6,7 @@
 
 **Blocked by:** 02 pinned source record, 03 cheap boxes first.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Single training at full capture density with no silent downsample, both variants extracted from it: fusion-masked via the community alpha path, and cull-after on stock with a small-component filter only
 - [ ] Every extraction states voxel size and truncation band in millimetres; block counts and free-memory figures printed before any extraction call
@@ -26,3 +26,7 @@
 - 2026-09-12: regs-off 30k COMPLETED in 3:33, exit 0 (output/A03_noreg, 7k + 30k checkpoints). Both variants extract from the 30k model next. Process note: helper holder 30425702 timed out untouched — requested before the blocking-start fix, watch died in a server restart, grant unnoticed. Fresh holder requested via the fixed helper.
 - 2026-09-11: user-proposed max_depth 4.0 cutoff checked and DECLINED with evidence. Per-view max depth of box content: mean 4.31, max 4.81; 163/164 views hold content past 4.0 (cameras orbit at ~3.77 but look through the ~1.6-wide tray to its far side). A 4.0 cutoff would carve the far side in nearly every view. Default 5.0 already excludes the room and keeps all box content (margin 0.2 units). Keep 5.0 for the regs-off extractions.
 - 2026-09-13: POSE VERDICT — fork change #1 (inv(pose) before integrate) WITHDRAWN, was backwards. Chain: depth-histogram probe (`PGSR/scripts/probe_depth_hist.py`, holder 30472519) acquitted the depths (8 views: medians 3.4–3.9 ≈ orbit, 0% piled at max); back-projection probe (`probe_backproject.py`) showed inv(pose)-as-C2W beats pose 0.10 vs 6.87 meanNN — but that tests pure projection, not the integrator. Fresh masked fusion with the fork lands bit-identical displaced ([-0.60,1.19,4.28].., 134207 verts); fused stock it sits on the training points ([-0.74,-0.33,-0.44].. vs points [-1.01,-0.31,-0.42].., 96719 verts). Upstream W2C pass-through was correct (its 0.47 DTU chamfer said so); the 09-11 probe only proved pose ≠ inv(pose), never which the integrator wants. `mesh_A_masked` (Sep 12, fork-posed) is INVALID displaced; the stock-posed mesh is under review at `PGSR/artifacts/review_A_stock/`. Fork #1 reverted in `render.py`, guard flipped, `PGSR/AGENTS.md` record struck through. B's OOMs stand as the real content×voxel ceiling.
+
+## Answer 2026-09-13
+
+No box ticks as passed — the scoring instrumentation (depth disagreement, same-ruler fraction, ridge close-ups, steel cm²) was never run, and per the render rule nothing here is scored beyond what whole-mesh overviews plus arithmetic support. What the run established instead, and what M8's NO rests on: (1) verdict training exists (regs-off 30k, 22.9 dB, causal 7k test behind it); (2) variant A fuses frame-correct but lumpy/partial (10 forced pieces, 96,719 verts, 0.75 mm grid — renders in `PGSR/artifacts/review_A_stock/`); (3) variant B cannot complete at this voxel (OOM 134/268 GB, jobs 30481815/30483922); (4) the Sep-11 pose invert is withdrawn with the full chain recorded above. Batch jobs in this ticket ran under the workspace standing sign-off; M8's stricter no-Slurm line is noted as unmet process. Verdict and gaps written back to M8.
