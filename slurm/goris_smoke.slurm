@@ -57,6 +57,12 @@ mkdir -p "$PKGS"
 
 step() { echo; echo "=== $* ==="; }
 
+# 2026-09-18 lesson (job 30715196 FAILED 1:0): plain `pip install --target`
+# resolves dependencies from PyPI and drops torch 2.8.0 + numpy 2.0.2 into
+# the sidecar, shadowing the env's torch 2.3.1 (PYTHONPATH is first) and
+# breaking the env-built rasterizer with an undefined-symbol ImportError.
+# --no-deps: the env already carries torch/numpy/PIL/cv2. If the sidecar
+# ever gains a shadowing torch/numpy, wipe it and rebuild (rm -rf $PKGS).
 step "gtracer (OptiX fork, pinned checkout) into sidecar"
 if python -c "import sys; sys.path.insert(0, '$PKGS'); import gtracer" 2>/dev/null; then
     echo "gtracer already importable in sidecar — skipping rebuild"
@@ -64,7 +70,7 @@ else
     (
         cd "$GORIS/submodules/gtracer"
         rm -rf ./build && mkdir build && cd build && cmake .. && make -j"${SLURM_CPUS_PER_TASK:-8}" && cd ../
-        pip install --no-cache-dir --target="$PKGS" .
+        pip install --no-cache-dir --no-deps --target="$PKGS" .
     )
 fi
 
@@ -72,7 +78,14 @@ step "simple-lama-inpainting into sidecar (needed at ticket 02 inpainting3D)"
 if python -c "import sys; sys.path.insert(0, '$PKGS'); import simple_lama_inpainting" 2>/dev/null; then
     echo "simple-lama already present — skipping"
 else
-    pip install --no-cache-dir --target="$PKGS" simple-lama-inpainting
+    pip install --no-cache-dir --no-deps --target="$PKGS" simple-lama-inpainting
+fi
+
+step "guard: sidecar must not shadow env torch/numpy"
+if [[ -e "$PKGS/torch" || -e "$PKGS/numpy" ]]; then
+    echo "sidecar shadows torch/numpy — wipe and rebuild sidecar, then stop"
+    ls "$PKGS" | head -20
+    exit 1
 fi
 
 step "full GOR-IS import smoke (reused rasterizer + sidecar gtracer)"
