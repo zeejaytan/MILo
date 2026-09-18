@@ -14,7 +14,8 @@ Writes $MILO_ROOT/data/goris_A03/:
                    alpha-masked training stays retired per M5)
   sparse/0         copy of the COLMAP model (read-only reuse, never edited)
   object_mask/     <name>.png, 255 = rig steel to remove.
-                   rig = foreground_old AND NOT sherd_erode0, both alphas >127.
+                   rig = foreground_old minus sherd_erode0 minus base plate
+                   minus marker dial (both kept as scale/alignment reference).
                    Refuses on any size mismatch (the colmap_to_milo.py lesson:
                    resampling a misaligned mask hides the misalignment).
   specular_mask/   not written in v1 (loader tolerates absence -> zeros)
@@ -50,7 +51,39 @@ def parse_args():
     p.add_argument("--dst-name", default="goris_A03")
     p.add_argument("--dry-run", action="store_true",
                    help="measure and report only; write nothing")
+    p.add_argument("--force", action="store_true",
+                   help="rewrite object_mask files already on disk")
     return p.parse_args()
+
+
+def keep_masks(fg_keep, sh_keep, rgb):
+    """Split foreground into (rig, kept) where kept = base plate + marker dial.
+
+    Base = blue-dominant foreground in large components only (small blue
+    clamp knobs stay rig). Dial = dark foreground in large components with
+    holes filled (swallows the white tick marks inside the disc), base and
+    sherd excluded first. Thresholds are coarse by design; the panels decide.
+    """
+    from scipy import ndimage
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    blue = fg_keep & (b - r > 25) & (b > 60)
+    lab, n = ndimage.label(blue)
+    base = np.zeros_like(fg_keep)
+    for i in range(1, n + 1):
+        if (lab == i).sum() > 50000:
+            base |= lab == i
+    dark = fg_keep & ~sh_keep & ~base & (np.maximum(np.maximum(r, g), b) < 75)
+    lab, n = ndimage.label(dark)
+    dial = np.zeros_like(fg_keep)
+    for i in range(1, n + 1):
+        comp = lab == i
+        if comp.sum() > 20000:
+            dial |= comp
+    dial = ndimage.binary_fill_holes(dial)
+    dial = ndimage.binary_dilation(dial, iterations=8) & fg_keep & ~sh_keep & ~base
+    kept = base | dial
+    rig = fg_keep & ~sh_keep & ~kept
+    return rig, kept
 
 
 def main():
@@ -78,7 +111,7 @@ def main():
         print(f"[ERROR] {len(views)} views, expected 164", file=sys.stderr)
         return 2
 
-    rig_px, sherd_px = [], []
+    rig_px, sherd_px, kept_px = [], [], []
     mismatched = []
     for v in views:
         fg = np.array(Image.open(os.path.join(fg_dir, v))).astype(np.int16)
@@ -92,9 +125,10 @@ def main():
             return 2
         fg_keep = fg[..., 3] > 127
         sh_keep = sh[..., 3] > 127
-        rig = fg_keep & ~sh_keep
+        rig, kept = keep_masks(fg_keep, sh_keep, ph[..., :3])
         rig_px.append(int(rig.sum()))
         sherd_px.append(int(sh_keep.sum()))
+        kept_px.append(int(kept.sum()))
 
     if mismatched:
         print(f"[ERROR] size mismatch on {len(mismatched)} views "
@@ -104,11 +138,14 @@ def main():
 
     rig = float(np.mean(rig_px))
     sherd = float(np.mean(sherd_px))
+    kept = float(np.mean(kept_px))
     total = 3200 * 2133
     cm2 = MM_PER_PX ** 2 / 100.0
     print(f"{len(views)} views")
     print(f"sherd kept     {sherd:>12,.0f} px = {100.0 * sherd / total:5.2f}% of frame "
           f"= {sherd * cm2:,.0f} cm2/view")
+    print(f"base+dial kept {kept:>12,.0f} px = {100.0 * kept / total:5.2f}% of frame "
+          f"= {kept * cm2:,.0f} cm2/view")
     print(f"rig to remove  {rig:>12,.0f} px = {100.0 * rig / total:5.2f}% of frame "
           f"= {rig * cm2:,.0f} cm2/view")
     print(f"held-out views: {len(held)} test / {len(views) - len(held & set(views))} train")
@@ -127,13 +164,16 @@ def main():
         os.makedirs(os.path.join(dst, "sparse"), exist_ok=True)
         shutil.copytree(os.path.join(src, "sparse", "0"), sparse_dst)
     for v in views:
+        mp = os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png")
+        if os.path.exists(mp) and not args.force:
+            continue  # resume: 164 full-res PNG writes outlast one ssh window
         fg = np.array(Image.open(os.path.join(fg_dir, v)))
         sh = np.array(Image.open(os.path.join(src, "images_masked", v)))
-        rig = ((fg[..., 3] > 127) & ~(sh[..., 3] > 127)).astype(np.uint8) * 255
-        mp = os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png")
-        if os.path.exists(mp):
-            continue  # resume: 164 full-res PNG writes outlast one ssh window
-        Image.fromarray(rig).save(mp)
+        ph = np.array(Image.open(os.path.join(src, "images", v)).convert("RGB"))
+        fg_keep = fg[..., 3] > 127
+        sh_keep = sh[..., 3] > 127
+        rig, _ = keep_masks(fg_keep, sh_keep, ph.astype(np.int16))
+        Image.fromarray(rig.astype(np.uint8) * 255).save(mp)
     train = [v for v in views if v not in held]
     test = [v for v in views if v in held]
     for name, seq in (("train_list.txt", train), ("test_list.txt", test),
@@ -148,14 +188,17 @@ def main():
         rig = np.array(Image.open(
             os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png"))) > 127
         sh = np.array(Image.open(os.path.join(src, "images_masked", v)))[..., 3] > 127
+        fg_keep = np.array(Image.open(os.path.join(fg_dir, v)))[..., 3] > 127
+        _, kept = keep_masks(fg_keep, sh, ph.astype(np.int16))
         panel = np.concatenate(
             [ph,
              np.where(rig[..., None], ph, 0).astype(np.uint8),
+             np.where(kept[..., None], ph, 0).astype(np.uint8),
              np.where(sh[..., None], ph, 0).astype(np.uint8)], axis=1)
         out = Image.fromarray(panel)
-        out = out.resize((out.width // 4, out.height // 4), Image.LANCZOS)
+        out = out.resize((out.width // 5, out.height // 5), Image.LANCZOS)
         out.save(os.path.join(panels, os.path.splitext(v)[0] + "_rig.jpg"), quality=88)
-    print(f"wrote {dst} (photo | rig mask | sherd kept panels in mask_panels/)")
+    print(f"wrote {dst} (photo | rig to remove | base+dial kept | sherd kept)")
     print("LOOK AT THE PANELS before training: a warm-lit rig misreads, "
           "and these masks decide what the label field learns.")
     return 0
