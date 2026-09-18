@@ -20,7 +20,7 @@ Pin GOR-IS at `eb36acc`, convert A03_sherds to its dataset layout, run recon →
 
 ## Implementation Decisions
 
-- Pin `applezyh/GOR-IS@eb36acc` (2026-05-30) before any job; separate `envs/goris` (python 3.12, nvdiffrast, OptiX gtracer fork per its README, incl. IRGS#5 segfault workaround). Never reuse `envs/milo`.
+- Pin `applezyh/GOR-IS@eb36acc` (2026-05-30) before any job; REUSE `envs/milo` (python 3.9, torch 2.3.1+cu118 already carries torch, rasterizer, simple-knn, nvdiffrast, trimesh, open3d) with an additive sidecar only (`goris_pkgs` via `pip install --target`, never into the env): OptiX `gtracer` fork build, `simple-lama-inpainting`, tensorboard avoided via `--logger none`. Fresh `envs/goris` (python 3.12) only if the smoke test proves 3.9 incompatible. Never retrain MILo to feed this.
 - Dataset `data/17062025/A03_sherds` converted once: rig object_mask (inverse of erode0 as start, verified by eye), chrome specular_mask (new), predicted normals (new), COLMAP sparse reused, train/val/test lists. Full resolution, no silent downsample.
 - Pipeline per `launcher.py`/`run.sh`: `--recon` 30k → `--remove_object` → `--inpainting2D` → `--inpainting3D` 34k (`--load_inpainted --use_material_inpainting --use_reflection_mask`), `--render_inpainting3D`. Mesh-after is a manual `render.py` WITHOUT `--skip_mesh`, bounded first, voxel/sdf/depth in mm.
 - Post pass `post_process_mesh` cluster count recorded; inpainted-contact faces tagged and excluded from every mm comparison.

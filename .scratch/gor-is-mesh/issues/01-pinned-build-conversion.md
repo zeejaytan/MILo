@@ -8,7 +8,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Repo pinned at `eb36acc` with submodule hashes recorded; env `envs/goris` builds per README (python 3.12, diff-gaussian-rasterization, simple-knn, nvdiffrast, OptiX gtracer fork); import smoke test passes on a GPU node
+- [ ] Reuse probe: `envs/milo` python imports torch, diff_gaussian_rasterization, simple_knn, nvdiffrast, trimesh, open3d (all present 2026-09-18); sidecar `goris_pkgs` holds OptiX gtracer build + simple-lama only; full `from scene.gaussian_model import GaussianModel` smoke passes on a GPU node; `--logger none` avoids tensorboard; `--resolution 1` is explicit (default -1 would silently halve 3200px to 1600)
 - [ ] A03_sherds converted: rig object_mask, chrome specular_mask, predicted normals, COLMAP sparse reused, train/val/test lists; layout matches `images/ object_mask/ specular_mask/ sparse/ normal/` plus lists
 - [ ] Mask panels rendered (`mask_content.py` split + photo|mask|clay panels) and looked at: steel vs clay cm² per view stated; erode0 edge verified not to eat the rim
 - [ ] No training started in this ticket; conversion artefacts land in gitignored `artifacts/`, never in git
