@@ -130,8 +130,10 @@ def main():
         fg = np.array(Image.open(os.path.join(fg_dir, v)))
         sh = np.array(Image.open(os.path.join(src, "images_masked", v)))
         rig = ((fg[..., 3] > 127) & ~(sh[..., 3] > 127)).astype(np.uint8) * 255
-        Image.fromarray(rig).save(os.path.join(dst, "object_mask",
-                                               os.path.splitext(v)[0] + ".png"))
+        mp = os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png")
+        if os.path.exists(mp):
+            continue  # resume: 164 full-res PNG writes outlast one ssh window
+        Image.fromarray(rig).save(mp)
     train = [v for v in views if v not in held]
     test = [v for v in views if v in held]
     for name, seq in (("train_list.txt", train), ("test_list.txt", test),
