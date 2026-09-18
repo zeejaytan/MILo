@@ -20,6 +20,6 @@ set -euo pipefail
 MILO_ROOT=/data/gpfs/projects/punim2657/MILo
 
 echo "=== GOR-IS convert started $(date) on $(hostname) ==="
-"$MILO_ROOT/envs/milo/bin/python" "$MILO_ROOT/repo/scripts/goris_convert_A03.py"
+"$MILO_ROOT/envs/milo/bin/python" "$MILO_ROOT/repo/scripts/goris_convert_A03.py" "$@"
 echo "=== GOR-IS convert finished $(date) ==="
 ls "$MILO_ROOT/data/goris_A03/object_mask" | wc -l
