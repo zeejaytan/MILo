@@ -82,7 +82,7 @@ def keep_masks(fg_keep, sh_keep, rgb):
     dial_h = np.zeros_like(fg_h)
     for i in range(1, n + 1):
         comp = lab == i
-        if comp.sum() > 5000:
+        if comp.sum() > 25000:
             dial_h |= comp
     dial_h = ndimage.binary_fill_holes(dial_h)
     dial_h = ndimage.binary_dilation(dial_h, iterations=4)
