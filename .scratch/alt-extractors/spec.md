@@ -39,7 +39,7 @@ Evaluate both tracks against the same bar on the same capture, in order: M1's tw
 - VGGT pose track names its checkpoint up front and scores cameras against the COLMAP solve on the same capture, with scale anchored per the true-scale question — an unscaled result is refused, never measured.
 - InstantSplat++ splat track runs the upstream prior-model path with the prior type stated, and its verdict rests on renders at ridge-resolving views plus the input mask-content split. It never clears a mesh box; any mesh claim behind it must be ticketed separately with voxel and band in mm.
 - Pinned versions are recorded in the ticket before any submission: TopoSurfel plus PGSR commits, VGGT checkpoint, InstantSplat++ commit, dependency build notes where they affect repeatability. An unpinned run is not a result.
-- Standing machine rules carry over unchanged: heavy data stays on the cluster, small renders and metrics land locally, no Slurm submission without explicit approval, full-resolution training throughout.
+- Standing machine rules carry over unchanged: heavy data stays on the cluster, small renders and metrics land locally, full-resolution training throughout.
 - The small-object literature half of the background research is still owed and is ticketed, not silently dropped.
 
 ## Testing Decisions

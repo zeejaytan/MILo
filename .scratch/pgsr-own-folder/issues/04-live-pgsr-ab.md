@@ -12,7 +12,7 @@
 - [ ] Every extraction states voxel size and truncation band in millimetres; block counts and free-memory figures printed before any extraction call
 - [ ] Cross-view depth disagreement in millimetres for PGSR versus the MILo route on the same capture and ruler; same-ruler photogrammetry comparison as the shared figure
 - [ ] Break-face close-ups for both variants versus MILo at a view resolving roughly-two-tenths-of-a-millimetre ridges exist before any score; whole-tray views alone do not pass
-- [ ] Clamp-contact faces recorded as unobserved, never filled; no batch submission without explicit approval
+- [ ] Clamp-contact faces recorded as unobserved, never filled
 
 ## Comments
 

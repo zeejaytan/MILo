@@ -47,7 +47,7 @@ The new folder carries the standing project shape (own remote pair, own job-scri
 - Resolution discipline carries over unchanged: full capture density throughout, object-centric indoor metric, every held-out view discipline kept for honest views, scale anchored per the true-scale question with unscaled results refused rather than measured.
 - Sequencing inside the trial is fixed: the two cheap boxes first (what the photogrammetry route already does on the capture; depth disagreement in millimetres), then the PGSR A/B. If the photogrammetry route already clears the roughly-one-millimetre relief the break faces need, that is recorded and the swap case must clear parity-plus or complementary coverage, not merely run.
 - The verdict distinguishes the three failure kinds because they lead to opposite decisions: the method failed on this material, the measurement was broken, or there was never valid material to score against.
-- Standing machine rules carry over unchanged: heavy data stays on the cluster, small renders and metrics land locally, no batch submission without explicit approval.
+- Standing machine rules carry over unchanged: heavy data stays on the cluster, small renders and metrics land locally.
 - Cluster env is reused where its imports resolve (the MILo env already carries the plane rasterizer the vendored renderer imports); no fresh env build unless an import probe fails, then only the additive delta.
 - Intent prefix for the new folder is **R** (reserved 2026-09-09; U/C/G/M/O/P/S taken, R free and mnemonic). New PGSR questions become R1, R2… M8 remains the question this first work answers until a new-folder question supersedes it by amendment, never by duplication.
 

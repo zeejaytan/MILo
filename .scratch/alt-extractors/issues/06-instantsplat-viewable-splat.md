@@ -18,4 +18,4 @@
 
 ## Comments
 
-- 2026-09-06 (trail start, both-in-order track 3/3): waits on 05. Design target is sparse-view large scenes (opposite of 143 dense views of 20–80 mm sherds), so judge on break-face close-ups only, never mm. No Slurm without approval.
+- 2026-09-06 (trail start, both-in-order track 3/3): waits on 05. Design target is sparse-view large scenes (opposite of 143 dense views of 20–80 mm sherds), so judge on break-face close-ups only, never mm.

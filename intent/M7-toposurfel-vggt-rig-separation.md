@@ -18,7 +18,7 @@ A viewable splat is for
 looking, not measuring — it does not clear the mesh bar below until a mesh route with
 voxel/band in mm plus scale anchoring is named. The bar is the M7 bar as written (steel
 cm² left, fraction within M1 ~1 mm on the same ruler, ridge-resolving renders). All
-tracks wait for M1's boxes. Pinned builds, full resolution, no Slurm without approval.
+tracks wait for M1's boxes. Pinned builds, full resolution.
 "Extract" alone is vague — `CONTEXT.md` now says to name masking, pruning, or culling;
 a splat is not a mesh.
 

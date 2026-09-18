@@ -28,7 +28,7 @@ Opinion before acting (workspace rule — researched, then stated): worth doing 
 - Retire as a mesh route if its depth-disagreement floor sits far above ~1 mm with nothing complementary (one capture, eye verification) — record which of the three it is (method failed / ruler broken / reference wrong), do not fund a second seed.
 - If the fusion-masked variant (A) thins clay the way M5 did (~91% drain on MILo): retire that variant NO at the same weight (one capture, eye verification), keep variant B's verdict independent — do not let one variant's failure close the other.
 - If PGSR hits an extraction ceiling at the required voxel (whichever Open3D class): this question becomes the tiling question — amend, do not build around it.
-- Pinned builds, full resolution, no Slurm without approval.
+- Pinned builds, full resolution.
 
 ## Verdict 2026-09-13: no — PGSR does not replace MILo as the sherd mesh route
 
