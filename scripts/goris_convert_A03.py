@@ -62,25 +62,33 @@ def keep_masks(fg_keep, sh_keep, rgb):
     Base = blue-dominant foreground in large components only (small blue
     clamp knobs stay rig). Dial = dark foreground in large components with
     holes filled (swallows the white tick marks inside the disc), base and
-    sherd excluded first. Thresholds are coarse by design; the panels decide.
+    sherd excluded first. Component analysis runs at half resolution for
+    speed and is upsampled nearest for exact full-res masks. Thresholds are
+    coarse by design; the panels decide.
     """
     from scipy import ndimage
-    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-    blue = fg_keep & (b - r > 25) & (b > 60)
+    fg_h = fg_keep[::2, ::2]
+    sh_h = sh_keep[::2, ::2]
+    rgb_h = rgb[::2, ::2].astype(np.int16)
+    r, g, b = rgb_h[..., 0], rgb_h[..., 1], rgb_h[..., 2]
+    blue = fg_h & (b - r > 25) & (b > 60)
     lab, n = ndimage.label(blue)
-    base = np.zeros_like(fg_keep)
+    base_h = np.zeros_like(fg_h)
     for i in range(1, n + 1):
-        if (lab == i).sum() > 50000:
-            base |= lab == i
-    dark = fg_keep & ~sh_keep & ~base & (np.maximum(np.maximum(r, g), b) < 75)
+        if (lab == i).sum() > 12500:
+            base_h |= lab == i
+    dark = fg_h & ~sh_h & ~base_h & (np.maximum(np.maximum(r, g), b) < 75)
     lab, n = ndimage.label(dark)
-    dial = np.zeros_like(fg_keep)
+    dial_h = np.zeros_like(fg_h)
     for i in range(1, n + 1):
         comp = lab == i
-        if comp.sum() > 20000:
-            dial |= comp
-    dial = ndimage.binary_fill_holes(dial)
-    dial = ndimage.binary_dilation(dial, iterations=8) & fg_keep & ~sh_keep & ~base
+        if comp.sum() > 5000:
+            dial_h |= comp
+    dial_h = ndimage.binary_fill_holes(dial_h)
+    dial_h = ndimage.binary_dilation(dial_h, iterations=4)
+    up = lambda m: np.repeat(np.repeat(m, 2, axis=0), 2, axis=1)[:fg_keep.shape[0], :fg_keep.shape[1]]
+    base, dial = up(base_h), up(dial_h)
+    dial = dial & fg_keep & ~sh_keep & ~base
     kept = base | dial
     rig = fg_keep & ~sh_keep & ~kept
     return rig, kept
@@ -113,6 +121,8 @@ def main():
 
     rig_px, sherd_px, kept_px = [], [], []
     mismatched = []
+    os.makedirs(os.path.join(dst, "images"), exist_ok=True)
+    os.makedirs(os.path.join(dst, "object_mask"), exist_ok=True)
     for v in views:
         fg = np.array(Image.open(os.path.join(fg_dir, v))).astype(np.int16)
         sh = np.array(Image.open(os.path.join(src, "images_masked", v))).astype(np.int16)
@@ -129,6 +139,14 @@ def main():
         rig_px.append(int(rig.sum()))
         sherd_px.append(int(sh_keep.sum()))
         kept_px.append(int(kept.sum()))
+        if not args.dry_run:
+            mp = os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png")
+            if os.path.exists(mp) and not args.force:
+                continue  # resume
+            Image.fromarray(rig.astype(np.uint8) * 255).save(mp)
+            link = os.path.join(dst, "images", v)
+            if not os.path.exists(link):
+                os.symlink(os.path.join(src, "images", v), link)
 
     if mismatched:
         print(f"[ERROR] size mismatch on {len(mismatched)} views "
@@ -153,27 +171,10 @@ def main():
     if args.dry_run:
         return 0
 
-    os.makedirs(os.path.join(dst, "images"), exist_ok=True)
-    os.makedirs(os.path.join(dst, "object_mask"), exist_ok=True)
-    for v in views:
-        link = os.path.join(dst, "images", v)
-        if not os.path.exists(link):
-            os.symlink(os.path.join(src, "images", v), link)
     sparse_dst = os.path.join(dst, "sparse", "0")
     if not os.path.isdir(sparse_dst):
         os.makedirs(os.path.join(dst, "sparse"), exist_ok=True)
         shutil.copytree(os.path.join(src, "sparse", "0"), sparse_dst)
-    for v in views:
-        mp = os.path.join(dst, "object_mask", os.path.splitext(v)[0] + ".png")
-        if os.path.exists(mp) and not args.force:
-            continue  # resume: 164 full-res PNG writes outlast one ssh window
-        fg = np.array(Image.open(os.path.join(fg_dir, v)))
-        sh = np.array(Image.open(os.path.join(src, "images_masked", v)))
-        ph = np.array(Image.open(os.path.join(src, "images", v)).convert("RGB"))
-        fg_keep = fg[..., 3] > 127
-        sh_keep = sh[..., 3] > 127
-        rig, _ = keep_masks(fg_keep, sh_keep, ph.astype(np.int16))
-        Image.fromarray(rig.astype(np.uint8) * 255).save(mp)
     train = [v for v in views if v not in held]
     test = [v for v in views if v in held]
     for name, seq in (("train_list.txt", train), ("test_list.txt", test),
