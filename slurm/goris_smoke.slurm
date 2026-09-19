@@ -74,6 +74,17 @@ else
     )
 fi
 
+step "pure-python gaps: mediapy (render_utils) + lpips (inpainting3D)"
+for pkg in mediapy lpips; do
+    if python -c "import sys; sys.path.insert(0, '$PKGS'); import $pkg" 2>/dev/null; then
+        echo "$pkg already present — skipping"
+    else
+        # --no-deps (30715196 lesson): env carries numpy/PIL/torch/torchvision.
+        # wandb/tensorboard NOT needed: log_utils.py guards them in
+        # try/except ImportError and --logger none returns before use.
+        pip install --no-cache-dir --no-deps --target="$PKGS" "$pkg"
+    fi
+done
 step "simple-lama-inpainting into sidecar (needed at ticket 02 inpainting3D)"
 if python -c "import sys; sys.path.insert(0, '$PKGS'); import simple_lama_inpainting" 2>/dev/null; then
     echo "simple-lama already present — skipping"
@@ -101,6 +112,8 @@ sys.path.insert(0, "/data/gpfs/projects/punim2657/MILo/gor-is")
 from scene.gaussian_model import GaussianModel
 import gaussian_renderer
 print("scene.gaussian_model + gaussian_renderer: ok")
+import mediapy, lpips, simple_lama_inpainting
+print("mediapy + lpips + simple-lama (import only): ok")
 print("torch", torch.__version__, "| cuda gpu:", torch.cuda.is_available())
 PY
 
