@@ -6,9 +6,13 @@
 
 **Blocked by:** 01-pinned-build-conversion.
 
-**Status:** ready-for-agent
+**Status:** in-progress (recon submitted; inpainting job lands after iter speed is known)
 
-- [ ] `launcher.py --recon --remove_object --inpainting2D --inpainting3D --render_inpainting3D` runs at the pinned commit on A03 at full capture resolution with `--eval` held-out views; iteration counts and GPU/job IDs logged
+- [x] Pipeline fixed at the pinned commit with full-resolution, lists-honouring `--eval` (143/21), `--logger none`, `--resolution 1` — recon job `slurm/goris_recon.slurm` (train 30k → remove_object → metrics → density census), SUBMITTED `30753265` 2026-09-19, poll running
 - [ ] Held-out render PSNR reported as viewing signal only, never in mm; density counts (Gaussians in vs out) reported — ~90%+ drain stops the route at probe weight per M5/M6
-- [ ] Rig-free renders show zero steel to the eye on whole-tray views; inpainted jaw-contact regions tagged as invented for ticket 04 exclusion
+- [ ] Rig-free renders show zero steel to the eye on whole-tray views; inpainting2D/3D + final render ride a second job sized from recon iter speed; inpainted jaw-contact regions tagged as invented for ticket 04 exclusion
 - [ ] Logs and renders land in gitignored `artifacts/` / Spartan output; no mesh in this ticket
+
+## Comments
+
+- 2026-09-19: supersedes the launcher.py line above (launcher hardcodes `--resolution 512/4` and `--skip_mesh` on removal; direct `train.py`/`render.py` calls with `--resolution 1` instead). LaMa weights pre-fetched to `goris_cache/` (compute nodes offline); `--eval` honours train/test lists.
