@@ -14,7 +14,7 @@ Worth doing in general, not yet shown worth doing **for this**. GOR-IS is a legi
 
 ## Done when
 
-- [ ] Pinned build `applezyh/GOR-IS@eb36acc` in separate `envs/goris` (python 3.12, nvdiffrast, OptiX gtracer fork), A03_sherds converted (rig object_mask, chrome specular_mask, predicted normals, train/val/test lists), full resolution
+- [x] Pinned build `applezyh/GOR-IS@eb36acc` in reused `envs/milo` + `goris_pkgs` sidecar (2026-09-19, ticket 01: full import smoke green on GPU), A03_sherds converted (rig object_mask eye-verified, base+dial kept; specular/normal via loader None-path; 143/21/21 lists), full resolution (`--resolution 1` explicit)
 - [ ] Recon → removal → 2D/3D inpaint → manual mesh-after with voxel size and truncation band stated in **millimetres** (mesh is REQUIRED, not optional)
 - [ ] Cross-view depth disagreement in **millimetres** on the same capture, same ruler (scale sidecars, per M3)
 - [ ] Same-ruler fraction within ~1 mm vs OpenMVS on A03; inpainted contact excluded from the score
