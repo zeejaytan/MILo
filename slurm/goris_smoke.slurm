@@ -97,7 +97,10 @@ step "vendored rasterizer into sidecar (recon 30753265 lesson)"
 # require_depth); the env's vanilla build lacks it and train.py dies in
 # build_rasterizer with TypeError. Same package name, so the sidecar build
 # shadows the env's for GOR-IS jobs only; the env itself is untouched.
-if python -c "import sys; sys.path.insert(0, '$PKGS'); from diff_gaussian_rasterization import GaussianRasterizationSettings as S; import inspect; assert 'require_depth' in inspect.getfullargspec(S).annotations, 'no require_depth'" 2>/dev/null; then
+# 2026-09-19 lesson (recon 30753265): the fallthrough import check above
+# is vacuous — the env's own build also carries a require_depth annotation
+# (plus a require_coord GOR-IS never passes). Decide on directory presence.
+if [[ -d "$PKGS/diff_gaussian_rasterization" ]]; then
     echo "vendored rasterizer already in sidecar — skipping rebuild"
 else
     pip install --no-cache-dir --no-deps --target="$PKGS" "$GORIS/submodules/diff-gaussian-rasterization"
