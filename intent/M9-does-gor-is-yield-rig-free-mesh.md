@@ -8,6 +8,8 @@ The rig-free MILo mesh is too coarse for seating sherds — 0.82 mm cubes agains
 
 Plain terms: OpenMVS error on flat ground is 0.19 mm, two sheets of paper. The test is whether GOR-IS mesh gets within about five such sheets (1 mm) on sherd clay, with no clamp steel, on the same ruler.
 
+Resolution, amended 2026-09-21 (user decision, ticket 02): full 3200px trains at ~10s/iter — 30k iters ≈ 80 GPU-hours, out of reach. Half resolution (1600px, 0.42 mm/px) still oversamples the ~1 mm grain 2.4× and is what the trial runs at. This weakens the resolution box openly rather than silently.
+
 ## Opinion before acting (workspace rule — researched, then stated)
 
 Worth doing in general, not yet shown worth doing **for this**. GOR-IS is a legitimate remover (CVPR 2026 Highlight, `applezyh/GOR-IS@eb36acc` 2026-05-30) with a real mesh path (`render.py` → `GaussianExtractor.extract_mesh_bounded/_unbounded`, voxel/depth/sdf args, 50-cluster post pass). But its accuracy is shown on clean scenes at cm scale, none at 0.2 mm ridge scale, none with 644 cm² chrome steel against 61 cm² clay per view. Its default `run.sh` never meshes (`--skip_mesh` on both removal and render steps) — mesh-after is a manual third call. The inpainted jaw contact is invented clay by construction and must never score in mm.

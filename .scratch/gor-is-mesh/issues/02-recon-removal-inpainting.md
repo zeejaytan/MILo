@@ -16,3 +16,4 @@
 ## Comments
 
 - 2026-09-19: supersedes the launcher.py line above (launcher hardcodes `--resolution 512/4` and `--skip_mesh` on removal; direct `train.py`/`render.py` calls with `--resolution 1` instead). LaMa weights pre-fetched to `goris_cache/` (compute nodes offline); `--eval` honours train/test lists.
+- 2026-09-21: full-res recon `30762677` hit the 12h wall at 4000/30000 with nothing saved (first save at 7000) — ~10s/iter at 3200px with ray-traced lighting ≈ 80 GPU-hours. User decision: `--resolution 2` (1600px, 0.42mm/px, 2.4× over the ~1mm grain), two chained legs via `--start_checkpoint`. M9 amended openly. Leg 1 (`goris_recon.slurm`, 0→15000) submitted as below; leg 2 follows on COMPLETED.

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=goris-recon
+#SBATCH --job-name=goris-recon1
 #SBATCH --account=punim2657
 #SBATCH --partition=gpu-a100
 #SBATCH --gres=gpu:1
@@ -58,25 +58,26 @@ conda activate "$ENV_PREFIX"
 python -c "import torch; assert torch.cuda.is_available(); print('torch', torch.__version__, 'gpu ok')"
 
 cd "$GORIS"
-COMMON="-s $DATA -i images --random_background --resolution 1 --depth_ratio 0.0"
+# 2026-09-21 decision (user): full-res recon runs ~10s/iter (ray-traced
+# lighting at 3200px) — 30k iters ≈ 80 GPU-hours, far past one 12h job and
+# past sense for this trial. --resolution 2 (1600px, 0.42mm/px) still
+# oversamples the ~1mm break-face grain 2.4x. Two chained legs via
+# --start_checkpoint; leg 2 covers the second half. Recorded in ticket 02.
+COMMON="-s $DATA -i images --random_background --resolution 2 --depth_ratio 0.0"
 TRAIN="$COMMON --eval --logger none"
 
-echo "--- recon (30000 iters) ---"
-python train.py $TRAIN -m "$OUT" --iterations 30000
+echo "--- recon leg 1 (0 -> 15000 iters) ---"
+python train.py $TRAIN -m "$OUT" --iterations 15000 \
+    --save_iterations 15000 --checkpoint_iterations 15000
 
-echo "--- remove_object (renders rig-free views + masks, no mesh) ---"
-python render.py $COMMON --iteration 30000 -m "$OUT" --use_pbr --skip_mesh --skip_test --skip_train --remove_object
-
-echo "--- eval_recon (held-out PSNR, viewing signal only) ---"
-python metrics.py -m "$OUT" || echo "metrics non-fatal"
-
-echo "--- density census (M5/M6 drain tripwire: ~90% loss stops the route) ---"
+echo "--- density census leg 1 (M5/M6 drain tripwire: ~90% loss stops the route) ---"
 OUT="$OUT" python - <<'PY'
 import glob, os
 from plyfile import PlyData
-plys = sorted(glob.glob(os.environ["OUT"] + "/point_cloud/iteration_30000/*.ply"))
+plys = sorted(glob.glob(os.environ["OUT"] + "/point_cloud/iteration_15000/*.ply"))
 for p in plys:
     print(f"{os.path.basename(p)}: {PlyData.read(p)['vertex'].count} points")
 PY
 
-echo "=== GOR-IS recon finished $(date) ==="
+echo "=== GOR-IS recon leg 1 finished $(date) ==="
+echo "NEXT: leg 2 = train --start_checkpoint chkpnt15000.pth to 30000, then remove_object + metrics."
