@@ -28,9 +28,10 @@ def parse_args(argv=None):
     model = ModelParams(parser)
     pipe = PipelineParams(parser)
     parser.add_argument("--iteration", type=int, required=True)
-    parser.add_argument("--view", type=str, required=True)
+    parser.add_argument("--view", type=str, default=None,
+                        help="required for split=test|train, ignored for report")
     parser.add_argument("--split", type=str, default="test",
-                        choices=["test", "train"])
+                        choices=["test", "train", "report"])
     return model, pipe, parser.parse_args(argv)
 
 
@@ -43,25 +44,41 @@ def main():
     gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians, load_iteration=args.iteration,
                   shuffle=False)
+    pipe_obj = pipe.extract(args)
+    bg = torch.tensor([0., 0., 0.], device="cuda")
+
+    def render_one(cam):
+        pkg = render(cam, gaussians, pipe_obj, bg, 0.0)
+        return gaussians.pbr(cam, pkg["rend_alpha"], pkg["rend_normal"],
+                             pkg["surf_depth"], pkg["rend_diffuse"],
+                             pkg["rend_fresnel"], pkg["rend_roughness"], bg)
+
+    def nan_bounds():
+        with torch.no_grad():
+            v = gaussians.get_boundings(gaussians.alpha_min)[0].detach()
+            return int((~torch.isfinite(v)).any(dim=1).sum())
+
+    if args.split == "report":
+        # The scheduled loop itself: all test views then 5 train samples,
+        # sequentially in ONE process — exactly what training_report does.
+        # A hang here with clean per-view isolation convicts accumulation
+        # across the loop, not any view.
+        train = scene.getTrainCameras()
+        cams = list(scene.getTestCameras()) + [train[i % len(train)]
+                                               for i in range(5, 30, 5)]
+        for i, cam in enumerate(cams):
+            n_b = nan_bounds()
+            out = render_one(cam)
+            n_c = int((~torch.isfinite(out["render_color"])).sum())
+            print(f"REPORTLOOP {i + 1}/{len(cams)} view={cam.image_name} "
+                  f"nan_bounds={n_b} nan_color={n_c}", flush=True)
+        print("REPORTLOOP-OK", flush=True)
+        return
     cams = (scene.getTestCameras() if args.split == "test"
             else scene.getTrainCameras())
     cam = next(c for c in cams if c.image_name == args.view)
-
-    # NaN scan BEFORE the trace call.
-    with torch.no_grad():
-        b = gaussians.get_boundings(gaussians.alpha_min) if hasattr(
-            gaussians, "get_boundings") else None
-    n_nan_b = "n/a"
-    if b is not None:
-        import numpy as np  # noqa
-        v = b[0].detach()
-        n_nan_b = int((~torch.isfinite(v)).any(dim=1).sum())
-
-    bg = torch.tensor([0., 0., 0.], device="cuda")
-    pkg = render(cam, gaussians, pipe.extract(args), bg, 0.0)
-    out = gaussians.pbr(cam, pkg["rend_alpha"], pkg["rend_normal"],
-                        pkg["surf_depth"], pkg["rend_diffuse"],
-                        pkg["rend_fresnel"], pkg["rend_roughness"], bg)
+    n_nan_b = nan_bounds()
+    out = render_one(cam)
     n_nan_c = int((~torch.isfinite(out["render_color"])).sum())
     print(f"OK view={args.view} split={args.split} "
           f"nan_bounds={n_nan_b} nan_color={n_nan_c}", flush=True)
