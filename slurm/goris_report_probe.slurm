@@ -65,7 +65,7 @@ PASS=0; HANG=0; FAILED=""
 while read -r v; do
     name="${v%.*}"
     if timeout 180 python -u "$PROBE" -s "$DATA" -i images -m "$OUT" \
-        --resolution 2 --iteration 2000 --view "$name" --split test; then
+        --eval --resolution 2 --iteration 2000 --view "$name" --split test; then
         PASS=$((PASS + 1))
     else
         code=$?
@@ -82,7 +82,7 @@ echo "test views: pass=$PASS hang/fail=$HANG ::$FAILED"
 
 for v in A31_1101 A31_1102 A31_1103; do
     timeout 180 python -u "$PROBE" -s "$DATA" -i images -m "$OUT" \
-        --resolution 2 --iteration 2000 --view "$v" --split train \
+        --eval --resolution 2 --iteration 2000 --view "$v" --split train \
         && echo "control $v OK" || echo "control $v NOT-OK"
 done
 
