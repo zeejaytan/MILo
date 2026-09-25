@@ -67,8 +67,17 @@ COMMON="-s $DATA -i images --random_background --resolution 2 --depth_ratio 0.0"
 TRAIN="$COMMON --eval --logger none"
 
 echo "--- recon leg 1 (0 -> 15000 iters) ---"
-python train.py $TRAIN -m "$OUT" --iterations 15000 \
-    --save_iterations 15000 --checkpoint_iterations 15000
+# 2026-09-25 diagnostic series (31201057/31276683/31278872/31279727):
+# - every view traces clean in isolation (24/24) and in one sequential loop
+#   (REPORTLOOP-OK); all 164 poses finite. No killer view, no killer loop.
+# - wedges strike inside training_report's scheduled test-set renders at
+#   some report (2000 in diag, 4000 in both recons), scene-state-dependent.
+# The report mutates nothing (@torch.no_grad): disable it in-training
+# (--test_iterations 100000) and evaluate post-hoc with the proven harness.
+# Faulthandler wrapper names the op if the main loop ever wedges instead.
+python -u "$MILO_ROOT/repo/scripts/goris_diag_train.py" ./train.py \
+    $TRAIN -m "$OUT" --iterations 15000 --test_iterations 100000 \
+    --save_iterations 5000 10000 15000 --checkpoint_iterations 15000
 
 echo "--- density census leg 1 (M5/M6 drain tripwire: ~90% loss stops the route) ---"
 OUT="$OUT" python - <<'PY'
