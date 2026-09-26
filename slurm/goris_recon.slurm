@@ -77,7 +77,8 @@ echo "--- recon leg 1 (0 -> 15000 iters) ---"
 # Faulthandler wrapper names the op if the main loop ever wedges instead.
 python -u "$MILO_ROOT/repo/scripts/goris_diag_train.py" ./train.py \
     $TRAIN -m "$OUT" --iterations 15000 --test_iterations 100000 \
-    --save_iterations 5000 10000 15000 --checkpoint_iterations 15000
+    --save_iterations $(seq 1000 1000 15000) \
+    --checkpoint_iterations $(seq 1000 1000 15000)
 
 echo "--- density census leg 1 (M5/M6 drain tripwire: ~90% loss stops the route) ---"
 OUT="$OUT" python - <<'PY'
