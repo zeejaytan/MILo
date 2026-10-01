@@ -25,10 +25,13 @@ GORIS=$MILO_ROOT/gor-is
 ENV_PREFIX=$MILO_ROOT/envs/milo
 PKGS=$MILO_ROOT/goris_pkgs
 DATA=$MILO_ROOT/data/goris_A03
-OUT=$MILO_ROOT/output/goris_probe
+# Iteration + model dir come from sbatch args (default: probe cloud at 2000):
+#   sbatch slurm/goris_reportloop.slurm 4060 output/goris_A03
+ITER="${1:-2000}"
+OUT="$MILO_ROOT/${2:-output/goris_probe}"
 
 echo "=== GOR-IS report-loop probe started $(date) on $(hostname) ==="
-[[ -f "$OUT/point_cloud/iteration_2000/point_cloud.ply" ]] || { echo "no probe cloud" >&2; exit 1; }
+[[ -f "$OUT/point_cloud/iteration_$ITER/point_cloud.ply" ]] || { echo "no cloud at iteration_$ITER in $OUT" >&2; exit 1; }
 
 module purge
 module load GCC/11.3.0 OpenMPI/4.1.4
@@ -50,7 +53,7 @@ cd "$GORIS"
 
 timeout 3000 python -u "$MILO_ROOT/repo/scripts/goris_probe_view.py" \
     -s "$DATA" -i images -m "$OUT" --eval --resolution 2 \
-    --iteration 2000 --split report
+    --iteration "$ITER" --split report
 code=$?
 echo "exit=$code (124 = hung in the loop; 0 with REPORTLOOP-OK = loop clear)"
 exit $code
