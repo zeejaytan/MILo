@@ -50,8 +50,10 @@ cd "$GORIS"
 
 PROBE="$MILO_ROOT/repo/scripts/goris_probe_view.py"
 PASS=0; BAD=0; FAILED=""
+set +e
 while read -r v; do
     name="${v%.*}"
+    echo "probing $name ..."
     out=$(timeout 120 python -u "$PROBE" -s "$DATA" -i images -m "$OUT" \
         --eval --resolution 2 --iteration "$ITER" --view "$name" --split train 2>&1)
     code=$?
@@ -65,5 +67,6 @@ while read -r v; do
         BAD=$((BAD + 1)); FAILED="$FAILED $name(err$code)"
     fi
 done < "$DATA/train_list.txt"
+set -e
 echo "train views: pass=$PASS bad=$BAD ::$FAILED"
 echo "=== GOR-IS train-view probe finished $(date) ==="
