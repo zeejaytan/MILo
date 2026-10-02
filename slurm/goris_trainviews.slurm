@@ -49,6 +49,7 @@ conda activate "$ENV_PREFIX"
 cd "$GORIS"
 
 PROBE="$MILO_ROOT/repo/scripts/goris_probe_view.py"
+LIST="${LIST:-$DATA/train_list.txt}"
 PASS=0; BAD=0; FAILED=""
 set +e
 while read -r v; do
@@ -66,7 +67,7 @@ while read -r v; do
         echo "ERROR view=$name split=train rc=$code :: $(echo "$out" | grep -E "Error|error" | head -1)"
         BAD=$((BAD + 1)); FAILED="$FAILED $name(err$code)"
     fi
-done < "$DATA/train_list.txt"
+done < "$LIST"
 set -e
 echo "train views: pass=$PASS bad=$BAD ::$FAILED"
 echo "=== GOR-IS train-view probe finished $(date) ==="

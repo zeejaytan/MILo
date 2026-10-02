@@ -49,6 +49,10 @@ def main():
 
     def render_one(cam):
         pkg = render(cam, gaussians, pipe_obj, bg, 0.0)
+        n_d = int((~torch.isfinite(pkg["surf_depth"])).sum())
+        n_n = int((~torch.isfinite(pkg["rend_normal"])).sum())
+        print(f"PRE view={cam.image_name} nan_depth={n_d} "
+              f"nan_normal={n_n}", flush=True)
         return gaussians.pbr(cam, pkg["rend_alpha"], pkg["rend_normal"],
                              pkg["surf_depth"], pkg["rend_diffuse"],
                              pkg["rend_fresnel"], pkg["rend_roughness"], bg)
