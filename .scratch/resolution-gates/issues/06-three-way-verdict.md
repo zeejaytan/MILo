@@ -7,7 +7,7 @@ ruler, with resolving-view break-face renders, written back into M6 win or lose.
 
 **Blocked by:** 05 (2DGS mesh); reads the M1 boxes (01–03) as its bar and baseline.
 
-**Status:** claimed (2026-09-07 — verdict work started; renders before numbers)
+**Status:** resolved (2026-09-13 — verdict written into M6, question retired NO)
 
 - [ ] Same-ruler comparison of all three meshes (fraction of sherd surface within the
       requirement in **mm**); the average across runs is reported, never best-of-N alone

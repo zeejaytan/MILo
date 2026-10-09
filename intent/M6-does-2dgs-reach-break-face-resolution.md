@@ -1,9 +1,9 @@
 # M6 — Does 2D Gaussian Splatting get sherds out of the rig at the resolution a break face needs?
 
-**Status:** open · **Blocked by:** the OpenMVS baseline only (requirement ~1 mm
-stated and concurred; the MILo-specific boxes — depth disagreement on MILo's
-Gaussians, MILo renders — do not gate this: a different method needs its own
-depth probe, which is part of its evaluation below, not a prerequisite) ·
+**Status:** retired 2026-09-13 — answered NO on A03 (type-1 method-on-material
+failure; keep-options (a), (b) and (c) all fail, do not fund a second seed) ·
+**Blocked by:** none (M1 requirement ~1 mm and OpenMVS baseline both landed 2026-09-06;
+the MILo-specific boxes never gated this) ·
 **Effort:** roughly 1–2 weeks (pinned build, one-capture A/B on existing data,
 no Slurm campaign)
 
@@ -80,18 +80,36 @@ build-prep.
   2026-09-06), trained on the existing `A03_sherds` dataset at full capture
   resolution, mesh extracted 2026-09-07 with voxel 0.001u (0.374 mm) and
   truncation band 0.005u (1.87 mm) stated in **millimetres**
-- [ ] Cross-view depth disagreement in **millimetres** for 2DGS versus MILo's DTU route
-      on the same capture, on the same ruler (scale sidecars, per
-      [M3](M3-is-the-mesh-at-true-scale.md))
-- [ ] Same-ruler comparison against OpenMVS on A03 — fraction of sherd surface within
-      the M1 requirement (in **mm**); reuses M1's second box, not a second ruler
-- [ ] Break-face close-up renders, 2DGS versus MILo, at a view that resolves ~0.2 mm
-      ridges — a whole-sherd view looks fine at every resolution and has misled here
-      repeatedly. 2026-09-10: staged for eye check instead of static renders —
-      `.scratch/visual-qa` ticket 07 (A03 OpenMVS vs 2DGS previews, one frame,
-      pin-annotatable); verdict still open.
-- [ ] Rig check: `mask_content.py` steel-vs-clay split for the inputs actually used, and
-      remaining steel surface area in the extracted mesh, stated in cm²
+- [x] Cross-view depth disagreement in **millimetres** for 2DGS on the same
+      capture, on the same ruler (scale sidecars, per
+      [M3](M3-is-the-mesh-at-true-scale.md)) — 2026-09-11, adjacent views median
+      0.28–0.66 mm, p90 11–36 mm, 25–44% of pixels beyond 1 mm (n≈140k each,
+      3 pairs; self-pair control 0.00 mm); deep clay median 0.22–0.31 mm
+      (17–29% beyond), rim band median 0.35–1.54 mm (32–57% beyond), p90
+      20–56 mm. Half the pixels outvote the 0.374 mm cube — the floor sits
+      above the ~1 mm bar
+- [x] Same-ruler comparison against OpenMVS on A03 — fraction of sherd surface within
+      the M1 requirement (in **mm**) — 2026-09-08/11, login-node CPU raycast:
+      2DGS→OpenMVS 13.2% within 1 mm, median 49 mm; reverse 42.9%, median
+      2.2 mm; correct-K re-fusion 8.4%, median 71 mm (noise-only change —
+      cameras exonerated, verdict doubly grounded). Formal `compare_meshes.py`
+      refused (size gate 2.31× — content, not units). Keep (a) and (b) fail
+- [x] Break-face close-up renders, 2DGS versus MILo, at a view that resolves ~0.2 mm
+      ridges — 2026-09-07 conservator eye (CloudCompare boxed mm mesh: some
+      sherds OK-ish, some never formed — first completeness failure);
+      2026-09-10 probe eye (`artifacts/2dgs-a03/probe_A31_1100.png`: black
+      frame, sherds translucent smears); 2026-09-12 dilated eye
+      (`artifacts/2dgs-a03/dprobe_A31_1100.png`: identical ghosts); preview
+      pair staged — `.scratch/visual-qa` ticket 07
+      (`preview/manifest_a03.json`, previews at
+      `MILo/artifacts/visual-qa/a03_2dgs_openmvs/`). Keep (c) fails: control
+      held-out PSNR 21–22 dB, masked probes 11.6 dB — no viewing-only route
+- [x] Rig check: `mask_content.py` steel-vs-clay split for the inputs actually used, and
+      remaining steel surface area in the extracted mesh, stated in cm² —
+      inputs 644 cm² steel vs 61 cm² clay per view; OpenMVS O01 rig 326 cm²,
+      O02–O11 ten sherds 18–100 cm²; 2DGS S01–S20 all 25–254 cm² with no
+      sherd-scale separation (sherd+steel webbing); masked fine mesh keeps
+      steel sheets
 
 ## Gate / stop condition (amended 2026-09-06 per user: OpenMVS is the ceiling, not a stop-baseline)
 
@@ -116,11 +134,27 @@ build-prep.
   (one capture, eye verification), do not fund a second architecture to re-learn it.
   **Retired 2026-09-10 (ticket 07): NO — 94% drained by 7k iters (78,227→4,620),
   bg 0.00195, held-out PSNR 11.6 dB vs 21.2 control. Same trade as M4/M5 with
-  nothing paired to the exclusion. Eye renders pending; numbers alone retire it.
+  nothing paired to the exclusion. Eye renders landed 2026-09-10/12 (black frame, translucent smears; dilated identical ghosts); numbers alone had retired it.
   This is a method-on-material failure (type 1), same-ruler numbers.**
+- 2026-09-12/13, branch stays dead after two follow-ups (ticket 07): dilated
+  masks 78,227->5,781 (92.6% drained, PSNR 11.59 vs 11.57 -- margin buys nothing);
+  background weight 0.1 (job 30485175) 78,227->12,796 (~84% drained, PSNR
+  11.58 dB -- counts scale with weight, collapse does not lift). No further
+  masked variants without fresh justification.
 - 2026-09-11: a calibration scare (fusion intrinsics) was raised and then
   retracted the same day — correct-K re-fusion changed the verdict numbers by
   noise only (8.4% vs 13% within 1 mm). Type-1 verdict stands, doubly grounded.
+- **Verdict 2026-09-13: retired NO.** One capture (A03), eye verification at every
+  step. Baseline masked fine mesh: 13.2% within 1 mm (median 49 mm) vs the ~1 mm
+  bar and 0.186 mm OpenMVS ceiling — keep (a) mesh-of-record and (b) complementary
+  coverage fail; masked probes hold 11.6 dB vs 21–22 dB control — keep (c)
+  viewing-only fails. Depth floor (median 0.28–0.66 mm, p90 11–36 mm) sits above
+  the bar with nothing complementary. This is failure type 1 — the method failed
+  on this material — not a broken ruler (correct-K re-fusion agrees) and not a
+  wrong reference (OpenMVS side is the M1 ceiling). Ticket 06 resolved here;
+  ticket 07 retired the masked branch at probe weight; ticket 08 never started
+  (probe never GO) and goes `wontfix`.
+- Loop check 2026-09-13: close-out written back from tickets 06/07/08; M6 carries no checker errors (remaining errors on the board belong to M8, a separate open question).
 
 ## Source
 

@@ -8,7 +8,7 @@ on the same ruler, verdict written into M6.
 
 **Blocked by:** 07 (probe GO — do not start on any other basis).
 
-**Status:** ready-for-agent
+**Status:** wontfix (2026-09-13 — probe never went GO; M6 retired NO, branch dead at probe weight)
 
 - [ ] Full 30k masked train on `A03_sherds` (`-r 1`, `--eval`); deltas vs control:
       Gaussian counts, agreement mm, masked-PSNR, rim renders — same instruments

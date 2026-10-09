@@ -23,6 +23,14 @@ loss plus two-sided masked photometric loss, occlusion pruning explicitly deferr
   frame black, zero steel, sherds reduced to translucent smears — masking
   works, clay destroyed. Agent eye; conservator confirm pending.
 - [x] NO-GO stops here: retire the branch at probe weight, do not fund 08
+- [x] Dilated-masks follow-up 2026-09-12 (job 30467156 + renders 30483899):
+      78,227 → 5,781 (92.6% drained vs 94%), PSNR 11.59 vs 11.57, bg 0.00193;
+      eye (`artifacts/2dgs-a03/dprobe_A31_1100.png`) identical ghosts — margin
+      buys neither rims nor residue. Branch stays dead
+- [x] Discriminating probe 2026-09-13 (job 30485175, background weight 0.1):
+      78,227 → 12,796 (~84% drained), PSNR 11.58 dB — counts scale with weight,
+      collapse does not lift. Finding filed in M6 2026-09-13; no further masked
+      variants without fresh justification
 
 ## Comments
 

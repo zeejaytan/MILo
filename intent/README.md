@@ -17,13 +17,21 @@ built too (2026-09-05): `section_overlay.py` cuts both meshes with one plane and
 the wall in millimetres, and it makes an 8% error unmistakable on synthetic geometry. What
 remains in M3 is one bench measurement against a caliper, and it blocks nothing.
 
+**Two tracks, conservator 2026-09-18:** COLMAP → OpenMVS is the **golden standard and safe
+choice** — it carries the pipeline ([U16](../../intent/U16-shortest-route-to-one-reassembled-pot.md)).
+**3DGS is the exploratory track**, aimed at where the field is advancing, and it does not
+block anything. Every route that got far enough to be judged here failed on **cross-view
+depth consistency**, which is precisely what the 2025–26 3DGS surface literature is working
+on — so any new candidate is screened on depth agreement in millimetres before a mesh is
+built from it. Detail in [M1](M1-resolution-the-material-needs.md).
+
 **M1 is the one to do next.** Both its first two boxes are cheap and unblocked, and the
 second one — what OpenMVS already achieves on A03 — decides whether lifting MILo's
 extraction ceiling is worth doing *for this material*.
 
 | # | Question | Status | Blocked by |
 |---|---|---|---|
-| [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | open — the authors' DTU route is closed, the ceiling may be liftable | none (was M3; lifted 2026-09-04) |
+| [M1](M1-resolution-the-material-needs.md) | Can either route reach the resolution a break face needs? | **answered for the production route** — COLMAP → OpenMVS meets the ~1 mm bar with margin (0.186 mm wobble, A02); MILo tiling STOPPED 2026-09-06. Open on the ridge-resolving render, on SAGA's owed follow-up, and on the 3DGS track's screening gate | none (was M3; lifted 2026-09-04) |
 | [M2](M2-does-masking-eat-the-break-face.md) | Does masking the clamps destroy the thing we are trying to measure? | open — at the limit | none |
 | [M3](M3-is-the-mesh-at-true-scale.md) | How do we know a mesh is at true scale? | open — **118 of 118 captures state a scale source** (117 plate, 1 board); the section picture is built and shows an 8% error; what is left is a caliper round-trip | none |
 | [M4](M4-can-rig-gaussians-be-pruned-after-training.md) | Can the rig Gaussians be pruned after training while keeping Gaussian-scale sharpness? | retired — answered NO on A03 2026-09-06 (zero steel, but webbed + 1.76 mm footprint; eye-confirmed too coarse) | none |
