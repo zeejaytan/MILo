@@ -18,7 +18,7 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 
 - [x] Mechanism check (done 2026-10-16, ticket 01, job 33166058 COMPLETED): coarse patches coincide with rig occlusion — piece 2: 463.0 mm open edge, 276.5 mm (60%) at vis<0.25, 427 mm hole on steel (0/667) vs clay (548/667), render-verified by lead; top-10 36% occluded; P3 exception noted (442 mm holes, only 9.3 occluded) — fill unlocked
 - [x] Pinned LaMa fill (done 2026-10-16, ticket 02, fill 33167281[0-7] + verify 33171383 all COMPLETED): 164/164 views; outside-mask Δ=0, break-touch 0 px, 164 flags; jaw-contact list empty (0 verts unseen in all 143 train views); lead eye-check confirms no mask leak — soft LaMa ghosts + retextured background correctly flagged, carried as known caveats — A/B unlocked
-- [ ] A/B trains, identical seed/config/iterations: filled inputs vs unmasked control
+- [x] A/B trains (done 2026-10-16, ticket 03, 33192555 + 33192982 COMPLETED): identical seed(0-by-construction)/config, 18k iters (configs/fast overrides 30k default — ticket wording corrected); control 225k Gaussians loss 0.047 vs filled 8.3k loss 0.081 — strong pixel-driven divergence, judged at extraction, not rerun
 - [ ] Same-voxel extraction both arms, voxel and band stated in **millimetres**
 - [ ] Density as counts (Gaussians, verts, footprint in mm) AND relief in mm, stated separately — a finely-sampled smooth fake must not pass
 - [ ] Break-face arc agreement in **mm**; any break move is contamination, trial stops
