@@ -16,7 +16,7 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 
 ## Done when
 
-- [ ] Mechanism check: coarse patches of the sherd-only mesh coincide with rig-occluded pixels (occlusion map from the existing masks) — fill only if they do
+- [x] Mechanism check (done 2026-10-16, ticket 01, job 33166058 COMPLETED): coarse patches coincide with rig occlusion — piece 2: 463.0 mm open edge, 276.5 mm (60%) at vis<0.25, 427 mm hole on steel (0/667) vs clay (548/667), render-verified by lead; top-10 36% occluded; P3 exception noted (442 mm holes, only 9.3 occluded) — fill unlocked
 - [ ] Pinned LaMa fill of rig/clamp pixels at full photo resolution on one capture (pin reused from PGSR ticket 01, no rebuild); break pixels and permanently unobserved contacts excluded
 - [ ] A/B trains, identical seed/config/iterations: filled inputs vs unmasked control
 - [ ] Same-voxel extraction both arms, voxel and band stated in **millimetres**
