@@ -19,11 +19,11 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 - [x] Mechanism check (done 2026-10-16, ticket 01, job 33166058 COMPLETED): coarse patches coincide with rig occlusion — piece 2: 463.0 mm open edge, 276.5 mm (60%) at vis<0.25, 427 mm hole on steel (0/667) vs clay (548/667), render-verified by lead; top-10 36% occluded; P3 exception noted (442 mm holes, only 9.3 occluded) — fill unlocked
 - [x] Pinned LaMa fill (done 2026-10-16, ticket 02, fill 33167281[0-7] + verify 33171383 all COMPLETED): 164/164 views; outside-mask Δ=0, break-touch 0 px, 164 flags; jaw-contact list empty (0 verts unseen in all 143 train views); lead eye-check confirms no mask leak — soft LaMa ghosts + retextured background correctly flagged, carried as known caveats — A/B unlocked
 - [x] A/B trains (done 2026-10-16, ticket 03, 33192555 + 33192982 COMPLETED): identical seed(0-by-construction)/config, 18k iters (configs/fast overrides 30k default — ticket wording corrected); control 225k Gaussians loss 0.047 vs filled 8.3k loss 0.081 — strong pixel-driven divergence, judged at extraction, not rerun
-- [ ] Same-voxel extraction both arms, voxel and band stated in **millimetres**
-- [ ] Density as counts (Gaussians, verts, footprint in mm) AND relief in mm, stated separately — a finely-sampled smooth fake must not pass
-- [ ] Break-face arc agreement in **mm**; any break move is contamination, trial stops
-- [ ] Filled-area flag written and honoured downstream (demonstrated, not painted); filled regions excluded from mm scoring
-- [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off
+- [x] Same-voxel extraction (done 2026-10-17, ticket 04, voxel 0.0028u=1.047mm ±8.37mm): control 57,632 verts; filled arm 0 verts at matched settings AND 4x band, both devices — empty
+- [x] Density as counts AND relief in mm, stated separately (done 2026-10-17, ticket 04, control only — filled side UNMEASURABLE_EMPTY_MESH): control 464 pieces / 11 over 200 verts, Rq median 0.144mm p90 0.430mm; smooth-fake check moot, nothing to pass it with
+- [x] Break-face arc agreement in mm (done 2026-10-17 to unmeasurable, ticket 04): no break_arc exists; wall-thickness hook contaminated (room-scale, surroundings included); cross-arm verdict UNMEASURABLE — no break move possible with no B surface
+- [x] Filled-area flag honoured downstream (demonstrated 2026-10-17, ticket 04): 164/164 views audited, filled∩sherd = 0 px everywhere
+- [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (ticket 05: B has no mesh — stage A vs emptiness for the eye)
 
 ## Gate / stop condition
 
