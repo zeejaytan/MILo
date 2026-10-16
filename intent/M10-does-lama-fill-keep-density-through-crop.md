@@ -25,7 +25,7 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 - [x] Filled-area flag honoured downstream (demonstrated 2026-10-17, ticket 04): 164/164 views audited, filled∩sherd = 0 px everywhere
 - [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (ticket 05: B has no mesh — stage A vs emptiness for the eye)
 - [x] Rig-only fill (done 2026-10-17, ticket 06, stage/fill/verify all COMPLETED): 164/164, rig frac 0.19, background+sherd Δ=0; PARTIAL — smooth clamp faces + lit-rubber jaw interiors missed (unfilled+unflagged, dilute toward null); rod ghosts fixed. Validity: B win = win; B null = INCONCLUSIVE (refine masks), not NO.
-- [ ] Rig-only train (ticket 07): single train vs ticket-03 control, identical seed/config/18k
+- [x] Rig-only train (done 2026-10-17, ticket 07, job 33216618 COMPLETED 2:07): 18k, seed-0 construction, cfg diff paths-only vs 03 control; final 158,312 Gaussians loss 0.048 ≈ control — no collapse (worker report lost to markup leak, evidence lead-recovered from disk)
 - [ ] Rig-only extraction + density/relief/break vs control (ticket 08)
 
 ## Gate / stop condition
