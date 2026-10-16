@@ -21,6 +21,8 @@ Plain terms: where the clamp covers pottery, cameras see steel instead of clay. 
 - Extraction: same-voxel both arms, voxel + band stated in mm. Scale `mm_per_unit 373.7333` (±1.4% bar disagreement); `markers_usable false` (scale from 190x130mm base). Prior ceiling 0.0022u = 0.822mm / ±6.58mm / 32,209 blocks (0.002u = 0.75mm overflows 32,768 cliff). Existing `mesh_sherds_mm.ply` was carved with old dilated masks → re-extract clean erode0 baseline, do not reuse as evidence.
 - Measures: density as counts (verts/faces/per-cm2 via `mesh_report.py` / `render_mesh.py`) AND relief in mm (surface_disagreement median/p90/p99/max + frac-within-0.5/1mm; raking + 10mm bar) stated separately — smooth fake must not pass. Break-face arc agreement in mm; any break move = contamination, trial stops (ticket 04 must pin the hook: `wall_chords`/`wall_thickness`/`surface_disagreement` candidates only — no `break_arc` function exists).
 - Second capture scoped only on clay-with-break-untouched + flag-honoured success. Otherwise retire NO; LaMa stays visualisation-only on MILo.
+- Complement-mask verdict (2026-10-17, ticket 04): filled arm 0 verts incl. 4x-band diags both devices vs control 57,632 — NO-GO, retired at one-capture weight.
+- Rig-only variant (user decision 2026-10-17): remove the rig, not the background — inpaint mask = rig pixels only, studio background byte-identical. Separate treatment, own chain (06 → 07 → 08), judged on its own; the complement NO stands regardless.
 
 ## Done when (from intent, unchanged)
 
@@ -41,4 +43,4 @@ Plain terms: where the clamp covers pottery, cameras see steel instead of clay. 
 
 ## Ticket order (sequential — same data/files)
 
-01 mechanism-occlusion-check → 02 pinned-lama-fill → 03 paired-ab-trains → 04 same-voxel-extract-measure → 05 eye-qa-writeback. One finished ticket per commit; judgement (intent writes, verdicts, Needs-eye) stays with the session.
+01 mechanism-occlusion-check → 02 pinned-lama-fill → 03 paired-ab-trains → 04 same-voxel-extract-measure → 05 eye-qa-writeback → 06 rig-only-fill → 07 rig-only-train → 08 rig-only-extract-measure. One finished ticket per commit; judgement (intent writes, verdicts, Needs-eye) stays with the session.

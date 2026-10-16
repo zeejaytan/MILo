@@ -24,6 +24,7 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 - [x] Break-face arc agreement in mm (done 2026-10-17 to unmeasurable, ticket 04): no break_arc exists; wall-thickness hook contaminated (room-scale, surroundings included); cross-arm verdict UNMEASURABLE — no break move possible with no B surface
 - [x] Filled-area flag honoured downstream (demonstrated 2026-10-17, ticket 04): 164/164 views audited, filled∩sherd = 0 px everywhere
 - [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (ticket 05: B has no mesh — stage A vs emptiness for the eye)
+- [ ] Rig-only variant (user decision 2026-10-17 — remove the rig, not the background; tickets 06→07→08): rig-only fill with background byte-identical; single train vs ticket-03 control; same-voxel extraction + density/relief/break vs control. Judged on its own; complement-mask NO stands regardless.
 
 ## Gate / stop condition
 
