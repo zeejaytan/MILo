@@ -26,7 +26,7 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 - [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (ticket 05: B has no mesh — stage A vs emptiness for the eye)
 - [x] Rig-only fill (done 2026-10-17, ticket 06, stage/fill/verify all COMPLETED): 164/164, rig frac 0.19, background+sherd Δ=0; PARTIAL — smooth clamp faces + lit-rubber jaw interiors missed (unfilled+unflagged, dilute toward null); rod ghosts fixed. Validity: B win = win; B null = INCONCLUSIVE (refine masks), not NO.
 - [x] Rig-only train (done 2026-10-17, ticket 07, job 33216618 COMPLETED 2:07): 18k, seed-0 construction, cfg diff paths-only vs 03 control; final 158,312 Gaussians loss 0.048 ≈ control — no collapse (worker report lost to markup leak, evidence lead-recovered from disk)
-- [ ] Rig-only extraction + density/relief/break vs control (ticket 08)
+- [x] Rig-only extraction + density/relief/break vs control (done 2026-10-17, ticket 08, all jobs COMPLETED): rigfill 64,018 verts (+11%), 14 vs 11 pieces, same verts/cm²; Rq 0.155 vs 0.144mm; section median 0.099mm, walls 8.30 vs 8.34mm — NO break move; flag honoured (0 px). Debit: held-out silhouette 73% vs 59% (extra surface, expected). Verdict: rigfill WIN → KEEP per gate (single object/run — a lead). Complement-mask NO stands.
 
 ## Gate / stop condition
 
