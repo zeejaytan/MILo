@@ -1,6 +1,6 @@
 # M10 — Does LaMa-filled rig pixels let MILo keep sherd density through the crop?
 
-**Status:** open · **Blocked by:** none · **Effort:** roughly 1 week (pinned fill, one-capture A/B on existing data)
+**Status:** closed (answered 2026-10-17: keep — rig-only fill pays back the masking drain) · **Blocked by:** none · **Effort:** roughly 1 week (pinned fill, one-capture A/B on existing data)
 
 ## Why it matters
 
@@ -23,10 +23,18 @@ Three cautions, all load-bearing. First, M5's lesson: if the coarseness comes fr
 - [x] Density as counts AND relief in mm, stated separately (done 2026-10-17, ticket 04, control only — filled side UNMEASURABLE_EMPTY_MESH): control 464 pieces / 11 over 200 verts, Rq median 0.144mm p90 0.430mm; smooth-fake check moot, nothing to pass it with
 - [x] Break-face arc agreement in mm (done 2026-10-17 to unmeasurable, ticket 04): no break_arc exists; wall-thickness hook contaminated (room-scale, surroundings included); cross-arm verdict UNMEASURABLE — no break move possible with no B surface
 - [x] Filled-area flag honoured downstream (demonstrated 2026-10-17, ticket 04): 164/164 views audited, filled∩sherd = 0 px everywhere
-- [ ] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (ticket 05: B has no mesh — stage A vs emptiness for the eye)
+- [x] Sherd close-ups at ridge-resolving views, both arms, plus conservator eye sign-off (done 2026-10-17, ticket 05): witnessed verdict — full scene much coarser; control and LaMa not much different. Eye and numbers agree. Viewer pairs m10_rigfill (control vs rigfill) + m10_fullscene (cropped full scene vs rigfill), localhost:8081.
 - [x] Rig-only fill (done 2026-10-17, ticket 06, stage/fill/verify all COMPLETED): 164/164, rig frac 0.19, background+sherd Δ=0; PARTIAL — smooth clamp faces + lit-rubber jaw interiors missed (unfilled+unflagged, dilute toward null); rod ghosts fixed. Validity: B win = win; B null = INCONCLUSIVE (refine masks), not NO.
 - [x] Rig-only train (done 2026-10-17, ticket 07, job 33216618 COMPLETED 2:07): 18k, seed-0 construction, cfg diff paths-only vs 03 control; final 158,312 Gaussians loss 0.048 ≈ control — no collapse (worker report lost to markup leak, evidence lead-recovered from disk)
 - [x] Rig-only extraction + density/relief/break vs control (done 2026-10-17, ticket 08, all jobs COMPLETED): rigfill 64,018 verts (+11%), 14 vs 11 pieces, same verts/cm²; Rq 0.155 vs 0.144mm; section median 0.099mm, walls 8.30 vs 8.34mm — NO break move; flag honoured (0 px). Debit: held-out silhouette 73% vs 59% (extra surface, expected). Verdict: rigfill WIN → KEEP per gate (single object/run — a lead). Complement-mask NO stands.
+
+## Where it stands
+
+Filling just the rig pixels with LaMa leaves the cut-out sherds slightly denser (+11% surface points, same points-per-square-centimetre) at the same finish, with walls unmoved — the conservator's eye confirms control and LaMa look not much different, while the original full scene looks much coarser. So the fill pays back the masking drain without roughening the clay: keep, and only now scope a second capture.
+Weight: one object, one run per arm — a lead, not a conclusion.
+Next: scope the second capture (user decision); full-scene meshes always staged cropped to rig+sherds.
+Picture: MILo/artifacts/m10_t08/mesh_rigfill_render.png | Rigfill mesh: same 10-piece layout as control, slightly fuller
+Viewer: m10_rigfill (control vs rigfill), m10_fullscene (cropped full scene vs rigfill)
 
 ## Gate / stop condition
 
