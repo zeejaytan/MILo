@@ -6,7 +6,7 @@
 
 **Blocked by:** 24-train-lossless-repaint (resolved 2026-10-19).
 
-**Status:** ready-for-agent
+**Status:** resolved 2026-10-19 — DONE. All 3 jobs COMPLETED. T25 vs T22 vs ctrl: density 152.2/154.8/146.3 per-cm2; Rq 0.156/0.181/0.144 (grip 0.198/0.236); disagreement 0.576/0.618; silhouette 0.510/0.482/0.606 (= rigfill 0.511). Compression caused ~2/3 of excess roughness; repaint itself costs silhouette + residual relief. Verified on disk by lead.
 
 - [ ] Source field: `/data/gpfs/projects/punim2657/MILo/output/17062025/m10_ticket24/A03_t24lossless/` iteration_18000 cloud.
 - [ ] Extract with the T08/T22-matched settings (voxel 0.0028u, band mult 8, masked DTU fusion + same scale FACTOR via apply_scale --force-factor). Expect the inherited broken render tail (T14/T22 precedent: fusion+scale+report succeed; run renders/scores as separate jobs, do not re-derive).
