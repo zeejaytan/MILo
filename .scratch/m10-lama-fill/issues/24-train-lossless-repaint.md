@@ -6,7 +6,7 @@
 
 **Blocked by:** 23-lossless-repaint-rebuild (resolved 2026-10-19).
 
-**Status:** ready-for-agent
+**Status:** resolved 2026-10-19 — DONE. Job 33392153 COMPLETED 0:0 (2:16), 145,940 Gaussians, cloud + note on disk, verified by lead. Config identical to T21 except source paths.
 
 - [ ] Source images: `/data/gpfs/projects/punim2657/MILo/output/17062025/m10_ticket23/composite_png/` (164 PNG views, PIL-verified PNG RGB 3200x2133).
 - [ ] View set: same 123 kept views as T14/T21 (reuse the roster; drop the same 41). Dataset layout mirrors T21 (filtered sparse copy + symlinks into composite_png).
