@@ -1,22 +1,22 @@
-# M11 — Can cross-view graft recover the jaw-covered sherd face from real pixels?
+# M11 — Can cross-view graft recover rig-blocked sherd surface from real pixels?
 
-**Status:** open · **Blocked by:** none (M10 closed-keep 2026-10-17) · **Effort:** roughly 1–2 weeks (probe, graft build, eye gate, retrain only if the eye says so)
+**Status:** open · **Blocked by:** none (M10 closed-keep 2026-10-17) · **Effort:** roughly 1–2 weeks (probe, graft build, eye gate, retrain only if the eye says so) · **Correction 2026-10-18:** first version wrongly targeted jaw-covered face; jaws ride with the sherd so that clay is visible nowhere — scope is rig-blocked surface only (user correction, intent edited in place, git holds the earlier telling)
 
 ## Why it matters
 
-The clamp's black rubber jaws sit on the sherd faces themselves, and nothing tried so far can paint over them honestly. LaMa failed the geometry (ticket 13d: a masked prong filled dark, mean change ~2.5 grey levels — the rim is mostly darkness, so there is nothing to extrapolate from). The jaw pixels are not missing observations of backdrop; they are missing observations of *clay that other photos genuinely saw*. Sixteen dozen calibrated views circle the same sherd — the pixels the jaw hides in one view are visible in others. Copying those real observations across would recover the face without inventing any of it.
+Two occluders, two fates — corrected 2026-10-18, because the first telling blurred them. The clamp's rubber jaws ride *with* the sherd on the turntable: they sit on the same face patch in every view, so that clay is seen nowhere and no graft can recover it (LaMa proved it too — ticket 13d: a masked prong filled dark, mean change ~2.5 grey levels, because the rim is mostly darkness). The *rig itself* is the graftable case: static steel the turning sherd passes behind, so surface hidden in one view stands genuinely visible in sisters. The graft target is rig-blocked surface only; jaw-covered face stays excluded, by geometry, not by choice.
 
-Plain terms: where the rubber jaw covers the pottery, one photo sees black rubber but a dozen sister photos see the actual clay. The test is whether geometry (camera positions + depth, which this project already owns) can carry those genuine clay pixels across — so the sherd face arrives whole, measured throughout, with nothing hallucinated.
+Plain terms: the rubber jaw travels with the pottery, so no photo ever sees beneath it — that clay is gone and stays gone. But the sherd also swings behind the fixed steel rigging, and what one photo loses to steel, a sister photo sees as plain clay. The test is whether geometry (camera positions + depth, which this project already owns) can carry those genuine clay pixels across — so the rig-blocked surface arrives whole, measured throughout, with nothing hallucinated.
 
 ## Opinion before acting (workspace rule — researched, then stated)
 
 Worth doing **for this**, as an adaptation, not an adoption. The literature survey (2026-10-18, `docs/notes/multiview-completion-survey.md`) returned a clean negative: no paper or codebase does faithful cross-view texture transfer as its stated task. The closest mechanism precedent is 3DGIC (Huang et al., CVPR 2025, arXiv:2502.11801): its depth-guided stage shrinks each inpainting mask to pixels visible in *no* view by projecting visible background across views, and only then fills the remainder — "visible-anywhere ⇒ copy, visible-nowhere ⇒ hallucinate". We borrow the split and refuse the second half: visible-anywhere ⇒ copy real pixels; visible-nowhere ⇒ leave out and say so, never hallucinate. That refusal is load-bearing — it keeps every grafted pixel on the measured side of the 2026-10-05 marking rule (diffusion-invented fill must be labelled generated, never treated as measured evidence), which LaMa fill could never satisfy on sherd faces.
 
-Three cautions. First, the probe comes before the build: if most jaw-covered face pixels turn out visible nowhere (grazing angles, every view jawed), there is nothing to copy and the question stops at a number. Second, cross-view pixels disagree (lighting, exposure, resampling) — the graft needs photometric matching plus the same outside-mask guarantees LaMa refills honoured (untouched pixels bit-identical), or it is a fancier fake. Third, 3DGIC's code is deletion-framed and its licence unverified — borrow the idea from the paper, do not depend on the repo until the licence is checked.
+Three cautions. First, the probe comes before the build and counts rig-blocked pixels only — jaw-covered face is out of scope by the correction above, visible nowhere in any view. If most rig-blocked surface also turns out visible nowhere (grazing angles), there is nothing to copy and the question stops at a number. Second, cross-view pixels disagree (lighting, exposure, resampling) — the graft needs photometric matching plus the same outside-mask guarantees LaMa refills honoured (untouched pixels bit-identical), or it is a fancier fake. Third, 3DGIC's code is deletion-framed and its licence unverified — borrow the idea from the paper, do not depend on the repo until the licence is checked.
 
 ## Done when
 
-- [ ] Visibility probe: for jaw-on-face pixels, what fraction is genuinely visible in ≥1 other view (date, ticket, job)
+- [ ] Visibility probe: for rig-blocked (not jaw-covered) pixels, what fraction is genuinely visible in ≥1 other view (date, ticket, job)
 - [ ] Graft build: pose+depth projection carrying real pixels across, with photometric match and outside-mask guarantees verified per view
 - [ ] Eye gate: grafted faces staged in visual-qa beside control; conservator confirms clay, not smear — need-eye pair logged with same-round reply
 - [ ] Retrain + measure only if the eye passes: density/roughness vs control with grafted regions flagged as measured-but-relocated
@@ -33,7 +33,7 @@ Viewer: none yet.
 
 ## Gate / stop condition
 
-- Jaw-covered face mostly visible nowhere → stop at the probe; fall back to excluding jawed views (M10 Next) rather than building the graft.
+- Rig-blocked surface mostly visible nowhere → stop at the probe; fall back to excluding jawed views (M10 Next) rather than building the graft. (Jaw-covered face is visible nowhere by construction — never in scope.)
 - Grafted pixels fail bit-identical-outside or photometric match → stop; a graft that alters its neighbours is a fake.
 - Eye reads smear, seams, or wrong clay → retire NO; graft stays unbuilt, exclusion stands.
 - Eye confirms clay with flags honoured → keep; retrain and measure, then scope the second capture with jaw-aware posing.
