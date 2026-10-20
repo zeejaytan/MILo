@@ -6,12 +6,12 @@
 
 **Blocked by:** 05 (subset design follows the autopsy features).
 
-**Status:** ready-for-agent
+**Status:** results-in (both sets wedged at ITER 4000 2026-10-20, lead-recorded; verdict feeds 08)
 
-- [ ] Wedge set (killers + nearest neighbours) vs clean set (neighbours only), trained as short legs from scratch — bounded at 2 GPU legs total, first save inside the wall
-- [ ] Subset lists are copies (train_list.05wedge.txt style); the curated train_list.txt and its train_list.143.txt backup are never overwritten by this ticket
-- [ ] Verdict recorded: minimal wedging set (list the views) vs clean set, or no-repro-under-X-views (say so explicitly — routes back to 08 as "trigger unidentified")
-- [ ] No edits to the authors' tree; no curation of the main training lists here
+- [x] Wedge set (killers + nearest neighbours) vs clean set (neighbours only), trained as short legs from scratch — bounded at 2 GPU legs total, first save inside the wall
+- [x] Subset lists are copies (train_list.05wedge.txt style); the curated train_list.txt and its train_list.143.txt backup are never overwritten by this ticket
+- [x] Verdict recorded: minimal wedging set (list the views) vs clean set, or no-repro-under-X-views (say so explicitly — routes back to 08 as "trigger unidentified")
+- [x] No edits to the authors' tree; no curation of the main training lists here
 
 ## Evidence (worker 2026-10-20)
 
@@ -27,3 +27,4 @@ Subset design (from 05 neighbour table — killers + frame-adjacent passing neig
 ## Comments
 
 - 2026-10-19 (lead): bounded by conservator decision — 2 legs, then verdict whatever the outcome. Uses the 4000-iter wedge point as the repro bar: a subset that sails past 5000 iters does not reproduce it.
+- 2026-10-20 (lead): VERDICT — BOTH SETS WEDGED. Wedge leg 33449900: 4000/6000 at 29.18it/s (Loss 0.02650, Points 51602), chkpnt saved 04:50, then stuck in reflect_trace (gaussian_model.py:134 via pbr:178), faulthandler Timeout dumps every 10 min for ~7h. Clean leg 33449901 (8 neighbours, zero killers): 4000/6000 at 29.20it/s (Loss 0.02458, Points 58133), chkpnt saved 06:05:33, same call site, ~35 Timeout dumps over ~6h. Repro bar met in the wrong direction: killer views are NOT the cause; even passing neighbours stall at ITER 4000 on A03. Both legs scancelled 2026-10-20 (~12:00 AEDT, sacct CANCELLED) to stop GPU burn — the question was answered, waiting longer changes nothing.
