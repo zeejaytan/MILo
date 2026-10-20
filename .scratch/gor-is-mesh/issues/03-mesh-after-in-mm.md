@@ -6,7 +6,7 @@
 
 **Blocked by:** 02-recon-removal-inpainting.
 
-**Status:** ready-for-agent
+**Status:** wontfix (retired unexecuted 2026-10-20 by 08 verdict — no mesh ever existed)
 
 - [ ] Manual `render.py` WITHOUT `--skip_mesh` on the iteration-34000 inpainted model, bounded first (`--voxel_size --sdf_trunc --depth_trunc` all stated in mm, mesh saved as `fuse.ply` plus `_post.ply`); unbounded only as a named second variant
 - [ ] Voxel size, truncation band, depth range, cluster-keep count and scale sidecar recorded beside the mesh; `compare_meshes.py` refusal without sidecar verified, not assumed

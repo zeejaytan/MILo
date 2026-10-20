@@ -6,7 +6,7 @@
 
 **Blocked by:** 05 (subset design follows the autopsy features).
 
-**Status:** results-in (both sets wedged at ITER 4000 2026-10-20, lead-recorded; verdict feeds 08)
+**Status:** resolved (M9 retired 2026-10-20 on this evidence)
 
 - [x] Wedge set (killers + nearest neighbours) vs clean set (neighbours only), trained as short legs from scratch — bounded at 2 GPU legs total, first save inside the wall
 - [x] Subset lists are copies (train_list.05wedge.txt style); the curated train_list.txt and its train_list.143.txt backup are never overwritten by this ticket

@@ -6,7 +6,7 @@
 
 **Blocked by:** 02 (killer list — satisfied: A31_1111, A32_1142, A33_1176 hang; A32_1151 illegal-access; outcomes flip run to run across two nodes).
 
-**Status:** results-in (autopsy complete 2026-10-20, lead-accepted; verdict feeds 08)
+**Status:** resolved (M9 retired 2026-10-20 on this evidence)
 
 - [x] Feature table for the 4 killers vs 8 passing neighbours from the same trays: camera pose (angle/height neighbours), steel-proxy share per view, dial/marble-rod presence, blur/exposure outliers, COLMAP sparse point counts and reprojection spread
 - [x] Verdict recorded: NO-COMMON-FEATURE (stated explicitly — a negative is an answer)

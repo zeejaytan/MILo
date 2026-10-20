@@ -6,7 +6,7 @@
 
 **Blocked by:** 03-mesh-after-in-mm.
 
-**Status:** ready-for-agent
+**Status:** wontfix (retired unexecuted 2026-10-20 by 08 verdict — no GOR-IS mesh to compare)
 
 **Needs-eye:** stage via `visual-qa/viewer/stage_pair.py` (GOR-IS mesh vs OpenMVS, ridge-resolving close-ups); closes only on witnessed look plus conservator note and agent reply, never numbers alone.
 

@@ -6,7 +6,7 @@
 
 **Blocked by:** None (control 33427213 COMPLETED; chkpnt15000.pth on Spartan).
 
-**Status:** results-in (resume runs clean 2026-10-20, lead-accepted; verdict feeds 08)
+**Status:** resolved (M9 retired 2026-10-20 on this evidence)
 
 - [x] One short GPU job: resume sample control from chkpnt15000, run to ~15500 (or the next save point), then stop — sized in minutes, not hours
 - [x] Final sacct State/ExitCode recorded in the ticket; faulthandler tail kept if it wedges

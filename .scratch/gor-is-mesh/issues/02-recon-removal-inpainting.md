@@ -6,7 +6,7 @@
 
 **Blocked by:** 01-pinned-build-conversion.
 
-**Status:** in-progress (recon submitted; inpainting job lands after iter speed is known)
+**Status:** resolved (probe hub closed 2026-10-20 — control + wedge evidence fed the 08 retire verdict in M9)
 
 - [x] Pipeline fixed at the pinned commit with full-resolution, lists-honouring `--eval` (143/21), `--logger none`, `--resolution 1` — recon job `slurm/goris_recon.slurm` (train 30k → remove_object → metrics → density census), SUBMITTED `30753265` 2026-09-19, poll running
 - [ ] Held-out render PSNR reported as viewing signal only, never in mm; density counts (Gaussians in vs out) reported — ~90%+ drain stops the route at probe weight per M5/M6
