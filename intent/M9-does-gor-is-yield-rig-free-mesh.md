@@ -1,6 +1,6 @@
 # M9 — Does GOR-IS give a rig-free sherd mesh at the resolution a break face needs?
 
-**Status:** open · **Blocked by:** none (M1 requirement ~1 mm stated; OpenMVS baseline stands as ceiling) · **Effort:** roughly 1–2 weeks (pinned build, one-capture A/B on existing data)
+**Status:** retired 2026-10-20 (method failed on this material — bounded probe series closed, no second seed)
 
 ## Why it matters
 
@@ -17,11 +17,11 @@ Worth doing in general, not yet shown worth doing **for this**. GOR-IS is a legi
 ## Done when
 
 - [x] Pinned build `applezyh/GOR-IS@eb36acc` in reused `envs/milo` + `goris_pkgs` sidecar (2026-09-19, ticket 01: full import smoke green on GPU), A03_sherds converted (rig object_mask eye-verified, base+dial kept; specular/normal via loader None-path; 143/21/21 lists), full resolution (`--resolution 1` explicit)
-- [ ] Recon → removal → 2D/3D inpaint → manual mesh-after with voxel size and truncation band stated in **millimetres** (mesh is REQUIRED, not optional)
-- [ ] Cross-view depth disagreement in **millimetres** on the same capture, same ruler (scale sidecars, per M3)
-- [ ] Same-ruler fraction within ~1 mm vs OpenMVS on A03; inpainted contact excluded from the score
-- [ ] Break-face close-ups at ridge-resolving views, GOR-IS mesh vs OpenMVS, plus conservator eye sign-off
-- [ ] Rig check: steel-vs-clay split of inputs actually used, remaining steel cm² in the mesh
+- [ ] Recon → removal → 2D/3D inpaint → manual mesh-after — RETIRED UNEXECUTED 2026-10-20 (ticket 08): recon wedges at iter ~4000 on A03, no mesh ever existed
+- [ ] Cross-view depth disagreement in mm — RETIRED UNMEASURED (never reached measurement)
+- [ ] Same-ruler fraction within ~1 mm vs OpenMVS — RETIRED UNMEASURED (inpainted-contact exclusion never engaged)
+- [ ] Break-face close-ups + conservator eye sign-off — RETIRED UNSTAGED (no renders to judge)
+- [ ] Rig check — PARTIAL: killers excluded 143→139 under 8-stop rule (4 of 8 spent, remainder unspent); steel cm² in mesh unmeasured (no mesh)
 
 ## Gate / stop condition (OpenMVS is the ceiling, not a stop-baseline)
 
@@ -34,3 +34,12 @@ Worth doing in general, not yet shown worth doing **for this**. GOR-IS is a legi
 ## Source
 
 User request 2026-09-18 (mesh-after required); GOR-IS README + `run.sh` + `launcher.py` + `render.py` at `eb36acc`; [M1](M1-resolution-the-material-needs.md), [M3](M3-is-the-mesh-at-true-scale.md), [M4](M4-can-rig-gaussians-be-pruned-after-training.md), [M5](M5-can-masked-training-exclude-rig.md), [M6](M6-does-2dgs-reach-break-face-resolution.md), [M8](M8-does-pgsr-replace-milo.md); `docs/notes/A03_DTU_EXTRACTION_RESULT.md`.
+
+## Where it stands
+
+GOR-IS recon cannot train A03 past iter ~4000 — the sample-scene control ran 0–30000 clean (job 33427213) and its resume ran clean (job 33449819), so the stack is acquitted; killer views are acquitted (05 found no shared feature, 07's killer-free clean set wedged too, jobs 33449900/33449901); the trigger is unidentified at probe weight (iter 4000 is a routine densify step per code read, not a unique event). Cause: the method failed on this material — not the ruler, not the reference. Tickets 02/05/06/07 results in, 03/04 retired unexecuted.
+
+Weight: one capture (A03), probe weight (control + bounded 2-leg series, no second seed).
+Next: none — route retired.
+Picture: none (no mesh or renders to judge).
+Viewer: none.
