@@ -39,6 +39,8 @@ committed, and nothing heavy is copied to the laptop.
 Default branch is **`master`** (upstream's name). Local rsync landing zone: `artifacts/`
 — comparison renders, metrics and logs only.
 
+Workbench layout, and the harvest-then-delete procedure that goes with it: `C:\PR\docs\agents\workspace-hygiene.md`. Deletion follows `C:\PR\AGENTS.md` rule 13. Canonical checkout `/data/gpfs/projects/punim2657/MILo/repo`, working area `/data/gpfs/projects/punim2657/MILo/`; `runs/` + `attic/` not yet set up.
+
 ## Fork changes against upstream
 
 Five, each with its reason, in **`docs/reference/fork-changes.md`**: `.gitmodules` SSH → HTTPS;
