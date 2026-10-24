@@ -62,7 +62,17 @@ Job scripts are versioned in `slurm/` and sbatch'd **from the repo checkout** on
 
 Logs go to `/data/gpfs/projects/punim2657/MILo/logs/`.
 
-Ask before submitting any job, per the workspace rules.
+Submit jobs without asking: the workspace's standing sign-off covers every job (`../AGENTS.md`
+rule 3, 2026-10-20).
+
+Workbench layout, and the harvest-then-delete procedure that goes with it:
+`../docs/agents/workspace-hygiene.md`. Deletion follows `../AGENTS.md` rule 13. Canonical
+checkout `/data/gpfs/projects/punim2657/MILo/repo`, working area
+`/data/gpfs/projects/punim2657/MILo/`; `runs/` + `attic/` not yet set up. **MILo has two git
+submodules** (`Depth-Anything-V2`, `nvdiffrast`): git warns against many checkouts of such a
+repo, so keep ticket worktrees few and short-lived, and note that a job built with
+`run_from_commit.sh` (`git archive`) gets no submodules and must take a pinned copy from the
+working area.
 
 ## Domain notes / traps
 
